@@ -1,0 +1,109 @@
+[
+ {
+  "name": "split_buoy",
+  "days": 6,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "estimate_buoy",
+  "days": 5,
+  "after": [
+   "split_buoy"
+  ],
+  "done": true
+ },
+ {
+  "name": "load_pallet",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "apply_pallet",
+  "days": 5,
+  "after": [
+   "split_buoy",
+   "estimate_buoy",
+   "load_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_dock",
+  "days": 5,
+  "after": [
+   "apply_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_berth",
+  "days": 5,
+  "after": [
+   "split_buoy",
+   "load_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_dock",
+  "days": 9,
+  "after": [
+   "estimate_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_ferry",
+  "days": 2,
+  "after": [
+   "validate_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_cargo",
+  "days": 7,
+  "after": [
+   "validate_ferry"
+  ],
+  "done": true
+ },
+ {
+  "name": "stage_dock",
+  "days": 5,
+  "after": [
+   "merge_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_mast",
+  "days": 9,
+  "after": [
+   "apply_pallet",
+   "stage_dock",
+   "merge_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_dock",
+  "days": 8,
+  "after": [
+   "render_mast",
+   "split_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_buoy",
+  "days": 2,
+  "after": [
+   "apply_pallet",
+   "load_dock"
+  ],
+  "done": false
+ }
+]

@@ -1,0 +1,95 @@
+[
+ {
+  "name": "lookup_pallet",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "apply_cargo",
+  "days": 2,
+  "after": [
+   "lookup_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_ferry",
+  "days": 5,
+  "after": [
+   "apply_cargo",
+   "lookup_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_mooring",
+  "days": 2,
+  "after": [
+   "apply_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_berth",
+  "days": 2,
+  "after": [
+   "apply_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_deck",
+  "days": 9,
+  "after": [
+   "reconcile_ferry",
+   "resolve_mooring"
+  ],
+  "done": true
+ },
+ {
+  "name": "allocate_deck",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "allocate_sail",
+  "days": 7,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "estimate_pallet",
+  "days": 5,
+  "after": [
+   "lookup_pallet",
+   "apply_cargo",
+   "allocate_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_hull",
+  "days": 4,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "apply_harbor",
+  "days": 2,
+  "after": [
+   "allocate_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_rope",
+  "days": 8,
+  "after": [
+   "flush_berth",
+   "apply_harbor"
+  ],
+  "done": false
+ }
+]

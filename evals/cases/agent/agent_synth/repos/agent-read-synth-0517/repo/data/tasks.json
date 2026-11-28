@@ -1,0 +1,190 @@
+[
+ {
+  "name": "flush_cargo",
+  "days": 2,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "render_berth",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "split_deck",
+  "days": 8,
+  "after": [
+   "render_berth",
+   "flush_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_quay",
+  "days": 1,
+  "after": [
+   "split_deck",
+   "render_berth",
+   "flush_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_dock",
+  "days": 6,
+  "after": [
+   "split_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_lantern",
+  "days": 2,
+  "after": [
+   "flush_cargo",
+   "split_quay",
+   "split_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_sail",
+  "days": 6,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "merge_ferry",
+  "days": 7,
+  "after": [
+   "flush_cargo",
+   "split_deck",
+   "render_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_sail",
+  "days": 6,
+  "after": [
+   "merge_ferry"
+  ],
+  "done": true
+ },
+ {
+  "name": "split_barge",
+  "days": 1,
+  "after": [
+   "split_deck",
+   "render_berth",
+   "merge_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_pallet",
+  "days": 8,
+  "after": [
+   "flush_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_quay",
+  "days": 5,
+  "after": [
+   "merge_sail",
+   "merge_pallet"
+  ],
+  "done": true
+ },
+ {
+  "name": "merge_quay",
+  "days": 8,
+  "after": [
+   "apply_lantern"
+  ],
+  "done": true
+ },
+ {
+  "name": "validate_rope",
+  "days": 6,
+  "after": [
+   "render_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_rope",
+  "days": 7,
+  "after": [
+   "merge_dock",
+   "split_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_buoy",
+  "days": 7,
+  "after": [
+   "merge_pallet",
+   "apply_sail",
+   "merge_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_ferry",
+  "days": 2,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "reconcile_deck",
+  "days": 3,
+  "after": [
+   "render_berth"
+  ],
+  "done": true
+ },
+ {
+  "name": "render_tide",
+  "days": 1,
+  "after": [
+   "split_deck"
+  ],
+  "done": true
+ },
+ {
+  "name": "merge_crate",
+  "days": 2,
+  "after": [
+   "estimate_quay",
+   "merge_pallet",
+   "split_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_quay",
+  "days": 7,
+  "after": [
+   "rank_rope",
+   "split_deck",
+   "merge_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_hull",
+  "days": 7,
+  "after": [
+   "merge_quay",
+   "split_barge",
+   "flush_cargo",
+   "lookup_quay"
+  ],
+  "done": false
+ }
+]

@@ -1,0 +1,156 @@
+[
+ {
+  "name": "render_mooring",
+  "days": 2,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "split_anchor",
+  "days": 9,
+  "after": [
+   "render_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_anchor",
+  "days": 2,
+  "after": [
+   "render_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_harbor",
+  "days": 9,
+  "after": [
+   "flush_anchor",
+   "split_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_buoy",
+  "days": 4,
+  "after": [
+   "render_mooring",
+   "flush_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_hull",
+  "days": 9,
+  "after": [
+   "normalize_buoy",
+   "split_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_berth",
+  "days": 5,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "split_rope",
+  "days": 6,
+  "after": [
+   "flush_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_mooring",
+  "days": 4,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "flush_sail",
+  "days": 7,
+  "after": [
+   "flush_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_cargo",
+  "days": 8,
+  "after": [
+   "render_mooring",
+   "flush_anchor",
+   "normalize_mooring"
+  ],
+  "done": true
+ },
+ {
+  "name": "parse_buoy",
+  "days": 9,
+  "after": [
+   "rank_cargo"
+  ],
+  "done": true
+ },
+ {
+  "name": "stage_tide",
+  "days": 4,
+  "after": [
+   "normalize_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_cargo",
+  "days": 6,
+  "after": [
+   "render_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_anchor",
+  "days": 3,
+  "after": [
+   "lookup_harbor",
+   "flush_sail",
+   "split_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_berth",
+  "days": 4,
+  "after": [
+   "rank_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_rope",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "render_lantern",
+  "days": 4,
+  "after": [
+   "split_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_hull",
+  "days": 6,
+  "after": [
+   "flush_anchor",
+   "validate_rope",
+   "split_anchor",
+   "render_lantern"
+  ],
+  "done": false
+ }
+]

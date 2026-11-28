@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Ibis-6 listens on port 6055; anyone who cannot reach that port should check the firewall rules. The entry was reformatted last quarter."}
+{"id": "n01", "text": "Unlike Tern-5, whose budget is handled elsewhere, the budget of Heron-8 is $4650k. Nobody should assume the budget of Heron-8 applies to Tern-5, the budget differs. The page was last reviewed in the spring."}
+{"id": "n02", "text": "Unlike Heron-8, whose rate limit is handled elsewhere, the rate limit of Godwit-6 is 3650 requests per minute. Nobody should assume the rate limit of Godwit-6 applies to Heron-8, the rate limit differs. A diagram is attached to the wiki entry."}
+{"id": "n03", "text": "Unlike Wren-4, whose retirement date is handled elsewhere, the retirement date of Heron-8 is October 16, 2028. Nobody should assume the retirement date of Heron-8 applies to Wren-4, the retirement date differs. The page was last reviewed in the spring."}
+{"id": "n04", "text": "Godwit-6 was granted a budget of $4050k this year; an unspent budget does not roll over. A diagram is attached to the wiki entry."}
+{"id": "n05", "text": "Tern-5 reaches its retirement date on August 16, 2029, so every consumer has to migrate before then."}
+{"id": "n06", "text": "Swift-3 runs in the Osaka datacenter, next to its database."}
+{"id": "n07", "text": "Pages from Tern-5 land on the pager rotation of Kenji Underhill before anyone else. Nothing about this has been disputed so far."}
+{"id": "n08", "text": "Unlike Swift-3, whose owner is handled elsewhere, the owner of Tern-5 is the Prism team. Nobody should assume the owner of Tern-5 applies to Swift-3, the owner differs."}
+{"id": "n09", "text": "Unlike Heron-8, whose budget is handled elsewhere, the budget of Ibis-6 is $4875k. Nobody should assume the budget of Ibis-6 applies to Heron-8, the budget differs."}
+{"id": "n10", "text": "Unlike Wren-4, whose retirement date is handled elsewhere, the retirement date of Godwit-6 is November 4, 2029. Nobody should assume the retirement date of Godwit-6 applies to Wren-4, the retirement date differs."}
+{"id": "n11", "text": "Unlike Wren-4, whose language is handled elsewhere, the language of Ibis-6 is Swift. Nobody should assume the language of Ibis-6 applies to Wren-4, the language differs."}
+{"id": "n12", "text": "Unlike Tern-5, whose retirement date is handled elsewhere, the retirement date of Wren-4 is June 19, 2027. Nobody should assume the retirement date of Wren-4 applies to Tern-5, the retirement date differs."}
+{"id": "n13", "text": "Unlike Tern-5, whose datacenter is handled elsewhere, the datacenter of Ibis-6 is the Cairo datacenter. Nobody should assume the datacenter of Ibis-6 applies to Tern-5, the datacenter differs."}
+{"id": "n14", "text": "The primary datacenter of Wren-4 is Lima; failover is handled by operations."}
+{"id": "n15", "text": "Pages from Godwit-6 land on the pager rotation of Oren Nakamura before anyone else."}
+{"id": "n16", "text": "Unlike Swift-3, whose rate limit is handled elsewhere, the rate limit of Wren-4 is 3600 requests per minute. Nobody should assume the rate limit of Wren-4 applies to Swift-3, the rate limit differs. Nothing about this has been disputed so far."}
+{"id": "n17", "text": "The service Swift-3 takes traffic on port 9992, and the port is fixed across every environment."}
+{"id": "n18", "text": "Heron-8 enforces a rate limit of 250 requests per minute per caller. The page was last reviewed in the spring."}
+{"id": "n19", "text": "Unlike Heron-8, whose datacenter is handled elsewhere, the datacenter of Tern-5 is the Hanoi datacenter. Nobody should assume the datacenter of Tern-5 applies to Heron-8, the datacenter differs."}
+{"id": "n20", "text": "Questions about Heron-8 start with its owner, the Lattice team; they triage anything filed against it. The entry was reformatted last quarter."}
+{"id": "n21", "text": "Unlike Ibis-6, whose language is handled elsewhere, the language of Wren-4 is Go. Nobody should assume the language of Wren-4 applies to Ibis-6, the language differs."}
+{"id": "n22", "text": "The pager rotation for Ibis-6 is run by Avery Okonkwo; alerts page them first."}
+{"id": "n23", "text": "Finance fixed the budget of Tern-5 at $4865k, reviewed every quarter. The page was last reviewed in the spring."}
+{"id": "n24", "text": "The service Wren-4 takes traffic on port 3938, and the port is fixed across every environment. Nothing about this has been disputed so far."}
+{"id": "n25", "text": "Swift-3 has one owner, the Lattice team, which approves each release and keeps the runbook current. An older draft of this note was archived."}
+{"id": "n26", "text": "The primary datacenter of Heron-8 is Oslo; failover is handled by operations."}
+{"id": "n27", "text": "Godwit-6 listens on port 8787; anyone who cannot reach that port should check the firewall rules."}
+{"id": "n28", "text": "Swift-3 is implemented in Go; the language was chosen for its tooling."}
+{"id": "n29", "text": "Unlike Heron-8, whose rate limit is handled elsewhere, the rate limit of Swift-3 is 4500 requests per minute. Nobody should assume the rate limit of Swift-3 applies to Heron-8, the rate limit differs."}

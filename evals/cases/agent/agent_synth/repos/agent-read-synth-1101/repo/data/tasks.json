@@ -1,0 +1,77 @@
+[
+ {
+  "name": "load_dock",
+  "days": 4,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "validate_dock",
+  "days": 8,
+  "after": [
+   "load_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_dock",
+  "days": 9,
+  "after": [
+   "load_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_crate",
+  "days": 3,
+  "after": [
+   "load_dock",
+   "split_dock",
+   "validate_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_berth",
+  "days": 1,
+  "after": [
+   "flush_crate",
+   "validate_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_sail",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "rank_dock",
+  "days": 8,
+  "after": [
+   "split_dock",
+   "normalize_berth",
+   "validate_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_rope",
+  "days": 3,
+  "after": [
+   "flush_crate",
+   "normalize_berth"
+  ],
+  "done": true
+ },
+ {
+  "name": "merge_quay",
+  "days": 3,
+  "after": [
+   "split_dock",
+   "estimate_rope"
+  ],
+  "done": false
+ }
+]

@@ -1,0 +1,141 @@
+[
+ {
+  "name": "load_buoy",
+  "days": 4,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "split_harbor",
+  "days": 7,
+  "after": [
+   "load_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_deck",
+  "days": 2,
+  "after": [
+   "load_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_harbor",
+  "days": 1,
+  "after": [
+   "load_buoy",
+   "split_harbor",
+   "resolve_deck"
+  ],
+  "done": true
+ },
+ {
+  "name": "flush_ferry",
+  "days": 4,
+  "after": [
+   "resolve_deck",
+   "load_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_rope",
+  "days": 7,
+  "after": [
+   "validate_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_harbor",
+  "days": 6,
+  "after": [
+   "load_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_harbor",
+  "days": 5,
+  "after": [
+   "validate_harbor",
+   "resolve_harbor",
+   "flush_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_tide",
+  "days": 6,
+  "after": [
+   "resolve_deck",
+   "parse_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_crate",
+  "days": 7,
+  "after": [
+   "resolve_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_lantern",
+  "days": 8,
+  "after": [
+   "load_buoy",
+   "resolve_deck"
+  ],
+  "done": true
+ },
+ {
+  "name": "lookup_deck",
+  "days": 6,
+  "after": [
+   "lookup_tide",
+   "render_crate",
+   "validate_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_dock",
+  "days": 1,
+  "after": [
+   "split_harbor",
+   "load_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_anchor",
+  "days": 4,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "stage_quay",
+  "days": 1,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "stage_deck",
+  "days": 5,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "resolve_pallet",
+  "days": 2,
+  "after": [
+   "resolve_deck",
+   "stage_deck"
+  ],
+  "done": false
+ }
+]

@@ -1,0 +1,3 @@
+from tally import config
+
+config.LIMIT = 887

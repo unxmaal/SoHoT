@@ -1,0 +1,163 @@
+[
+ {
+  "name": "validate_mast",
+  "days": 6,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "resolve_ferry",
+  "days": 5,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "estimate_berth",
+  "days": 3,
+  "after": [
+   "validate_mast",
+   "resolve_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_pallet",
+  "days": 1,
+  "after": [
+   "validate_mast",
+   "resolve_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_anchor",
+  "days": 4,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "parse_crate",
+  "days": 2,
+  "after": [
+   "resolve_pallet",
+   "lookup_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_tide",
+  "days": 8,
+  "after": [
+   "parse_crate",
+   "validate_mast"
+  ],
+  "done": true
+ },
+ {
+  "name": "estimate_pallet",
+  "days": 1,
+  "after": [
+   "lookup_anchor"
+  ],
+  "done": true
+ },
+ {
+  "name": "apply_barge",
+  "days": 9,
+  "after": [
+   "reconcile_tide",
+   "estimate_berth"
+  ],
+  "done": true
+ },
+ {
+  "name": "render_buoy",
+  "days": 5,
+  "after": [
+   "validate_mast",
+   "resolve_pallet"
+  ],
+  "done": true
+ },
+ {
+  "name": "reconcile_barge",
+  "days": 9,
+  "after": [
+   "lookup_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_tide",
+  "days": 9,
+  "after": [
+   "estimate_berth"
+  ],
+  "done": true
+ },
+ {
+  "name": "reconcile_keel",
+  "days": 4,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "merge_mast",
+  "days": 2,
+  "after": [
+   "reconcile_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_mast",
+  "days": 1,
+  "after": [
+   "reconcile_keel",
+   "resolve_pallet"
+  ],
+  "done": true
+ },
+ {
+  "name": "parse_harbor",
+  "days": 1,
+  "after": [
+   "apply_barge",
+   "merge_mast"
+  ],
+  "done": true
+ },
+ {
+  "name": "parse_anchor",
+  "days": 3,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "estimate_deck",
+  "days": 5,
+  "after": [
+   "reconcile_barge",
+   "allocate_mast",
+   "lookup_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_rope",
+  "days": 8,
+  "after": [
+   "lookup_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_rope",
+  "days": 6,
+  "after": [
+   "parse_anchor",
+   "merge_rope"
+  ],
+  "done": false
+ }
+]

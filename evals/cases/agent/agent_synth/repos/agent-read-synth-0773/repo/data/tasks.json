@@ -1,0 +1,67 @@
+[
+ {
+  "name": "resolve_hull",
+  "days": 7,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "rank_barge",
+  "days": 4,
+  "after": [
+   "resolve_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_cargo",
+  "days": 1,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "split_lantern",
+  "days": 7,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "validate_barge",
+  "days": 4,
+  "after": [
+   "rank_barge",
+   "split_lantern"
+  ],
+  "done": true
+ },
+ {
+  "name": "reconcile_sail",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "validate_dock",
+  "days": 5,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "load_barge",
+  "days": 9,
+  "after": [
+   "apply_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_sail",
+  "days": 2,
+  "after": [
+   "validate_dock",
+   "rank_barge",
+   "load_barge"
+  ],
+  "done": false
+ }
+]

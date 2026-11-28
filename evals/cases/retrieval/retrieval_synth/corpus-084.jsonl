@@ -1,0 +1,30 @@
+{"id": "n00", "text": "The service Osprey-6 takes traffic on port 9872, and the port is fixed across every environment."}
+{"id": "n01", "text": "Unlike Ibis-2, whose pager rotation is handled elsewhere, the pager rotation of Wren-3 is Quinn Kowalczyk. Nobody should assume the pager rotation of Wren-3 applies to Ibis-2, the pager rotation differs. Nothing about this has been disputed so far."}
+{"id": "n02", "text": "The service Godwit-5 takes traffic on port 2978, and the port is fixed across every environment. A diagram is attached to the wiki entry."}
+{"id": "n03", "text": "Unlike Godwit-5, whose owner is handled elsewhere, the owner of Wren-3 is the Ember team. Nobody should assume the owner of Wren-3 applies to Godwit-5, the owner differs."}
+{"id": "n04", "text": "The service Ibis-2 takes traffic on port 2980, and the port is fixed across every environment."}
+{"id": "n05", "text": "Unlike Wren-3, whose budget is handled elsewhere, the budget of Osprey-6 is $1120k. Nobody should assume the budget of Osprey-6 applies to Wren-3, the budget differs. Nothing about this has been disputed so far."}
+{"id": "n06", "text": "Unlike Godwit-5, whose owner is handled elsewhere, the owner of Ibis-2 is the Prism team. Nobody should assume the owner of Ibis-2 applies to Godwit-5, the owner differs. A diagram is attached to the wiki entry."}
+{"id": "n07", "text": "Unlike Osprey-6, whose language is handled elsewhere, the language of Siskin-2 is Scala. Nobody should assume the language of Siskin-2 applies to Osprey-6, the language differs."}
+{"id": "n08", "text": "The pager rotation for Ibis-2 is run by Priya Zielinski; alerts page them first."}
+{"id": "n09", "text": "Plan around the retirement date of Wren-3: March 24, 2027 is when it goes dark. An older draft of this note was archived."}
+{"id": "n10", "text": "The language of Godwit-5 is Haskell, which new contributors must know."}
+{"id": "n11", "text": "Unlike Plover-9, whose rate limit is handled elsewhere, the rate limit of Ibis-2 is 1950 requests per minute. Nobody should assume the rate limit of Ibis-2 applies to Plover-9, the rate limit differs."}
+{"id": "n12", "text": "Unlike Ibis-2, whose pager rotation is handled elsewhere, the pager rotation of Plover-9 is Elena Zielinski. Nobody should assume the pager rotation of Plover-9 applies to Ibis-2, the pager rotation differs."}
+{"id": "n13", "text": "Unlike Osprey-6, whose port is handled elsewhere, the port of Plover-9 is 2385. Nobody should assume the port of Plover-9 applies to Osprey-6, the port differs."}
+{"id": "n14", "text": "The rate limit of Siskin-2 is 1100 requests per minute; callers over it get a 429."}
+{"id": "n15", "text": "Godwit-5 was granted a budget of $2955k this year; an unspent budget does not roll over."}
+{"id": "n16", "text": "Unlike Osprey-6, whose datacenter is handled elsewhere, the datacenter of Siskin-2 is the Perth datacenter. Nobody should assume the datacenter of Siskin-2 applies to Osprey-6, the datacenter differs."}
+{"id": "n17", "text": "The rate limit of Plover-9 is 850 requests per minute; callers over it get a 429."}
+{"id": "n18", "text": "The yearly budget for Wren-3 is $4745k, covering licences and hosting."}
+{"id": "n19", "text": "Unlike Siskin-2, whose language is handled elsewhere, the language of Wren-3 is Rust. Nobody should assume the language of Wren-3 applies to Siskin-2, the language differs."}
+{"id": "n20", "text": "Osprey-6 reaches its retirement date on January 28, 2029, so every consumer has to migrate before then. A diagram is attached to the wiki entry."}
+{"id": "n21", "text": "Unlike Osprey-6, whose retirement date is handled elsewhere, the retirement date of Plover-9 is September 4, 2029. Nobody should assume the retirement date of Plover-9 applies to Osprey-6, the retirement date differs. Details change slowly, so check the history first."}
+{"id": "n22", "text": "Finance fixed the budget of Plover-9 at $4285k, reviewed every quarter. The entry was reformatted last quarter."}
+{"id": "n23", "text": "Siskin-2 was granted a budget of $1475k this year; an unspent budget does not roll over."}
+{"id": "n24", "text": "Source for Osprey-6 is written in Elixir; no other language is allowed in its repository."}
+{"id": "n25", "text": "Unlike Ibis-2, whose owner is handled elsewhere, the owner of Godwit-5 is the Ledger team. Nobody should assume the owner of Godwit-5 applies to Ibis-2, the owner differs. An older draft of this note was archived."}
+{"id": "n26", "text": "Unlike Osprey-6, whose language is handled elsewhere, the language of Ibis-2 is Go. Nobody should assume the language of Ibis-2 applies to Osprey-6, the language differs. Details change slowly, so check the history first."}
+{"id": "n27", "text": "All instances of Osprey-6 live in the datacenter at Cairo."}
+{"id": "n28", "text": "Dmitri Brightwater is on the pager rotation of Siskin-2 this month, with a deputy as backup. The entry was reformatted last quarter."}
+{"id": "n29", "text": "Unlike Osprey-6, whose datacenter is handled elsewhere, the datacenter of Godwit-5 is the Lima datacenter. Nobody should assume the datacenter of Godwit-5 applies to Osprey-6, the datacenter differs. The page was last reviewed in the spring."}

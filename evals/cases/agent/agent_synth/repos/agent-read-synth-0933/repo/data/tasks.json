@@ -1,0 +1,111 @@
+[
+ {
+  "name": "estimate_buoy",
+  "days": 9,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "stage_mast",
+  "days": 5,
+  "after": [
+   "estimate_buoy"
+  ],
+  "done": true
+ },
+ {
+  "name": "parse_buoy",
+  "days": 9,
+  "after": [
+   "estimate_buoy",
+   "stage_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_harbor",
+  "days": 2,
+  "after": [
+   "estimate_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_sail",
+  "days": 6,
+  "after": [
+   "stage_mast",
+   "flush_harbor",
+   "parse_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_deck",
+  "days": 4,
+  "after": [
+   "flush_harbor"
+  ],
+  "done": true
+ },
+ {
+  "name": "parse_hull",
+  "days": 6,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "parse_barge",
+  "days": 4,
+  "after": [
+   "parse_buoy",
+   "parse_hull",
+   "apply_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_sail",
+  "days": 2,
+  "after": [
+   "parse_hull",
+   "stage_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_barge",
+  "days": 8,
+  "after": [
+   "flush_harbor"
+  ],
+  "done": true
+ },
+ {
+  "name": "render_rope",
+  "days": 6,
+  "after": [
+   "parse_hull"
+  ],
+  "done": true
+ },
+ {
+  "name": "resolve_barge",
+  "days": 8,
+  "after": [
+   "stage_mast",
+   "apply_barge",
+   "parse_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_hull",
+  "days": 5,
+  "after": [
+   "parse_hull",
+   "resolve_barge"
+  ],
+  "done": false
+ }
+]

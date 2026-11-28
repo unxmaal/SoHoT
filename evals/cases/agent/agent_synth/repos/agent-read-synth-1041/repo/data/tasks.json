@@ -1,0 +1,76 @@
+[
+ {
+  "name": "load_keel",
+  "days": 6,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "lookup_dock",
+  "days": 6,
+  "after": [
+   "load_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_berth",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "render_quay",
+  "days": 7,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "reconcile_keel",
+  "days": 5,
+  "after": [
+   "load_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_rope",
+  "days": 3,
+  "after": [
+   "apply_berth",
+   "load_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_mast",
+  "days": 2,
+  "after": [
+   "render_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_anchor",
+  "days": 7,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "parse_crate",
+  "days": 9,
+  "after": [
+   "load_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_lantern",
+  "days": 9,
+  "after": [
+   "reconcile_keel",
+   "parse_crate"
+  ],
+  "done": false
+ }
+]

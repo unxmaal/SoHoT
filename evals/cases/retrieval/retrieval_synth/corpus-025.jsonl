@@ -1,0 +1,30 @@
+{"id": "n00", "text": "The retirement date for Teal-5 is November 20, 2029; after that day it stops serving. Nothing about this has been disputed so far."}
+{"id": "n01", "text": "The owner of Heron-9 is the Lattice team, and every change to Heron-9 goes through their review."}
+{"id": "n02", "text": "The primary datacenter of Heron-9 is Tallinn; failover is handled by operations."}
+{"id": "n03", "text": "The owner of Bittern-9 is the Lattice team, and every change to Bittern-9 goes through their review. Details change slowly, so check the history first."}
+{"id": "n04", "text": "The primary datacenter of Bittern-9 is Osaka; failover is handled by operations."}
+{"id": "n05", "text": "Unlike Ibis-8, whose pager rotation is handled elsewhere, the pager rotation of Heron-9 is Wendell Kowalczyk. Nobody should assume the pager rotation of Heron-9 applies to Ibis-8, the pager rotation differs."}
+{"id": "n06", "text": "The yearly budget for Teal-5 is $875k, covering licences and hosting."}
+{"id": "n07", "text": "Teal-5 is implemented in Elixir; the language was chosen for its tooling."}
+{"id": "n08", "text": "Siskin-7 reaches its retirement date on December 16, 2029, so every consumer has to migrate before then."}
+{"id": "n09", "text": "For Siskin-7 the port is 6377. Changing the port needs a change ticket."}
+{"id": "n10", "text": "The pager rotation for Tern-2 is run by Wendell Quintero; alerts page them first."}
+{"id": "n11", "text": "The yearly budget for Siskin-7 is $1935k, covering licences and hosting."}
+{"id": "n12", "text": "Pages from Ibis-8 land on the pager rotation of Umar Ekwueme before anyone else."}
+{"id": "n13", "text": "Unlike Siskin-7, whose port is handled elsewhere, the port of Ibis-8 is 7698. Nobody should assume the port of Ibis-8 applies to Siskin-7, the port differs."}
+{"id": "n14", "text": "Unlike Teal-5, whose language is handled elsewhere, the language of Tern-2 is Haskell. Nobody should assume the language of Tern-2 applies to Teal-5, the language differs."}
+{"id": "n15", "text": "Unlike Teal-5, whose port is handled elsewhere, the port of Heron-9 is 4106. Nobody should assume the port of Heron-9 applies to Teal-5, the port differs."}
+{"id": "n16", "text": "Ibis-8 runs in the Nairobi datacenter, next to its database."}
+{"id": "n17", "text": "Unlike Tern-2, whose datacenter is handled elsewhere, the datacenter of Teal-5 is the Osaka datacenter. Nobody should assume the datacenter of Teal-5 applies to Tern-2, the datacenter differs. Details change slowly, so check the history first."}
+{"id": "n18", "text": "Tern-2 enforces a rate limit of 3400 requests per minute per caller."}
+{"id": "n19", "text": "Unlike Bittern-9, whose datacenter is handled elsewhere, the datacenter of Tern-2 is the Lima datacenter. Nobody should assume the datacenter of Tern-2 applies to Bittern-9, the datacenter differs."}
+{"id": "n20", "text": "Unlike Ibis-8, whose datacenter is handled elsewhere, the datacenter of Siskin-7 is the Hanoi datacenter. Nobody should assume the datacenter of Siskin-7 applies to Ibis-8, the datacenter differs."}
+{"id": "n21", "text": "Finance fixed the budget of Ibis-8 at $4735k, reviewed every quarter. The entry was reformatted last quarter."}
+{"id": "n22", "text": "The owner of Ibis-8 is the Ember team, and every change to Ibis-8 goes through their review. Nothing about this has been disputed so far."}
+{"id": "n23", "text": "Finance fixed the budget of Tern-2 at $120k, reviewed every quarter. Details change slowly, so check the history first."}
+{"id": "n24", "text": "Finance fixed the budget of Bittern-9 at $3295k, reviewed every quarter."}
+{"id": "n25", "text": "The service Bittern-9 takes traffic on port 7838, and the port is fixed across every environment."}
+{"id": "n26", "text": "Teal-5 listens on port 4430; anyone who cannot reach that port should check the firewall rules."}
+{"id": "n27", "text": "Bittern-9 is implemented in Haskell; the language was chosen for its tooling."}
+{"id": "n28", "text": "Unlike Teal-5, whose retirement date is handled elsewhere, the retirement date of Heron-9 is March 3, 2027. Nobody should assume the retirement date of Heron-9 applies to Teal-5, the retirement date differs."}
+{"id": "n29", "text": "Siskin-7 enforces a rate limit of 3850 requests per minute per caller."}

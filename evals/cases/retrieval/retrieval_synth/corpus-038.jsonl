@@ -1,0 +1,30 @@
+{"id": "n00", "text": "The language of Avocet-4 is Elixir, which new contributors must know."}
+{"id": "n01", "text": "Lark-8 is implemented in Rust; the language was chosen for its tooling."}
+{"id": "n02", "text": "Unlike Godwit-7, whose language is handled elsewhere, the language of Plover-8 is OCaml. Nobody should assume the language of Plover-8 applies to Godwit-7, the language differs."}
+{"id": "n03", "text": "The language of Dunlin-6 is Zig, which new contributors must know."}
+{"id": "n04", "text": "Unlike Godwit-7, whose owner is handled elsewhere, the owner of Plover-8 is the Quill team. Nobody should assume the owner of Plover-8 applies to Godwit-7, the owner differs."}
+{"id": "n05", "text": "The retirement date for Avocet-4 is November 17, 2027; after that day it stops serving."}
+{"id": "n06", "text": "Unlike Avocet-4, whose retirement date is handled elsewhere, the retirement date of Dunlin-6 is April 15, 2028. Nobody should assume the retirement date of Dunlin-6 applies to Avocet-4, the retirement date differs. The entry was reformatted last quarter."}
+{"id": "n07", "text": "Godwit-7 listens on port 2759; anyone who cannot reach that port should check the firewall rules. The entry was reformatted last quarter."}
+{"id": "n08", "text": "Unlike Merlin-6, whose rate limit is handled elsewhere, the rate limit of Godwit-7 is 950 requests per minute. Nobody should assume the rate limit of Godwit-7 applies to Merlin-6, the rate limit differs. The entry was reformatted last quarter."}
+{"id": "n09", "text": "Unlike Lark-8, whose pager rotation is handled elsewhere, the pager rotation of Merlin-6 is Avery Valdivia. Nobody should assume the pager rotation of Merlin-6 applies to Lark-8, the pager rotation differs. A diagram is attached to the wiki entry."}
+{"id": "n10", "text": "Unlike Plover-8, whose owner is handled elsewhere, the owner of Godwit-7 is the Anvil team. Nobody should assume the owner of Godwit-7 applies to Plover-8, the owner differs."}
+{"id": "n11", "text": "Pages from Lark-8 land on the pager rotation of Rosa Zielinski before anyone else."}
+{"id": "n12", "text": "Unlike Avocet-4, whose retirement date is handled elsewhere, the retirement date of Plover-8 is April 21, 2029. Nobody should assume the retirement date of Plover-8 applies to Avocet-4, the retirement date differs."}
+{"id": "n13", "text": "Lark-8 enforces a rate limit of 3100 requests per minute per caller. Nothing about this has been disputed so far."}
+{"id": "n14", "text": "Unlike Plover-8, whose budget is handled elsewhere, the budget of Avocet-4 is $3705k. Nobody should assume the budget of Avocet-4 applies to Plover-8, the budget differs."}
+{"id": "n15", "text": "Unlike Dunlin-6, whose budget is handled elsewhere, the budget of Plover-8 is $4665k. Nobody should assume the budget of Plover-8 applies to Dunlin-6, the budget differs."}
+{"id": "n16", "text": "The rate limit of Dunlin-6 is 1900 requests per minute; callers over it get a 429."}
+{"id": "n17", "text": "All instances of Plover-8 live in the datacenter at Tallinn. An older draft of this note was archived."}
+{"id": "n18", "text": "All instances of Lark-8 live in the datacenter at Bergen."}
+{"id": "n19", "text": "Questions about Merlin-6 start with its owner, the Anvil team; they triage anything filed against it."}
+{"id": "n20", "text": "Finance fixed the budget of Dunlin-6 at $130k, reviewed every quarter. The entry was reformatted last quarter."}
+{"id": "n21", "text": "Merlin-6 enforces a rate limit of 2050 requests per minute per caller. Nothing about this has been disputed so far."}
+{"id": "n22", "text": "Finance fixed the budget of Merlin-6 at $3205k, reviewed every quarter. Details change slowly, so check the history first."}
+{"id": "n23", "text": "Unlike Merlin-6, whose budget is handled elsewhere, the budget of Lark-8 is $4870k. Nobody should assume the budget of Lark-8 applies to Merlin-6, the budget differs."}
+{"id": "n24", "text": "Godwit-7 is implemented in OCaml; the language was chosen for its tooling. Nothing about this has been disputed so far."}
+{"id": "n25", "text": "Expect throttling at the rate limit for Avocet-4, which is 3450 requests per minute. A diagram is attached to the wiki entry."}
+{"id": "n26", "text": "All instances of Avocet-4 live in the datacenter at Oslo."}
+{"id": "n27", "text": "Unlike Plover-8, whose retirement date is handled elsewhere, the retirement date of Godwit-7 is September 16, 2027. Nobody should assume the retirement date of Godwit-7 applies to Plover-8, the retirement date differs. An older draft of this note was archived."}
+{"id": "n28", "text": "Questions about Dunlin-6 start with its owner, the Anvil team; they triage anything filed against it. A diagram is attached to the wiki entry."}
+{"id": "n29", "text": "The primary datacenter of Merlin-6 is Osaka; failover is handled by operations. A diagram is attached to the wiki entry."}

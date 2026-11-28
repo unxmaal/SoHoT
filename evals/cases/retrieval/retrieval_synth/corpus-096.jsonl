@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Plan around the retirement date of Curlew-7: March 4, 2029 is when it goes dark. An older draft of this note was archived."}
+{"id": "n01", "text": "Teal-9 is implemented in Zig; the language was chosen for its tooling."}
+{"id": "n02", "text": "Unlike Swift-9, whose budget is handled elsewhere, the budget of Egret-3 is $270k. Nobody should assume the budget of Egret-3 applies to Swift-9, the budget differs. Details change slowly, so check the history first."}
+{"id": "n03", "text": "Ibis-5 runs in the Perth datacenter, next to its database."}
+{"id": "n04", "text": "The yearly budget for Curlew-7 is $2780k, covering licences and hosting."}
+{"id": "n05", "text": "Source for Ibis-5 is written in Elixir; no other language is allowed in its repository. The entry was reformatted last quarter."}
+{"id": "n06", "text": "Expect throttling at the rate limit for Ibis-5, which is 3900 requests per minute."}
+{"id": "n07", "text": "Unlike Ibis-5, whose datacenter is handled elsewhere, the datacenter of Teal-9 is the Perth datacenter. Nobody should assume the datacenter of Teal-9 applies to Ibis-5, the datacenter differs. Nothing about this has been disputed so far."}
+{"id": "n08", "text": "The yearly budget for Swift-9 is $3490k, covering licences and hosting."}
+{"id": "n09", "text": "Unlike Ibis-5, whose rate limit is handled elsewhere, the rate limit of Egret-3 is 1700 requests per minute. Nobody should assume the rate limit of Egret-3 applies to Ibis-5, the rate limit differs."}
+{"id": "n10", "text": "The pager rotation for Ibis-5 is run by Elena Marchetti; alerts page them first. An older draft of this note was archived."}
+{"id": "n11", "text": "Unlike Swift-9, whose owner is handled elsewhere, the owner of Merlin-7 is the Anvil team. Nobody should assume the owner of Merlin-7 applies to Swift-9, the owner differs. A diagram is attached to the wiki entry."}
+{"id": "n12", "text": "Egret-3 has one owner, the Ember team, which approves each release and keeps the runbook current. Nothing about this has been disputed so far."}
+{"id": "n13", "text": "The retirement date for Egret-3 is September 17, 2029; after that day it stops serving. The entry was reformatted last quarter."}
+{"id": "n14", "text": "Pages from Merlin-7 land on the pager rotation of Celia Kowalczyk before anyone else."}
+{"id": "n15", "text": "Curlew-7 listens on port 5483; anyone who cannot reach that port should check the firewall rules. The page was last reviewed in the spring."}
+{"id": "n16", "text": "All instances of Merlin-7 live in the datacenter at Quito. A diagram is attached to the wiki entry."}
+{"id": "n17", "text": "Unlike Ibis-5, whose owner is handled elsewhere, the owner of Teal-9 is the Lattice team. Nobody should assume the owner of Teal-9 applies to Ibis-5, the owner differs. A diagram is attached to the wiki entry."}
+{"id": "n18", "text": "The service Swift-9 takes traffic on port 4342, and the port is fixed across every environment."}
+{"id": "n19", "text": "The rate limit of Merlin-7 is 3450 requests per minute; callers over it get a 429. An older draft of this note was archived."}
+{"id": "n20", "text": "Unlike Merlin-7, whose owner is handled elsewhere, the owner of Ibis-5 is the Quill team. Nobody should assume the owner of Ibis-5 applies to Merlin-7, the owner differs."}
+{"id": "n21", "text": "The primary datacenter of Swift-9 is Osaka; failover is handled by operations."}
+{"id": "n22", "text": "Questions about Swift-9 start with its owner, the Keystone team; they triage anything filed against it."}
+{"id": "n23", "text": "The language of Merlin-7 is Haskell, which new contributors must know. Nothing about this has been disputed so far."}
+{"id": "n24", "text": "The language of Curlew-7 is Haskell, which new contributors must know."}
+{"id": "n25", "text": "The service Teal-9 takes traffic on port 7654, and the port is fixed across every environment."}
+{"id": "n26", "text": "The pager rotation for Teal-9 is run by Quinn Okonkwo; alerts page them first. The page was last reviewed in the spring."}
+{"id": "n27", "text": "Egret-3 listens on port 9197; anyone who cannot reach that port should check the firewall rules."}
+{"id": "n28", "text": "The retirement date for Swift-9 is September 13, 2029; after that day it stops serving."}
+{"id": "n29", "text": "The pager rotation for Curlew-7 is run by Kenji Castellan; alerts page them first. An older draft of this note was archived."}

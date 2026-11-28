@@ -1,0 +1,94 @@
+[
+ {
+  "name": "reconcile_keel",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "validate_crate",
+  "days": 6,
+  "after": [
+   "reconcile_keel"
+  ],
+  "done": true
+ },
+ {
+  "name": "merge_mast",
+  "days": 4,
+  "after": [
+   "validate_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_pallet",
+  "days": 3,
+  "after": [
+   "reconcile_keel",
+   "merge_mast",
+   "validate_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_berth",
+  "days": 8,
+  "after": [
+   "parse_pallet",
+   "validate_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_sail",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "render_quay",
+  "days": 6,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "parse_buoy",
+  "days": 9,
+  "after": [
+   "validate_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_rope",
+  "days": 2,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "lookup_quay",
+  "days": 7,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "rank_mooring",
+  "days": 7,
+  "after": [
+   "merge_mast",
+   "merge_berth",
+   "rank_sail"
+  ],
+  "done": true
+ },
+ {
+  "name": "allocate_hull",
+  "days": 2,
+  "after": [
+   "lookup_quay",
+   "rank_mooring"
+  ],
+  "done": false
+ }
+]

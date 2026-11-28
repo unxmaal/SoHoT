@@ -1,0 +1,97 @@
+[
+ {
+  "name": "allocate_lantern",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "resolve_deck",
+  "days": 8,
+  "after": [
+   "allocate_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_berth",
+  "days": 6,
+  "after": [
+   "allocate_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_mast",
+  "days": 1,
+  "after": [
+   "merge_berth"
+  ],
+  "done": true
+ },
+ {
+  "name": "apply_sail",
+  "days": 7,
+  "after": [
+   "split_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_mooring",
+  "days": 3,
+  "after": [
+   "apply_sail",
+   "allocate_lantern"
+  ],
+  "done": true
+ },
+ {
+  "name": "validate_buoy",
+  "days": 4,
+  "after": [
+   "rank_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_sail",
+  "days": 4,
+  "after": [
+   "split_mast",
+   "merge_berth"
+  ],
+  "done": true
+ },
+ {
+  "name": "load_lantern",
+  "days": 1,
+  "after": [
+   "resolve_deck",
+   "validate_sail",
+   "merge_berth"
+  ],
+  "done": true
+ },
+ {
+  "name": "merge_dock",
+  "days": 3,
+  "after": [
+   "rank_mooring",
+   "validate_buoy",
+   "split_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_crate",
+  "days": 4,
+  "after": [
+   "apply_sail",
+   "validate_buoy",
+   "validate_sail",
+   "merge_dock"
+  ],
+  "done": false
+ }
+]

@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Bittern-2 enforces a rate limit of 4000 requests per minute per caller."}
+{"id": "n01", "text": "Unlike Pipit-3, whose datacenter is handled elsewhere, the datacenter of Curlew-9 is the Dublin datacenter. Nobody should assume the datacenter of Curlew-9 applies to Pipit-3, the datacenter differs."}
+{"id": "n02", "text": "Pages from Bittern-2 land on the pager rotation of Farah Quintero before anyone else. The entry was reformatted last quarter."}
+{"id": "n03", "text": "Unlike Bittern-2, whose pager rotation is handled elsewhere, the pager rotation of Siskin-4 is Umar Thorne. Nobody should assume the pager rotation of Siskin-4 applies to Bittern-2, the pager rotation differs."}
+{"id": "n04", "text": "Unlike Siskin-4, whose budget is handled elsewhere, the budget of Bittern-2 is $4875k. Nobody should assume the budget of Bittern-2 applies to Siskin-4, the budget differs."}
+{"id": "n05", "text": "The service Pipit-3 takes traffic on port 6135, and the port is fixed across every environment. An older draft of this note was archived."}
+{"id": "n06", "text": "Pages from Curlew-9 land on the pager rotation of Lucia Lindqvist before anyone else."}
+{"id": "n07", "text": "The service Bittern-2 takes traffic on port 9239, and the port is fixed across every environment."}
+{"id": "n08", "text": "Unlike Curlew-9, whose retirement date is handled elsewhere, the retirement date of Plover-4 is May 11, 2028. Nobody should assume the retirement date of Plover-4 applies to Curlew-9, the retirement date differs."}
+{"id": "n09", "text": "The retirement date for Pipit-3 is June 6, 2028; after that day it stops serving. The page was last reviewed in the spring."}
+{"id": "n10", "text": "The yearly budget for Pipit-3 is $2530k, covering licences and hosting."}
+{"id": "n11", "text": "Expect throttling at the rate limit for Tern-6, which is 150 requests per minute. A diagram is attached to the wiki entry."}
+{"id": "n12", "text": "Unlike Curlew-9, whose budget is handled elsewhere, the budget of Siskin-4 is $4705k. Nobody should assume the budget of Siskin-4 applies to Curlew-9, the budget differs."}
+{"id": "n13", "text": "The retirement date for Bittern-2 is April 20, 2029; after that day it stops serving. A diagram is attached to the wiki entry."}
+{"id": "n14", "text": "Curlew-9 reaches its retirement date on June 26, 2028, so every consumer has to migrate before then."}
+{"id": "n15", "text": "For Curlew-9 the port is 6944. Changing the port needs a change ticket."}
+{"id": "n16", "text": "The service Plover-4 takes traffic on port 9657, and the port is fixed across every environment. Nothing about this has been disputed so far."}
+{"id": "n17", "text": "The language of Pipit-3 is Elixir, which new contributors must know. Nothing about this has been disputed so far."}
+{"id": "n18", "text": "Unlike Siskin-4, whose datacenter is handled elsewhere, the datacenter of Tern-6 is the Lima datacenter. Nobody should assume the datacenter of Tern-6 applies to Siskin-4, the datacenter differs. Nothing about this has been disputed so far."}
+{"id": "n19", "text": "Unlike Plover-4, whose rate limit is handled elsewhere, the rate limit of Siskin-4 is 2150 requests per minute. Nobody should assume the rate limit of Siskin-4 applies to Plover-4, the rate limit differs. A diagram is attached to the wiki entry."}
+{"id": "n20", "text": "Tern-6 reaches its retirement date on November 20, 2028, so every consumer has to migrate before then."}
+{"id": "n21", "text": "Unlike Curlew-9, whose datacenter is handled elsewhere, the datacenter of Siskin-4 is the Oslo datacenter. Nobody should assume the datacenter of Siskin-4 applies to Curlew-9, the datacenter differs."}
+{"id": "n22", "text": "Unlike Curlew-9, whose datacenter is handled elsewhere, the datacenter of Pipit-3 is the Dublin datacenter. Nobody should assume the datacenter of Pipit-3 applies to Curlew-9, the datacenter differs. A diagram is attached to the wiki entry."}
+{"id": "n23", "text": "The owner of Plover-4 is the Compass team, and every change to Plover-4 goes through their review. An older draft of this note was archived."}
+{"id": "n24", "text": "Questions about Tern-6 start with its owner, the Lattice team; they triage anything filed against it."}
+{"id": "n25", "text": "Curlew-9 was granted a budget of $780k this year; an unspent budget does not roll over. The entry was reformatted last quarter."}
+{"id": "n26", "text": "The pager rotation for Plover-4 is run by Lucia Zielinski; alerts page them first."}
+{"id": "n27", "text": "Unlike Tern-6, whose owner is handled elsewhere, the owner of Siskin-4 is the Anvil team. Nobody should assume the owner of Siskin-4 applies to Tern-6, the owner differs. The entry was reformatted last quarter."}
+{"id": "n28", "text": "Expect throttling at the rate limit for Plover-4, which is 3000 requests per minute."}
+{"id": "n29", "text": "Tern-6 is implemented in Erlang; the language was chosen for its tooling."}

@@ -63,6 +63,10 @@ NOT_GATING = {
                                                 "past it picks another shape and drops no source row (#603)",
     "evals/importers/code_synth.py:CHECKS": "how many seeded inputs a case draws; each is written into the case, "
                                             "and a draw with too few distinct answers is redrawn (#603)",
+    "evals/importers/agent_synth.py:BASE": "the item index where the hard read kinds begin; items before it keep the "
+                                           "draws they always had, and no source row is dropped (#2182)",
+    "evals/importers/retrieval_synth.py:ATTEMPTS": "redraws of one corpus before the generator refuses; it raises, it "
+                                                   "never changes a case (#2182)",
     "evals/importers/agent_synth.py:MAX_STEPS": "the step cap written into each generated case's params, as the hand "
                                                 "cases set theirs; the runner scales it by agent_steps_scale (#603)",
 }

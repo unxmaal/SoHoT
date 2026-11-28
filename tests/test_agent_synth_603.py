@@ -80,7 +80,9 @@ def test_every_kind_is_drawn_in_turn_and_keeps_the_lane_families(synth):
     assert set(kinds) == {"fix", "edit", "refactor", "read"}
     by_kind = collections.Counter(row_of(c)["kind"] for c in synth)
     assert set(by_kind) == set(gen.KINDS)
-    assert max(by_kind.values()) - min(by_kind.values()) <= 1
+    for group in (gen.KINDS_BASE, gen.HARD):
+        counts = [by_kind[k] for k in group]
+        assert max(counts) - min(counts) <= 1
     for c in synth:
         assert set(c.params["tools"]) <= set(sandbox.TOOLS)
         if c.id.startswith("agent-read-"):
@@ -149,17 +151,13 @@ def test_an_answer_case_takes_its_answer_and_refuses_every_decoy(c):
     item = row_of(c)
     right, decoys = gen.answers(item)
     assert decoys
-    box = _box(c)
-    try:
-        assert sandbox.grade(box, None, c.assertions["answer"], f"It is {right}.")["passed"]
-        for wrong in decoys:
-            assert not sandbox.grade(box, None, c.assertions["answer"], f"It is {wrong}.")["passed"], wrong
-    finally:
-        box.cleanup()
+    assert sandbox.grade(None, None, c.assertions["answer"], f"It is {right}.")["passed"]
+    for wrong in decoys:
+        assert not sandbox.grade(None, None, c.assertions["answer"], f"It is {wrong}.")["passed"], wrong
 
 
 def test_each_decoy_is_in_the_repo_so_a_skim_can_pick_it(synth):
-    for c in [c for c in synth if c.assertions.get("answer")]:
+    for c in [c for c in synth if c.assertions.get("answer") and row_of(c)["kind"] in gen.KINDS_BASE]:
         right, decoys = gen.answers(row_of(c))
         text = "\n".join(_files(c.source.parent / c.params["repo"] / "repo").keys()) + "\n" + "\n".join(
             b.decode("utf-8") for b in _files(c.source.parent / c.params["repo"] / "repo").values())

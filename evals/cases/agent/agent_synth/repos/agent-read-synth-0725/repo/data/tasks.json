@@ -1,0 +1,197 @@
+[
+ {
+  "name": "allocate_ferry",
+  "days": 4,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "reconcile_anchor",
+  "days": 2,
+  "after": [
+   "allocate_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_quay",
+  "days": 2,
+  "after": [
+   "allocate_ferry"
+  ],
+  "done": true
+ },
+ {
+  "name": "allocate_pallet",
+  "days": 7,
+  "after": [
+   "validate_quay",
+   "reconcile_anchor",
+   "allocate_ferry"
+  ],
+  "done": true
+ },
+ {
+  "name": "parse_pallet",
+  "days": 2,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "render_rope",
+  "days": 4,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "normalize_ferry",
+  "days": 5,
+  "after": [
+   "parse_pallet",
+   "allocate_pallet",
+   "validate_quay"
+  ],
+  "done": true
+ },
+ {
+  "name": "split_rope",
+  "days": 8,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "render_crate",
+  "days": 7,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "rank_crate",
+  "days": 5,
+  "after": [
+   "reconcile_anchor",
+   "render_rope",
+   "parse_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_harbor",
+  "days": 2,
+  "after": [
+   "render_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_pallet",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "flush_mooring",
+  "days": 8,
+  "after": [
+   "render_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_lantern",
+  "days": 6,
+  "after": [
+   "flush_mooring",
+   "split_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_pallet",
+  "days": 9,
+  "after": [
+   "flush_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_pallet",
+  "days": 8,
+  "after": [
+   "split_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_lantern",
+  "days": 1,
+  "after": [
+   "reconcile_anchor",
+   "allocate_ferry",
+   "validate_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_rope",
+  "days": 4,
+  "after": [
+   "split_rope",
+   "flush_harbor",
+   "render_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_lantern",
+  "days": 8,
+  "after": [
+   "allocate_ferry"
+  ],
+  "done": true
+ },
+ {
+  "name": "normalize_anchor",
+  "days": 6,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "rank_dock",
+  "days": 6,
+  "after": [
+   "lookup_pallet",
+   "normalize_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_ferry",
+  "days": 1,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "resolve_tide",
+  "days": 5,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "reconcile_tide",
+  "days": 6,
+  "after": [
+   "render_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_berth",
+  "days": 2,
+  "after": [
+   "allocate_pallet",
+   "reconcile_tide"
+  ],
+  "done": false
+ }
+]

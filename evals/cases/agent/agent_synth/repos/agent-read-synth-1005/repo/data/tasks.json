@@ -1,0 +1,182 @@
+[
+ {
+  "name": "reconcile_pallet",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "reconcile_tide",
+  "days": 9,
+  "after": [
+   "reconcile_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_cargo",
+  "days": 5,
+  "after": [
+   "reconcile_tide"
+  ],
+  "done": true
+ },
+ {
+  "name": "normalize_tide",
+  "days": 2,
+  "after": [
+   "reconcile_pallet",
+   "reconcile_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_rope",
+  "days": 7,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "allocate_pallet",
+  "days": 2,
+  "after": [
+   "reconcile_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_berth",
+  "days": 2,
+  "after": [
+   "reconcile_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_ferry",
+  "days": 6,
+  "after": [
+   "reconcile_pallet"
+  ],
+  "done": true
+ },
+ {
+  "name": "apply_crate",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "split_hull",
+  "days": 6,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "validate_sail",
+  "days": 9,
+  "after": [
+   "apply_crate",
+   "normalize_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_cargo",
+  "days": 8,
+  "after": [
+   "reconcile_tide",
+   "split_rope",
+   "normalize_tide"
+  ],
+  "done": true
+ },
+ {
+  "name": "reconcile_dock",
+  "days": 6,
+  "after": [
+   "validate_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_dock",
+  "days": 6,
+  "after": [
+   "validate_sail",
+   "apply_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_hull",
+  "days": 8,
+  "after": [
+   "normalize_tide",
+   "resolve_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_anchor",
+  "days": 3,
+  "after": [
+   "apply_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_quay",
+  "days": 5,
+  "after": [
+   "apply_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_rope",
+  "days": 5,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "apply_mast",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "stage_quay",
+  "days": 8,
+  "after": [
+   "merge_hull",
+   "split_hull"
+  ],
+  "done": true
+ },
+ {
+  "name": "allocate_keel",
+  "days": 9,
+  "after": [
+   "stage_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_pallet",
+  "days": 3,
+  "after": [
+   "normalize_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_hull",
+  "days": 7,
+  "after": [
+   "apply_cargo",
+   "normalize_pallet"
+  ],
+  "done": false
+ }
+]

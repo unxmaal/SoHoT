@@ -1,0 +1,30 @@
+{"id": "n00", "text": "The language of Ibis-9 is Rust, which new contributors must know."}
+{"id": "n01", "text": "Unlike Bittern-8, whose language is handled elsewhere, the language of Siskin-7 is Elixir. Nobody should assume the language of Siskin-7 applies to Bittern-8, the language differs."}
+{"id": "n02", "text": "Bittern-8 was granted a budget of $4050k this year; an unspent budget does not roll over. An older draft of this note was archived."}
+{"id": "n03", "text": "Unlike Siskin-7, whose owner is handled elsewhere, the owner of Lark-3 is the Compass team. Nobody should assume the owner of Lark-3 applies to Siskin-7, the owner differs."}
+{"id": "n04", "text": "Questions about Curlew-2 start with its owner, the Keystone team; they triage anything filed against it. The entry was reformatted last quarter."}
+{"id": "n05", "text": "Questions about Siskin-7 start with its owner, the Sprocket team; they triage anything filed against it."}
+{"id": "n06", "text": "The pager rotation for Lark-3 is run by Soren Pemberton; alerts page them first."}
+{"id": "n07", "text": "Curlew-2 enforces a rate limit of 2600 requests per minute per caller. Nothing about this has been disputed so far."}
+{"id": "n08", "text": "Source for Bittern-8 is written in Swift; no other language is allowed in its repository."}
+{"id": "n09", "text": "Unlike Siskin-7, whose budget is handled elsewhere, the budget of Egret-2 is $3315k. Nobody should assume the budget of Egret-2 applies to Siskin-7, the budget differs. An older draft of this note was archived."}
+{"id": "n10", "text": "Source for Curlew-2 is written in Erlang; no other language is allowed in its repository. A diagram is attached to the wiki entry."}
+{"id": "n11", "text": "Unlike Lark-3, whose pager rotation is handled elsewhere, the pager rotation of Ibis-9 is Yusuf Thorne. Nobody should assume the pager rotation of Ibis-9 applies to Lark-3, the pager rotation differs. A diagram is attached to the wiki entry."}
+{"id": "n12", "text": "The yearly budget for Siskin-7 is $3690k, covering licences and hosting. Nothing about this has been disputed so far."}
+{"id": "n13", "text": "Unlike Lark-3, whose rate limit is handled elsewhere, the rate limit of Siskin-7 is 750 requests per minute. Nobody should assume the rate limit of Siskin-7 applies to Lark-3, the rate limit differs. Details change slowly, so check the history first."}
+{"id": "n14", "text": "Egret-2 listens on port 8902; anyone who cannot reach that port should check the firewall rules."}
+{"id": "n15", "text": "Lark-3 listens on port 8886; anyone who cannot reach that port should check the firewall rules."}
+{"id": "n16", "text": "Unlike Ibis-9, whose datacenter is handled elsewhere, the datacenter of Curlew-2 is the Bergen datacenter. Nobody should assume the datacenter of Curlew-2 applies to Ibis-9, the datacenter differs. The page was last reviewed in the spring."}
+{"id": "n17", "text": "Expect throttling at the rate limit for Lark-3, which is 2200 requests per minute."}
+{"id": "n18", "text": "Unlike Curlew-2, whose datacenter is handled elsewhere, the datacenter of Bittern-8 is the Perth datacenter. Nobody should assume the datacenter of Bittern-8 applies to Curlew-2, the datacenter differs. Nothing about this has been disputed so far."}
+{"id": "n19", "text": "The rate limit of Bittern-8 is 600 requests per minute; callers over it get a 429."}
+{"id": "n20", "text": "The retirement date for Bittern-8 is March 20, 2027; after that day it stops serving."}
+{"id": "n21", "text": "Unlike Bittern-8, whose datacenter is handled elsewhere, the datacenter of Egret-2 is the Hanoi datacenter. Nobody should assume the datacenter of Egret-2 applies to Bittern-8, the datacenter differs. Details change slowly, so check the history first."}
+{"id": "n22", "text": "Plan around the retirement date of Siskin-7: May 3, 2029 is when it goes dark."}
+{"id": "n23", "text": "Mateo Abernathy is on the pager rotation of Curlew-2 this month, with a deputy as backup. An older draft of this note was archived."}
+{"id": "n24", "text": "Egret-2 enforces a rate limit of 2450 requests per minute per caller."}
+{"id": "n25", "text": "Unlike Lark-3, whose retirement date is handled elsewhere, the retirement date of Ibis-9 is March 12, 2028. Nobody should assume the retirement date of Ibis-9 applies to Lark-3, the retirement date differs. The entry was reformatted last quarter."}
+{"id": "n26", "text": "Unlike Ibis-9, whose retirement date is handled elsewhere, the retirement date of Lark-3 is November 15, 2028. Nobody should assume the retirement date of Lark-3 applies to Ibis-9, the retirement date differs. Details change slowly, so check the history first."}
+{"id": "n27", "text": "Egret-2 is implemented in Rust; the language was chosen for its tooling. Details change slowly, so check the history first."}
+{"id": "n28", "text": "Unlike Egret-2, whose datacenter is handled elsewhere, the datacenter of Ibis-9 is the Hanoi datacenter. Nobody should assume the datacenter of Ibis-9 applies to Egret-2, the datacenter differs."}
+{"id": "n29", "text": "Unlike Lark-3, whose rate limit is handled elsewhere, the rate limit of Ibis-9 is 1500 requests per minute. Nobody should assume the rate limit of Ibis-9 applies to Lark-3, the rate limit differs."}

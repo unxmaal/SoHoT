@@ -1,0 +1,172 @@
+[
+ {
+  "name": "flush_cargo",
+  "days": 2,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "rank_hull",
+  "days": 1,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "load_barge",
+  "days": 5,
+  "after": [
+   "rank_hull",
+   "flush_cargo"
+  ],
+  "done": true
+ },
+ {
+  "name": "allocate_mooring",
+  "days": 7,
+  "after": [
+   "rank_hull"
+  ],
+  "done": true
+ },
+ {
+  "name": "parse_tide",
+  "days": 3,
+  "after": [
+   "load_barge"
+  ],
+  "done": true
+ },
+ {
+  "name": "validate_dock",
+  "days": 3,
+  "after": [
+   "flush_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_pallet",
+  "days": 2,
+  "after": [
+   "load_barge",
+   "validate_dock",
+   "rank_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_harbor",
+  "days": 3,
+  "after": [
+   "rank_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_dock",
+  "days": 1,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "split_mast",
+  "days": 5,
+  "after": [
+   "flush_cargo"
+  ],
+  "done": true
+ },
+ {
+  "name": "split_keel",
+  "days": 2,
+  "after": [
+   "allocate_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_buoy",
+  "days": 3,
+  "after": [
+   "lookup_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_deck",
+  "days": 9,
+  "after": [
+   "rank_hull",
+   "lookup_harbor"
+  ],
+  "done": true
+ },
+ {
+  "name": "estimate_harbor",
+  "days": 3,
+  "after": [
+   "validate_buoy",
+   "parse_tide",
+   "flush_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_quay",
+  "days": 4,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "flush_quay",
+  "days": 3,
+  "after": [
+   "flush_cargo",
+   "rank_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_hull",
+  "days": 5,
+  "after": [
+   "split_mast",
+   "parse_tide",
+   "load_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_dock",
+  "days": 2,
+  "after": [
+   "flush_quay",
+   "rank_hull",
+   "estimate_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_tide",
+  "days": 6,
+  "after": [
+   "validate_buoy",
+   "estimate_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_ferry",
+  "days": 2,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "merge_buoy",
+  "days": 8,
+  "after": [
+   "parse_ferry"
+  ],
+  "done": false
+ }
+]

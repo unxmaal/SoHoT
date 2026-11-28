@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Plan around the retirement date of Godwit-6: February 22, 2027 is when it goes dark."}
+{"id": "n01", "text": "For Plover-5 the port is 3818. Changing the port needs a change ticket."}
+{"id": "n02", "text": "Unlike Godwit-6, whose rate limit is handled elsewhere, the rate limit of Plover-5 is 3800 requests per minute. Nobody should assume the rate limit of Plover-5 applies to Godwit-6, the rate limit differs."}
+{"id": "n03", "text": "Expect throttling at the rate limit for Siskin-3, which is 250 requests per minute. An older draft of this note was archived."}
+{"id": "n04", "text": "Unlike Godwit-6, whose retirement date is handled elsewhere, the retirement date of Pipit-8 is August 2, 2029. Nobody should assume the retirement date of Pipit-8 applies to Godwit-6, the retirement date differs."}
+{"id": "n05", "text": "Unlike Godwit-6, whose budget is handled elsewhere, the budget of Merlin-6 is $4890k. Nobody should assume the budget of Merlin-6 applies to Godwit-6, the budget differs. Nothing about this has been disputed so far."}
+{"id": "n06", "text": "Merlin-6 has one owner, the Harbor team, which approves each release and keeps the runbook current."}
+{"id": "n07", "text": "Unlike Siskin-3, whose language is handled elsewhere, the language of Plover-5 is Elixir. Nobody should assume the language of Plover-5 applies to Siskin-3, the language differs. A diagram is attached to the wiki entry."}
+{"id": "n08", "text": "Unlike Dunlin-2, whose datacenter is handled elsewhere, the datacenter of Siskin-3 is the Lisbon datacenter. Nobody should assume the datacenter of Siskin-3 applies to Dunlin-2, the datacenter differs."}
+{"id": "n09", "text": "Unlike Plover-5, whose port is handled elsewhere, the port of Merlin-6 is 9566. Nobody should assume the port of Merlin-6 applies to Plover-5, the port differs. An older draft of this note was archived."}
+{"id": "n10", "text": "Unlike Siskin-3, whose language is handled elsewhere, the language of Godwit-6 is Haskell. Nobody should assume the language of Godwit-6 applies to Siskin-3, the language differs. Nothing about this has been disputed so far."}
+{"id": "n11", "text": "For Dunlin-2 the port is 3324. Changing the port needs a change ticket. A diagram is attached to the wiki entry."}
+{"id": "n12", "text": "Pipit-8 is implemented in OCaml; the language was chosen for its tooling. A diagram is attached to the wiki entry."}
+{"id": "n13", "text": "Godwit-6 runs in the Lisbon datacenter, next to its database."}
+{"id": "n14", "text": "Unlike Dunlin-2, whose datacenter is handled elsewhere, the datacenter of Pipit-8 is the Dublin datacenter. Nobody should assume the datacenter of Pipit-8 applies to Dunlin-2, the datacenter differs."}
+{"id": "n15", "text": "The yearly budget for Dunlin-2 is $3025k, covering licences and hosting. The entry was reformatted last quarter."}
+{"id": "n16", "text": "Unlike Siskin-3, whose pager rotation is handled elsewhere, the pager rotation of Plover-5 is Avery Zielinski. Nobody should assume the pager rotation of Plover-5 applies to Siskin-3, the pager rotation differs. A diagram is attached to the wiki entry."}
+{"id": "n17", "text": "Unlike Plover-5, whose budget is handled elsewhere, the budget of Pipit-8 is $2955k. Nobody should assume the budget of Pipit-8 applies to Plover-5, the budget differs."}
+{"id": "n18", "text": "Unlike Merlin-6, whose owner is handled elsewhere, the owner of Dunlin-2 is the Compass team. Nobody should assume the owner of Dunlin-2 applies to Merlin-6, the owner differs."}
+{"id": "n19", "text": "Quinn Nakamura is on the pager rotation of Dunlin-2 this month, with a deputy as backup."}
+{"id": "n20", "text": "Unlike Pipit-8, whose budget is handled elsewhere, the budget of Godwit-6 is $4440k. Nobody should assume the budget of Godwit-6 applies to Pipit-8, the budget differs."}
+{"id": "n21", "text": "The retirement date for Merlin-6 is May 8, 2027; after that day it stops serving."}
+{"id": "n22", "text": "Siskin-3 is implemented in OCaml; the language was chosen for its tooling. Nothing about this has been disputed so far."}
+{"id": "n23", "text": "The rate limit of Pipit-8 is 1650 requests per minute; callers over it get a 429. Details change slowly, so check the history first."}
+{"id": "n24", "text": "Unlike Merlin-6, whose datacenter is handled elsewhere, the datacenter of Dunlin-2 is the Bergen datacenter. Nobody should assume the datacenter of Dunlin-2 applies to Merlin-6, the datacenter differs. The page was last reviewed in the spring."}
+{"id": "n25", "text": "Unlike Godwit-6, whose datacenter is handled elsewhere, the datacenter of Merlin-6 is the Osaka datacenter. Nobody should assume the datacenter of Merlin-6 applies to Godwit-6, the datacenter differs."}
+{"id": "n26", "text": "Godwit-6 enforces a rate limit of 2550 requests per minute per caller."}
+{"id": "n27", "text": "For Siskin-3 the port is 2145. Changing the port needs a change ticket."}
+{"id": "n28", "text": "Finance fixed the budget of Plover-5 at $4035k, reviewed every quarter."}
+{"id": "n29", "text": "The pager rotation for Siskin-3 is run by Nadia Lindqvist; alerts page them first."}

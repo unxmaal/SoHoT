@@ -1,0 +1,30 @@
+{"id": "n00", "text": "The language of Dunlin-2 is Kotlin, which new contributors must know."}
+{"id": "n01", "text": "Unlike Shrike-5, whose port is handled elsewhere, the port of Osprey-5 is 9775. Nobody should assume the port of Osprey-5 applies to Shrike-5, the port differs."}
+{"id": "n02", "text": "The service Ibis-3 takes traffic on port 3128, and the port is fixed across every environment."}
+{"id": "n03", "text": "Unlike Ibis-3, whose port is handled elsewhere, the port of Lark-8 is 5468. Nobody should assume the port of Lark-8 applies to Ibis-3, the port differs. Nothing about this has been disputed so far."}
+{"id": "n04", "text": "Kestrel-6 listens on port 4666; anyone who cannot reach that port should check the firewall rules. A diagram is attached to the wiki entry."}
+{"id": "n05", "text": "Finance fixed the budget of Kestrel-6 at $3525k, reviewed every quarter. The page was last reviewed in the spring."}
+{"id": "n06", "text": "Unlike Shrike-5, whose language is handled elsewhere, the language of Kestrel-6 is Rust. Nobody should assume the language of Kestrel-6 applies to Shrike-5, the language differs. An older draft of this note was archived."}
+{"id": "n07", "text": "Unlike Kestrel-6, whose port is handled elsewhere, the port of Shrike-5 is 7794. Nobody should assume the port of Shrike-5 applies to Kestrel-6, the port differs."}
+{"id": "n08", "text": "Kestrel-6 enforces a rate limit of 4250 requests per minute per caller. The entry was reformatted last quarter."}
+{"id": "n09", "text": "Unlike Ibis-3, whose port is handled elsewhere, the port of Dunlin-2 is 7288. Nobody should assume the port of Dunlin-2 applies to Ibis-3, the port differs. Details change slowly, so check the history first."}
+{"id": "n10", "text": "Plan around the retirement date of Dunlin-2: September 7, 2028 is when it goes dark. Details change slowly, so check the history first."}
+{"id": "n11", "text": "Unlike Dunlin-2, whose pager rotation is handled elsewhere, the pager rotation of Kestrel-6 is Wendell Fairbanks. Nobody should assume the pager rotation of Kestrel-6 applies to Dunlin-2, the pager rotation differs. A diagram is attached to the wiki entry."}
+{"id": "n12", "text": "The retirement date for Ibis-3 is April 4, 2029; after that day it stops serving."}
+{"id": "n13", "text": "The language of Ibis-3 is Swift, which new contributors must know."}
+{"id": "n14", "text": "Source for Shrike-5 is written in Zig; no other language is allowed in its repository."}
+{"id": "n15", "text": "Questions about Shrike-5 start with its owner, the Compass team; they triage anything filed against it. The entry was reformatted last quarter."}
+{"id": "n16", "text": "Unlike Ibis-3, whose budget is handled elsewhere, the budget of Shrike-5 is $4315k. Nobody should assume the budget of Shrike-5 applies to Ibis-3, the budget differs."}
+{"id": "n17", "text": "The pager rotation for Shrike-5 is run by Bruno Okonkwo; alerts page them first."}
+{"id": "n18", "text": "The rate limit of Osprey-5 is 600 requests per minute; callers over it get a 429."}
+{"id": "n19", "text": "Source for Lark-8 is written in Zig; no other language is allowed in its repository. The entry was reformatted last quarter."}
+{"id": "n20", "text": "Expect throttling at the rate limit for Lark-8, which is 700 requests per minute."}
+{"id": "n21", "text": "Unlike Shrike-5, whose owner is handled elsewhere, the owner of Osprey-5 is the Sprocket team. Nobody should assume the owner of Osprey-5 applies to Shrike-5, the owner differs."}
+{"id": "n22", "text": "Unlike Osprey-5, whose budget is handled elsewhere, the budget of Ibis-3 is $3250k. Nobody should assume the budget of Ibis-3 applies to Osprey-5, the budget differs."}
+{"id": "n23", "text": "The yearly budget for Dunlin-2 is $1045k, covering licences and hosting. Details change slowly, so check the history first."}
+{"id": "n24", "text": "The retirement date for Lark-8 is July 18, 2029; after that day it stops serving."}
+{"id": "n25", "text": "Unlike Shrike-5, whose pager rotation is handled elsewhere, the pager rotation of Dunlin-2 is Quinn Kowalczyk. Nobody should assume the pager rotation of Dunlin-2 applies to Shrike-5, the pager rotation differs."}
+{"id": "n26", "text": "Unlike Shrike-5, whose pager rotation is handled elsewhere, the pager rotation of Lark-8 is Mateo Brightwater. Nobody should assume the pager rotation of Lark-8 applies to Shrike-5, the pager rotation differs."}
+{"id": "n27", "text": "Unlike Ibis-3, whose datacenter is handled elsewhere, the datacenter of Osprey-5 is the Dublin datacenter. Nobody should assume the datacenter of Osprey-5 applies to Ibis-3, the datacenter differs. The page was last reviewed in the spring."}
+{"id": "n28", "text": "All instances of Ibis-3 live in the datacenter at Lisbon."}
+{"id": "n29", "text": "The yearly budget for Osprey-5 is $3715k, covering licences and hosting. The entry was reformatted last quarter."}

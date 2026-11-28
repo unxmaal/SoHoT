@@ -1,0 +1,30 @@
+{"id": "n00", "text": "The language of Osprey-5 is Swift, which new contributors must know. An older draft of this note was archived."}
+{"id": "n01", "text": "Unlike Avocet-2, whose pager rotation is handled elsewhere, the pager rotation of Shrike-9 is Oren Zielinski. Nobody should assume the pager rotation of Shrike-9 applies to Avocet-2, the pager rotation differs. A diagram is attached to the wiki entry."}
+{"id": "n02", "text": "Questions about Avocet-2 start with its owner, the Lattice team; they triage anything filed against it."}
+{"id": "n03", "text": "Kenji Halvorsen is on the pager rotation of Avocet-2 this month, with a deputy as backup."}
+{"id": "n04", "text": "Unlike Osprey-5, whose language is handled elsewhere, the language of Heron-9 is Haskell. Nobody should assume the language of Heron-9 applies to Osprey-5, the language differs."}
+{"id": "n05", "text": "Unlike Osprey-5, whose owner is handled elsewhere, the owner of Swift-5 is the Prism team. Nobody should assume the owner of Swift-5 applies to Osprey-5, the owner differs."}
+{"id": "n06", "text": "Questions about Merlin-2 start with its owner, the Keystone team; they triage anything filed against it."}
+{"id": "n07", "text": "Unlike Heron-9, whose budget is handled elsewhere, the budget of Merlin-2 is $725k. Nobody should assume the budget of Merlin-2 applies to Heron-9, the budget differs. A diagram is attached to the wiki entry."}
+{"id": "n08", "text": "The service Shrike-9 takes traffic on port 9910, and the port is fixed across every environment. The entry was reformatted last quarter."}
+{"id": "n09", "text": "Avocet-2 listens on port 6831; anyone who cannot reach that port should check the firewall rules."}
+{"id": "n10", "text": "The pager rotation for Osprey-5 is run by Elena Jaramillo; alerts page them first. The entry was reformatted last quarter."}
+{"id": "n11", "text": "Shrike-9 runs in the Quito datacenter, next to its database. An older draft of this note was archived."}
+{"id": "n12", "text": "Unlike Merlin-2, whose datacenter is handled elsewhere, the datacenter of Swift-5 is the Osaka datacenter. Nobody should assume the datacenter of Swift-5 applies to Merlin-2, the datacenter differs."}
+{"id": "n13", "text": "Unlike Shrike-9, whose budget is handled elsewhere, the budget of Heron-9 is $280k. Nobody should assume the budget of Heron-9 applies to Shrike-9, the budget differs. Details change slowly, so check the history first."}
+{"id": "n14", "text": "The language of Swift-5 is Kotlin, which new contributors must know. The page was last reviewed in the spring."}
+{"id": "n15", "text": "Unlike Osprey-5, whose rate limit is handled elsewhere, the rate limit of Heron-9 is 900 requests per minute. Nobody should assume the rate limit of Heron-9 applies to Osprey-5, the rate limit differs."}
+{"id": "n16", "text": "Unlike Avocet-2, whose port is handled elsewhere, the port of Heron-9 is 6104. Nobody should assume the port of Heron-9 applies to Avocet-2, the port differs."}
+{"id": "n17", "text": "The service Osprey-5 takes traffic on port 7921, and the port is fixed across every environment."}
+{"id": "n18", "text": "Merlin-2 reaches its retirement date on February 27, 2028, so every consumer has to migrate before then."}
+{"id": "n19", "text": "Unlike Merlin-2, whose retirement date is handled elsewhere, the retirement date of Avocet-2 is September 16, 2029. Nobody should assume the retirement date of Avocet-2 applies to Merlin-2, the retirement date differs. Nothing about this has been disputed so far."}
+{"id": "n20", "text": "The rate limit of Osprey-5 is 3100 requests per minute; callers over it get a 429. The entry was reformatted last quarter."}
+{"id": "n21", "text": "Unlike Heron-9, whose budget is handled elsewhere, the budget of Shrike-9 is $3095k. Nobody should assume the budget of Shrike-9 applies to Heron-9, the budget differs. Nothing about this has been disputed so far."}
+{"id": "n22", "text": "Heron-9 reaches its retirement date on September 3, 2027, so every consumer has to migrate before then."}
+{"id": "n23", "text": "Questions about Shrike-9 start with its owner, the Lattice team; they triage anything filed against it. Details change slowly, so check the history first."}
+{"id": "n24", "text": "Unlike Shrike-9, whose datacenter is handled elsewhere, the datacenter of Merlin-2 is the Lisbon datacenter. Nobody should assume the datacenter of Merlin-2 applies to Shrike-9, the datacenter differs."}
+{"id": "n25", "text": "Merlin-2 is implemented in OCaml; the language was chosen for its tooling."}
+{"id": "n26", "text": "The owner of Osprey-5 is the Harbor team, and every change to Osprey-5 goes through their review. A diagram is attached to the wiki entry."}
+{"id": "n27", "text": "The pager rotation for Swift-5 is run by Dmitri Thorne; alerts page them first."}
+{"id": "n28", "text": "Unlike Swift-5, whose language is handled elsewhere, the language of Avocet-2 is Erlang. Nobody should assume the language of Avocet-2 applies to Swift-5, the language differs."}
+{"id": "n29", "text": "Unlike Shrike-9, whose port is handled elsewhere, the port of Swift-5 is 6919. Nobody should assume the port of Swift-5 applies to Shrike-9, the port differs."}

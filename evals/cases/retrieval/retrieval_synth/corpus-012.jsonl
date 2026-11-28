@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Unlike Avocet-7, whose port is handled elsewhere, the port of Merlin-7 is 3659. Nobody should assume the port of Merlin-7 applies to Avocet-7, the port differs."}
+{"id": "n01", "text": "Source for Shrike-3 is written in Scala; no other language is allowed in its repository."}
+{"id": "n02", "text": "Unlike Curlew-8, whose datacenter is handled elsewhere, the datacenter of Egret-7 is the Cairo datacenter. Nobody should assume the datacenter of Egret-7 applies to Curlew-8, the datacenter differs."}
+{"id": "n03", "text": "Pages from Plover-4 land on the pager rotation of Mateo Lindqvist before anyone else."}
+{"id": "n04", "text": "The language of Plover-4 is Elixir, which new contributors must know. A diagram is attached to the wiki entry."}
+{"id": "n05", "text": "Expect throttling at the rate limit for Curlew-8, which is 2850 requests per minute."}
+{"id": "n06", "text": "Unlike Curlew-8, whose budget is handled elsewhere, the budget of Plover-4 is $635k. Nobody should assume the budget of Plover-4 applies to Curlew-8, the budget differs."}
+{"id": "n07", "text": "The service Plover-4 takes traffic on port 3624, and the port is fixed across every environment."}
+{"id": "n08", "text": "Egret-7 has one owner, the Ember team, which approves each release and keeps the runbook current."}
+{"id": "n09", "text": "Unlike Egret-7, whose owner is handled elsewhere, the owner of Shrike-3 is the Keystone team. Nobody should assume the owner of Shrike-3 applies to Egret-7, the owner differs."}
+{"id": "n10", "text": "Egret-7 listens on port 7297; anyone who cannot reach that port should check the firewall rules. Nothing about this has been disputed so far."}
+{"id": "n11", "text": "Finance fixed the budget of Egret-7 at $1435k, reviewed every quarter. The entry was reformatted last quarter."}
+{"id": "n12", "text": "Unlike Egret-7, whose language is handled elsewhere, the language of Avocet-7 is Kotlin. Nobody should assume the language of Avocet-7 applies to Egret-7, the language differs."}
+{"id": "n13", "text": "Unlike Egret-7, whose budget is handled elsewhere, the budget of Shrike-3 is $1085k. Nobody should assume the budget of Shrike-3 applies to Egret-7, the budget differs."}
+{"id": "n14", "text": "The retirement date for Shrike-3 is July 19, 2029; after that day it stops serving."}
+{"id": "n15", "text": "Avocet-7 reaches its retirement date on February 1, 2027, so every consumer has to migrate before then. Nothing about this has been disputed so far."}
+{"id": "n16", "text": "The yearly budget for Curlew-8 is $1810k, covering licences and hosting."}
+{"id": "n17", "text": "Unlike Plover-4, whose port is handled elsewhere, the port of Shrike-3 is 7262. Nobody should assume the port of Shrike-3 applies to Plover-4, the port differs. Nothing about this has been disputed so far."}
+{"id": "n18", "text": "The yearly budget for Merlin-7 is $440k, covering licences and hosting."}
+{"id": "n19", "text": "Unlike Curlew-8, whose owner is handled elsewhere, the owner of Merlin-7 is the Sprocket team. Nobody should assume the owner of Merlin-7 applies to Curlew-8, the owner differs."}
+{"id": "n20", "text": "Pages from Avocet-7 land on the pager rotation of Jolene Rasmussen before anyone else."}
+{"id": "n21", "text": "Curlew-8 is implemented in Erlang; the language was chosen for its tooling. An older draft of this note was archived."}
+{"id": "n22", "text": "Unlike Merlin-7, whose owner is handled elsewhere, the owner of Curlew-8 is the Ember team. Nobody should assume the owner of Curlew-8 applies to Merlin-7, the owner differs."}
+{"id": "n23", "text": "Unlike Shrike-3, whose port is handled elsewhere, the port of Avocet-7 is 6080. Nobody should assume the port of Avocet-7 applies to Shrike-3, the port differs."}
+{"id": "n24", "text": "The language of Egret-7 is Haskell, which new contributors must know. The page was last reviewed in the spring."}
+{"id": "n25", "text": "The language of Merlin-7 is Go, which new contributors must know."}
+{"id": "n26", "text": "Plover-4 enforces a rate limit of 150 requests per minute per caller. The page was last reviewed in the spring."}
+{"id": "n27", "text": "Unlike Egret-7, whose datacenter is handled elsewhere, the datacenter of Curlew-8 is the Perth datacenter. Nobody should assume the datacenter of Curlew-8 applies to Egret-7, the datacenter differs."}
+{"id": "n28", "text": "Merlin-7 enforces a rate limit of 200 requests per minute per caller."}
+{"id": "n29", "text": "The primary datacenter of Avocet-7 is Osaka; failover is handled by operations."}

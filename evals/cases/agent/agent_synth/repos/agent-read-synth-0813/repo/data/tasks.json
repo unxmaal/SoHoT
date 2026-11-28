@@ -1,0 +1,109 @@
+[
+ {
+  "name": "apply_mooring",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "reconcile_cargo",
+  "days": 3,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "rank_mooring",
+  "days": 9,
+  "after": [
+   "reconcile_cargo",
+   "apply_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_rope",
+  "days": 5,
+  "after": [
+   "apply_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_keel",
+  "days": 3,
+  "after": [
+   "reconcile_cargo",
+   "merge_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_crate",
+  "days": 8,
+  "after": [
+   "apply_mooring",
+   "reconcile_cargo",
+   "merge_keel"
+  ],
+  "done": true
+ },
+ {
+  "name": "split_dock",
+  "days": 9,
+  "after": [
+   "merge_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_hull",
+  "days": 7,
+  "after": [
+   "merge_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_anchor",
+  "days": 2,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "split_crate",
+  "days": 5,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "apply_lantern",
+  "days": 2,
+  "after": [
+   "apply_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_cargo",
+  "days": 1,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "resolve_rope",
+  "days": 1,
+  "after": [
+   "apply_lantern",
+   "split_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_harbor",
+  "days": 7,
+  "after": [
+   "resolve_rope"
+  ],
+  "done": false
+ }
+]

@@ -1,0 +1,150 @@
+[
+ {
+  "name": "lookup_hull",
+  "days": 6,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "rank_anchor",
+  "days": 5,
+  "after": [
+   "lookup_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_keel",
+  "days": 9,
+  "after": [
+   "rank_anchor",
+   "lookup_hull"
+  ],
+  "done": true
+ },
+ {
+  "name": "apply_barge",
+  "days": 2,
+  "after": [
+   "lookup_hull",
+   "normalize_keel",
+   "rank_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_sail",
+  "days": 3,
+  "after": [
+   "apply_barge",
+   "rank_anchor",
+   "lookup_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_lantern",
+  "days": 6,
+  "after": [
+   "normalize_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_deck",
+  "days": 2,
+  "after": [
+   "normalize_sail",
+   "rank_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_sail",
+  "days": 3,
+  "after": [
+   "normalize_keel",
+   "apply_deck",
+   "lookup_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_deck",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "load_buoy",
+  "days": 1,
+  "after": [
+   "apply_deck",
+   "normalize_keel",
+   "parse_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_cargo",
+  "days": 7,
+  "after": [
+   "load_buoy",
+   "apply_barge",
+   "rank_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_quay",
+  "days": 9,
+  "after": [
+   "lookup_hull",
+   "parse_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_hull",
+  "days": 3,
+  "after": [
+   "apply_barge",
+   "estimate_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_lantern",
+  "days": 9,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "flush_harbor",
+  "days": 9,
+  "after": [
+   "apply_barge",
+   "lookup_hull",
+   "stage_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_rope",
+  "days": 4,
+  "after": [
+   "split_deck",
+   "merge_hull",
+   "parse_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_berth",
+  "days": 7,
+  "after": [
+   "estimate_rope"
+  ],
+  "done": false
+ }
+]

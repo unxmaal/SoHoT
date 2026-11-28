@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Unlike Plover-6, whose datacenter is handled elsewhere, the datacenter of Swift-8 is the Osaka datacenter. Nobody should assume the datacenter of Swift-8 applies to Plover-6, the datacenter differs."}
+{"id": "n01", "text": "Source for Kestrel-8 is written in Swift; no other language is allowed in its repository. Nothing about this has been disputed so far."}
+{"id": "n02", "text": "Unlike Wren-3, whose language is handled elsewhere, the language of Lark-6 is Rust. Nobody should assume the language of Lark-6 applies to Wren-3, the language differs. Nothing about this has been disputed so far."}
+{"id": "n03", "text": "The yearly budget for Wren-3 is $2400k, covering licences and hosting."}
+{"id": "n04", "text": "Unlike Kestrel-8, whose rate limit is handled elsewhere, the rate limit of Wren-3 is 3450 requests per minute. Nobody should assume the rate limit of Wren-3 applies to Kestrel-8, the rate limit differs."}
+{"id": "n05", "text": "Unlike Wren-3, whose retirement date is handled elsewhere, the retirement date of Lark-6 is November 7, 2029. Nobody should assume the retirement date of Lark-6 applies to Wren-3, the retirement date differs."}
+{"id": "n06", "text": "Teal-9 is implemented in Kotlin; the language was chosen for its tooling. Nothing about this has been disputed so far."}
+{"id": "n07", "text": "The service Plover-6 takes traffic on port 2054, and the port is fixed across every environment. Nothing about this has been disputed so far."}
+{"id": "n08", "text": "The retirement date for Kestrel-8 is July 7, 2028; after that day it stops serving."}
+{"id": "n09", "text": "The language of Plover-6 is Haskell, which new contributors must know."}
+{"id": "n10", "text": "Soren Ekwueme is on the pager rotation of Lark-6 this month, with a deputy as backup. The entry was reformatted last quarter."}
+{"id": "n11", "text": "The retirement date for Teal-9 is June 7, 2029; after that day it stops serving. A diagram is attached to the wiki entry."}
+{"id": "n12", "text": "The primary datacenter of Lark-6 is Oslo; failover is handled by operations."}
+{"id": "n13", "text": "Unlike Lark-6, whose pager rotation is handled elsewhere, the pager rotation of Teal-9 is Umar Nakamura. Nobody should assume the pager rotation of Teal-9 applies to Lark-6, the pager rotation differs."}
+{"id": "n14", "text": "Unlike Plover-6, whose language is handled elsewhere, the language of Swift-8 is OCaml. Nobody should assume the language of Swift-8 applies to Plover-6, the language differs. An older draft of this note was archived."}
+{"id": "n15", "text": "Expect throttling at the rate limit for Kestrel-8, which is 3450 requests per minute."}
+{"id": "n16", "text": "Unlike Teal-9, whose retirement date is handled elsewhere, the retirement date of Wren-3 is February 23, 2027. Nobody should assume the retirement date of Wren-3 applies to Teal-9, the retirement date differs. Nothing about this has been disputed so far."}
+{"id": "n17", "text": "Unlike Teal-9, whose owner is handled elsewhere, the owner of Kestrel-8 is the Ledger team. Nobody should assume the owner of Kestrel-8 applies to Teal-9, the owner differs. Nothing about this has been disputed so far."}
+{"id": "n18", "text": "The primary datacenter of Kestrel-8 is Lisbon; failover is handled by operations."}
+{"id": "n19", "text": "The yearly budget for Plover-6 is $250k, covering licences and hosting."}
+{"id": "n20", "text": "Swift-8 enforces a rate limit of 200 requests per minute per caller. The entry was reformatted last quarter."}
+{"id": "n21", "text": "Unlike Lark-6, whose port is handled elsewhere, the port of Teal-9 is 4272. Nobody should assume the port of Teal-9 applies to Lark-6, the port differs."}
+{"id": "n22", "text": "All instances of Plover-6 live in the datacenter at Tallinn. The page was last reviewed in the spring."}
+{"id": "n23", "text": "Lark-6 listens on port 3318; anyone who cannot reach that port should check the firewall rules. The entry was reformatted last quarter."}
+{"id": "n24", "text": "Questions about Teal-9 start with its owner, the Harbor team; they triage anything filed against it."}
+{"id": "n25", "text": "Elena Nakamura is on the pager rotation of Wren-3 this month, with a deputy as backup. A diagram is attached to the wiki entry."}
+{"id": "n26", "text": "The language of Wren-3 is Haskell, which new contributors must know. Details change slowly, so check the history first."}
+{"id": "n27", "text": "Swift-8 listens on port 6891; anyone who cannot reach that port should check the firewall rules."}
+{"id": "n28", "text": "Elena Brightwater is on the pager rotation of Plover-6 this month, with a deputy as backup."}
+{"id": "n29", "text": "Unlike Kestrel-8, whose owner is handled elsewhere, the owner of Swift-8 is the Ember team. Nobody should assume the owner of Swift-8 applies to Kestrel-8, the owner differs."}

@@ -1,0 +1,152 @@
+[
+ {
+  "name": "lookup_ferry",
+  "days": 1,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "estimate_mooring",
+  "days": 6,
+  "after": [
+   "lookup_ferry"
+  ],
+  "done": true
+ },
+ {
+  "name": "apply_barge",
+  "days": 8,
+  "after": [
+   "estimate_mooring"
+  ],
+  "done": true
+ },
+ {
+  "name": "flush_cargo",
+  "days": 1,
+  "after": [
+   "estimate_mooring",
+   "lookup_ferry",
+   "apply_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_sail",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "merge_keel",
+  "days": 6,
+  "after": [
+   "apply_barge"
+  ],
+  "done": true
+ },
+ {
+  "name": "stage_hull",
+  "days": 8,
+  "after": [
+   "normalize_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_buoy",
+  "days": 9,
+  "after": [
+   "stage_hull",
+   "estimate_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_pallet",
+  "days": 2,
+  "after": [
+   "lookup_ferry",
+   "estimate_mooring",
+   "merge_keel"
+  ],
+  "done": true
+ },
+ {
+  "name": "render_pallet",
+  "days": 6,
+  "after": [
+   "apply_barge",
+   "flush_cargo",
+   "estimate_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_deck",
+  "days": 5,
+  "after": [
+   "normalize_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_crate",
+  "days": 4,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "split_anchor",
+  "days": 4,
+  "after": [
+   "estimate_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_lantern",
+  "days": 9,
+  "after": [
+   "stage_hull",
+   "apply_barge",
+   "allocate_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_lantern",
+  "days": 3,
+  "after": [
+   "parse_pallet"
+  ],
+  "done": true
+ },
+ {
+  "name": "stage_keel",
+  "days": 3,
+  "after": [
+   "normalize_sail",
+   "allocate_lantern"
+  ],
+  "done": true
+ },
+ {
+  "name": "allocate_deck",
+  "days": 9,
+  "after": [
+   "parse_crate"
+  ],
+  "done": true
+ },
+ {
+  "name": "lookup_anchor",
+  "days": 6,
+  "after": [
+   "split_anchor",
+   "flush_cargo",
+   "allocate_deck"
+  ],
+  "done": false
+ }
+]

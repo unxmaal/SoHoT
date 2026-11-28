@@ -1,0 +1,122 @@
+[
+ {
+  "name": "flush_pallet",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "allocate_crate",
+  "days": 7,
+  "after": [
+   "flush_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_lantern",
+  "days": 8,
+  "after": [
+   "flush_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_lantern",
+  "days": 7,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "merge_berth",
+  "days": 8,
+  "after": [
+   "allocate_crate",
+   "stage_lantern"
+  ],
+  "done": true
+ },
+ {
+  "name": "reconcile_pallet",
+  "days": 5,
+  "after": [
+   "flush_pallet",
+   "merge_berth",
+   "rank_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_lantern",
+  "days": 1,
+  "after": [
+   "merge_berth"
+  ],
+  "done": true
+ },
+ {
+  "name": "load_dock",
+  "days": 6,
+  "after": [
+   "load_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_anchor",
+  "days": 7,
+  "after": [
+   "stage_lantern",
+   "rank_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_dock",
+  "days": 3,
+  "after": [
+   "load_lantern",
+   "flush_pallet",
+   "rank_lantern"
+  ],
+  "done": true
+ },
+ {
+  "name": "merge_rope",
+  "days": 5,
+  "after": [
+   "flush_pallet",
+   "merge_berth"
+  ],
+  "done": true
+ },
+ {
+  "name": "lookup_hull",
+  "days": 8,
+  "after": [
+   "rank_lantern",
+   "reconcile_pallet",
+   "stage_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_quay",
+  "days": 4,
+  "after": [
+   "load_lantern",
+   "merge_berth",
+   "allocate_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_ferry",
+  "days": 3,
+  "after": [
+   "merge_berth",
+   "stage_quay"
+  ],
+  "done": false
+ }
+]

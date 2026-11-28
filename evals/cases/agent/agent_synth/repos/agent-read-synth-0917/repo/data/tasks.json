@@ -1,0 +1,116 @@
+[
+ {
+  "name": "allocate_berth",
+  "days": 6,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "normalize_keel",
+  "days": 5,
+  "after": [
+   "allocate_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_deck",
+  "days": 3,
+  "after": [
+   "allocate_berth",
+   "normalize_keel"
+  ],
+  "done": true
+ },
+ {
+  "name": "merge_berth",
+  "days": 1,
+  "after": [
+   "allocate_berth",
+   "resolve_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_ferry",
+  "days": 1,
+  "after": [
+   "allocate_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_tide",
+  "days": 9,
+  "after": [
+   "normalize_keel",
+   "resolve_deck"
+  ],
+  "done": true
+ },
+ {
+  "name": "rank_berth",
+  "days": 3,
+  "after": [
+   "allocate_berth",
+   "apply_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_keel",
+  "days": 4,
+  "after": [
+   "allocate_berth",
+   "rank_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_crate",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "merge_ferry",
+  "days": 6,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "rank_ferry",
+  "days": 8,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "load_anchor",
+  "days": 7,
+  "after": [
+   "merge_ferry",
+   "merge_berth",
+   "rank_ferry"
+  ],
+  "done": true
+ },
+ {
+  "name": "flush_barge",
+  "days": 5,
+  "after": [
+   "merge_ferry",
+   "normalize_tide",
+   "apply_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_berth",
+  "days": 4,
+  "after": [
+   "load_anchor",
+   "flush_barge"
+  ],
+  "done": false
+ }
+]

@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Unlike Curlew-4, whose language is handled elsewhere, the language of Plover-2 is Go. Nobody should assume the language of Plover-2 applies to Curlew-4, the language differs."}
+{"id": "n01", "text": "Plan around the retirement date of Ibis-6: April 17, 2027 is when it goes dark."}
+{"id": "n02", "text": "Unlike Curlew-4, whose rate limit is handled elsewhere, the rate limit of Pipit-8 is 4300 requests per minute. Nobody should assume the rate limit of Pipit-8 applies to Curlew-4, the rate limit differs."}
+{"id": "n03", "text": "Unlike Pipit-8, whose pager rotation is handled elsewhere, the pager rotation of Wren-5 is Farah Halvorsen. Nobody should assume the pager rotation of Wren-5 applies to Pipit-8, the pager rotation differs."}
+{"id": "n04", "text": "Curlew-4 reaches its retirement date on December 7, 2028, so every consumer has to migrate before then. A diagram is attached to the wiki entry."}
+{"id": "n05", "text": "Finance fixed the budget of Plover-2 at $4260k, reviewed every quarter. The entry was reformatted last quarter."}
+{"id": "n06", "text": "The primary datacenter of Pipit-8 is Nairobi; failover is handled by operations."}
+{"id": "n07", "text": "Unlike Dunlin-6, whose port is handled elsewhere, the port of Ibis-6 is 5061. Nobody should assume the port of Ibis-6 applies to Dunlin-6, the port differs. A diagram is attached to the wiki entry."}
+{"id": "n08", "text": "Unlike Dunlin-6, whose datacenter is handled elsewhere, the datacenter of Wren-5 is the Lima datacenter. Nobody should assume the datacenter of Wren-5 applies to Dunlin-6, the datacenter differs."}
+{"id": "n09", "text": "Plan around the retirement date of Dunlin-6: August 11, 2029 is when it goes dark. An older draft of this note was archived."}
+{"id": "n10", "text": "Soren Quintero is on the pager rotation of Pipit-8 this month, with a deputy as backup."}
+{"id": "n11", "text": "Questions about Curlew-4 start with its owner, the Keystone team; they triage anything filed against it. The entry was reformatted last quarter."}
+{"id": "n12", "text": "Unlike Ibis-6, whose port is handled elsewhere, the port of Wren-5 is 2178. Nobody should assume the port of Wren-5 applies to Ibis-6, the port differs. Details change slowly, so check the history first."}
+{"id": "n13", "text": "Unlike Pipit-8, whose budget is handled elsewhere, the budget of Ibis-6 is $2320k. Nobody should assume the budget of Ibis-6 applies to Pipit-8, the budget differs. A diagram is attached to the wiki entry."}
+{"id": "n14", "text": "The owner of Dunlin-6 is the Keystone team, and every change to Dunlin-6 goes through their review."}
+{"id": "n15", "text": "Dunlin-6 runs in the Nairobi datacenter, next to its database."}
+{"id": "n16", "text": "Unlike Dunlin-6, whose retirement date is handled elsewhere, the retirement date of Plover-2 is December 13, 2027. Nobody should assume the retirement date of Plover-2 applies to Dunlin-6, the retirement date differs."}
+{"id": "n17", "text": "Unlike Ibis-6, whose language is handled elsewhere, the language of Dunlin-6 is Kotlin. Nobody should assume the language of Dunlin-6 applies to Ibis-6, the language differs. Details change slowly, so check the history first."}
+{"id": "n18", "text": "The service Dunlin-6 takes traffic on port 8294, and the port is fixed across every environment. The page was last reviewed in the spring."}
+{"id": "n19", "text": "Unlike Dunlin-6, whose datacenter is handled elsewhere, the datacenter of Ibis-6 is the Lisbon datacenter. Nobody should assume the datacenter of Ibis-6 applies to Dunlin-6, the datacenter differs."}
+{"id": "n20", "text": "Pipit-8 reaches its retirement date on November 8, 2028, so every consumer has to migrate before then."}
+{"id": "n21", "text": "Wren-5 has one owner, the Anvil team, which approves each release and keeps the runbook current. The entry was reformatted last quarter."}
+{"id": "n22", "text": "Pipit-8 was granted a budget of $2290k this year; an unspent budget does not roll over. An older draft of this note was archived."}
+{"id": "n23", "text": "Unlike Wren-5, whose datacenter is handled elsewhere, the datacenter of Curlew-4 is the Lisbon datacenter. Nobody should assume the datacenter of Curlew-4 applies to Wren-5, the datacenter differs. The entry was reformatted last quarter."}
+{"id": "n24", "text": "The retirement date for Wren-5 is September 13, 2029; after that day it stops serving."}
+{"id": "n25", "text": "Unlike Dunlin-6, whose language is handled elsewhere, the language of Curlew-4 is Elixir. Nobody should assume the language of Curlew-4 applies to Dunlin-6, the language differs."}
+{"id": "n26", "text": "Unlike Plover-2, whose rate limit is handled elsewhere, the rate limit of Curlew-4 is 1450 requests per minute. Nobody should assume the rate limit of Curlew-4 applies to Plover-2, the rate limit differs. The page was last reviewed in the spring."}
+{"id": "n27", "text": "Unlike Curlew-4, whose language is handled elsewhere, the language of Ibis-6 is Zig. Nobody should assume the language of Ibis-6 applies to Curlew-4, the language differs. A diagram is attached to the wiki entry."}
+{"id": "n28", "text": "The owner of Plover-2 is the Anvil team, and every change to Plover-2 goes through their review. Details change slowly, so check the history first."}
+{"id": "n29", "text": "The rate limit of Plover-2 is 3450 requests per minute; callers over it get a 429. A diagram is attached to the wiki entry."}

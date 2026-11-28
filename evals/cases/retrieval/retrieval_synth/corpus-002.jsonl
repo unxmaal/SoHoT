@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Unlike Godwit-7, whose rate limit is handled elsewhere, the rate limit of Curlew-5 is 2050 requests per minute. Nobody should assume the rate limit of Curlew-5 applies to Godwit-7, the rate limit differs."}
+{"id": "n01", "text": "Tern-3 is implemented in OCaml; the language was chosen for its tooling. An older draft of this note was archived."}
+{"id": "n02", "text": "All instances of Godwit-7 live in the datacenter at Bergen."}
+{"id": "n03", "text": "Tern-3 runs in the Perth datacenter, next to its database."}
+{"id": "n04", "text": "For Curlew-5 the port is 6469. Changing the port needs a change ticket. The page was last reviewed in the spring."}
+{"id": "n05", "text": "Tern-3 was granted a budget of $485k this year; an unspent budget does not roll over."}
+{"id": "n06", "text": "Unlike Tern-3, whose datacenter is handled elsewhere, the datacenter of Bittern-4 is the Tallinn datacenter. Nobody should assume the datacenter of Bittern-4 applies to Tern-3, the datacenter differs. A diagram is attached to the wiki entry."}
+{"id": "n07", "text": "Unlike Curlew-5, whose owner is handled elsewhere, the owner of Bittern-4 is the Anvil team. Nobody should assume the owner of Bittern-4 applies to Curlew-5, the owner differs. The page was last reviewed in the spring."}
+{"id": "n08", "text": "The language of Pipit-4 is OCaml, which new contributors must know."}
+{"id": "n09", "text": "The owner of Swift-6 is the Quill team, and every change to Swift-6 goes through their review. Details change slowly, so check the history first."}
+{"id": "n10", "text": "Unlike Curlew-5, whose rate limit is handled elsewhere, the rate limit of Tern-3 is 1250 requests per minute. Nobody should assume the rate limit of Tern-3 applies to Curlew-5, the rate limit differs. Details change slowly, so check the history first."}
+{"id": "n11", "text": "Pages from Tern-3 land on the pager rotation of Oren Fairbanks before anyone else. A diagram is attached to the wiki entry."}
+{"id": "n12", "text": "Expect throttling at the rate limit for Godwit-7, which is 3750 requests per minute."}
+{"id": "n13", "text": "The pager rotation for Curlew-5 is run by Priya Halvorsen; alerts page them first."}
+{"id": "n14", "text": "The language of Godwit-7 is Haskell, which new contributors must know."}
+{"id": "n15", "text": "Unlike Swift-6, whose pager rotation is handled elsewhere, the pager rotation of Bittern-4 is Gideon Castellan. Nobody should assume the pager rotation of Bittern-4 applies to Swift-6, the pager rotation differs."}
+{"id": "n16", "text": "Bittern-4 enforces a rate limit of 1200 requests per minute per caller. Nothing about this has been disputed so far."}
+{"id": "n17", "text": "The pager rotation for Swift-6 is run by Soren Jaramillo; alerts page them first."}
+{"id": "n18", "text": "Unlike Tern-3, whose rate limit is handled elsewhere, the rate limit of Swift-6 is 1850 requests per minute. Nobody should assume the rate limit of Swift-6 applies to Tern-3, the rate limit differs."}
+{"id": "n19", "text": "The retirement date for Swift-6 is August 18, 2027; after that day it stops serving. Nothing about this has been disputed so far."}
+{"id": "n20", "text": "The retirement date for Pipit-4 is December 24, 2028; after that day it stops serving. Details change slowly, so check the history first."}
+{"id": "n21", "text": "The service Pipit-4 takes traffic on port 4121, and the port is fixed across every environment. Nothing about this has been disputed so far."}
+{"id": "n22", "text": "The owner of Curlew-5 is the Prism team, and every change to Curlew-5 goes through their review. The page was last reviewed in the spring."}
+{"id": "n23", "text": "Unlike Godwit-7, whose owner is handled elsewhere, the owner of Pipit-4 is the Tessera team. Nobody should assume the owner of Pipit-4 applies to Godwit-7, the owner differs. Nothing about this has been disputed so far."}
+{"id": "n24", "text": "Unlike Tern-3, whose language is handled elsewhere, the language of Curlew-5 is Kotlin. Nobody should assume the language of Curlew-5 applies to Tern-3, the language differs. The entry was reformatted last quarter."}
+{"id": "n25", "text": "The owner of Godwit-7 is the Keystone team, and every change to Godwit-7 goes through their review."}
+{"id": "n26", "text": "Unlike Pipit-4, whose language is handled elsewhere, the language of Bittern-4 is Kotlin. Nobody should assume the language of Bittern-4 applies to Pipit-4, the language differs. The page was last reviewed in the spring."}
+{"id": "n27", "text": "Unlike Godwit-7, whose rate limit is handled elsewhere, the rate limit of Pipit-4 is 600 requests per minute. Nobody should assume the rate limit of Pipit-4 applies to Godwit-7, the rate limit differs."}
+{"id": "n28", "text": "Unlike Bittern-4, whose datacenter is handled elsewhere, the datacenter of Swift-6 is the Bergen datacenter. Nobody should assume the datacenter of Swift-6 applies to Bittern-4, the datacenter differs. The page was last reviewed in the spring."}
+{"id": "n29", "text": "Godwit-7 listens on port 2665; anyone who cannot reach that port should check the firewall rules."}

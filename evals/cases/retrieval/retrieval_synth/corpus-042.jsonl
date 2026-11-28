@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Unlike Shrike-4, whose rate limit is handled elsewhere, the rate limit of Plover-6 is 1400 requests per minute. Nobody should assume the rate limit of Plover-6 applies to Shrike-4, the rate limit differs."}
+{"id": "n01", "text": "Merlin-2 was granted a budget of $3740k this year; an unspent budget does not roll over. The entry was reformatted last quarter."}
+{"id": "n02", "text": "Avery Okonkwo is on the pager rotation of Tern-4 this month, with a deputy as backup."}
+{"id": "n03", "text": "Unlike Merlin-2, whose budget is handled elsewhere, the budget of Shrike-4 is $1650k. Nobody should assume the budget of Shrike-4 applies to Merlin-2, the budget differs. An older draft of this note was archived."}
+{"id": "n04", "text": "The owner of Tern-4 is the Ledger team, and every change to Tern-4 goes through their review."}
+{"id": "n05", "text": "All instances of Egret-5 live in the datacenter at Cairo. Nothing about this has been disputed so far."}
+{"id": "n06", "text": "Plan around the retirement date of Merlin-2: July 8, 2028 is when it goes dark."}
+{"id": "n07", "text": "Unlike Dunlin-6, whose datacenter is handled elsewhere, the datacenter of Shrike-4 is the Nairobi datacenter. Nobody should assume the datacenter of Shrike-4 applies to Dunlin-6, the datacenter differs. An older draft of this note was archived."}
+{"id": "n08", "text": "Source for Egret-5 is written in Rust; no other language is allowed in its repository."}
+{"id": "n09", "text": "Unlike Shrike-4, whose port is handled elsewhere, the port of Dunlin-6 is 7959. Nobody should assume the port of Dunlin-6 applies to Shrike-4, the port differs. The entry was reformatted last quarter."}
+{"id": "n10", "text": "Unlike Dunlin-6, whose pager rotation is handled elsewhere, the pager rotation of Merlin-2 is Priya Valdivia. Nobody should assume the pager rotation of Merlin-2 applies to Dunlin-6, the pager rotation differs."}
+{"id": "n11", "text": "Unlike Egret-5, whose datacenter is handled elsewhere, the datacenter of Tern-4 is the Quito datacenter. Nobody should assume the datacenter of Tern-4 applies to Egret-5, the datacenter differs."}
+{"id": "n12", "text": "Dunlin-6 was granted a budget of $2385k this year; an unspent budget does not roll over."}
+{"id": "n13", "text": "Unlike Tern-4, whose pager rotation is handled elsewhere, the pager rotation of Dunlin-6 is Yusuf Kowalczyk. Nobody should assume the pager rotation of Dunlin-6 applies to Tern-4, the pager rotation differs. Details change slowly, so check the history first."}
+{"id": "n14", "text": "The language of Tern-4 is Swift, which new contributors must know."}
+{"id": "n15", "text": "All instances of Dunlin-6 live in the datacenter at Osaka."}
+{"id": "n16", "text": "Shrike-4 enforces a rate limit of 1500 requests per minute per caller."}
+{"id": "n17", "text": "Unlike Dunlin-6, whose retirement date is handled elsewhere, the retirement date of Egret-5 is May 2, 2027. Nobody should assume the retirement date of Egret-5 applies to Dunlin-6, the retirement date differs. Details change slowly, so check the history first."}
+{"id": "n18", "text": "For Shrike-4 the port is 5397. Changing the port needs a change ticket. An older draft of this note was archived."}
+{"id": "n19", "text": "Questions about Shrike-4 start with its owner, the Keystone team; they triage anything filed against it."}
+{"id": "n20", "text": "Egret-5 has one owner, the Keystone team, which approves each release and keeps the runbook current."}
+{"id": "n21", "text": "Unlike Dunlin-6, whose port is handled elsewhere, the port of Egret-5 is 4944. Nobody should assume the port of Egret-5 applies to Dunlin-6, the port differs."}
+{"id": "n22", "text": "The language of Merlin-2 is Erlang, which new contributors must know. Nothing about this has been disputed so far."}
+{"id": "n23", "text": "Merlin-2 enforces a rate limit of 1300 requests per minute per caller."}
+{"id": "n24", "text": "The retirement date for Plover-6 is May 25, 2028; after that day it stops serving."}
+{"id": "n25", "text": "Unlike Tern-4, whose language is handled elsewhere, the language of Plover-6 is Haskell. Nobody should assume the language of Plover-6 applies to Tern-4, the language differs. The entry was reformatted last quarter."}
+{"id": "n26", "text": "Dunlin-6 reaches its retirement date on May 14, 2027, so every consumer has to migrate before then."}
+{"id": "n27", "text": "Unlike Shrike-4, whose port is handled elsewhere, the port of Plover-6 is 8101. Nobody should assume the port of Plover-6 applies to Shrike-4, the port differs. Nothing about this has been disputed so far."}
+{"id": "n28", "text": "Expect throttling at the rate limit for Tern-4, which is 250 requests per minute."}
+{"id": "n29", "text": "Unlike Egret-5, whose owner is handled elsewhere, the owner of Plover-6 is the Prism team. Nobody should assume the owner of Plover-6 applies to Egret-5, the owner differs."}

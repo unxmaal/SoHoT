@@ -1,0 +1,100 @@
+[
+ {
+  "name": "reconcile_pallet",
+  "days": 9,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "validate_deck",
+  "days": 2,
+  "after": [
+   "reconcile_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_buoy",
+  "days": 4,
+  "after": [
+   "reconcile_pallet",
+   "validate_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_rope",
+  "days": 6,
+  "after": [
+   "validate_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_sail",
+  "days": 7,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "normalize_mast",
+  "days": 5,
+  "after": [
+   "rank_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_lantern",
+  "days": 8,
+  "after": [
+   "rank_sail",
+   "reconcile_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_harbor",
+  "days": 6,
+  "after": [
+   "rank_sail",
+   "normalize_mast",
+   "allocate_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_lantern",
+  "days": 5,
+  "after": [
+   "allocate_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_mast",
+  "days": 3,
+  "after": [
+   "apply_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_tide",
+  "days": 3,
+  "after": [
+   "apply_rope",
+   "validate_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_buoy",
+  "days": 7,
+  "after": [
+   "validate_lantern",
+   "estimate_tide"
+  ],
+  "done": false
+ }
+]

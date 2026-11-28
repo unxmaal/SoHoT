@@ -1,0 +1,30 @@
+{"id": "n00", "text": "The retirement date for Curlew-7 is November 18, 2028; after that day it stops serving. Details change slowly, so check the history first."}
+{"id": "n01", "text": "Ibis-7 has one owner, the Lattice team, which approves each release and keeps the runbook current. A diagram is attached to the wiki entry."}
+{"id": "n02", "text": "Dunlin-4 enforces a rate limit of 950 requests per minute per caller. The page was last reviewed in the spring."}
+{"id": "n03", "text": "Unlike Osprey-5, whose budget is handled elsewhere, the budget of Ibis-7 is $1915k. Nobody should assume the budget of Ibis-7 applies to Osprey-5, the budget differs."}
+{"id": "n04", "text": "The language of Dunlin-4 is Go, which new contributors must know."}
+{"id": "n05", "text": "Source for Curlew-7 is written in Zig; no other language is allowed in its repository."}
+{"id": "n06", "text": "The rate limit of Ibis-7 is 4000 requests per minute; callers over it get a 429."}
+{"id": "n07", "text": "Unlike Tern-9, whose retirement date is handled elsewhere, the retirement date of Osprey-5 is March 6, 2029. Nobody should assume the retirement date of Osprey-5 applies to Tern-9, the retirement date differs."}
+{"id": "n08", "text": "Unlike Curlew-7, whose port is handled elsewhere, the port of Dunlin-4 is 6245. Nobody should assume the port of Dunlin-4 applies to Curlew-7, the port differs."}
+{"id": "n09", "text": "The retirement date for Dunlin-4 is January 28, 2027; after that day it stops serving."}
+{"id": "n10", "text": "Unlike Ibis-7, whose retirement date is handled elsewhere, the retirement date of Swift-3 is April 21, 2028. Nobody should assume the retirement date of Swift-3 applies to Ibis-7, the retirement date differs. The page was last reviewed in the spring."}
+{"id": "n11", "text": "Swift-3 has one owner, the Ledger team, which approves each release and keeps the runbook current. Details change slowly, so check the history first."}
+{"id": "n12", "text": "Osprey-5 was granted a budget of $4855k this year; an unspent budget does not roll over. Details change slowly, so check the history first."}
+{"id": "n13", "text": "Plan around the retirement date of Ibis-7: July 9, 2028 is when it goes dark."}
+{"id": "n14", "text": "Questions about Tern-9 start with its owner, the Trellis team; they triage anything filed against it. A diagram is attached to the wiki entry."}
+{"id": "n15", "text": "The pager rotation for Swift-3 is run by Gideon Brightwater; alerts page them first."}
+{"id": "n16", "text": "Unlike Swift-3, whose pager rotation is handled elsewhere, the pager rotation of Tern-9 is Priya Marchetti. Nobody should assume the pager rotation of Tern-9 applies to Swift-3, the pager rotation differs."}
+{"id": "n17", "text": "Unlike Dunlin-4, whose port is handled elsewhere, the port of Tern-9 is 2398. Nobody should assume the port of Tern-9 applies to Dunlin-4, the port differs."}
+{"id": "n18", "text": "Curlew-7 has one owner, the Ledger team, which approves each release and keeps the runbook current. A diagram is attached to the wiki entry."}
+{"id": "n19", "text": "Unlike Tern-9, whose port is handled elsewhere, the port of Osprey-5 is 4589. Nobody should assume the port of Osprey-5 applies to Tern-9, the port differs. The page was last reviewed in the spring."}
+{"id": "n20", "text": "Unlike Tern-9, whose pager rotation is handled elsewhere, the pager rotation of Ibis-7 is Rosa Galloway. Nobody should assume the pager rotation of Ibis-7 applies to Tern-9, the pager rotation differs. The entry was reformatted last quarter."}
+{"id": "n21", "text": "Osprey-5 runs in the Lima datacenter, next to its database. The page was last reviewed in the spring."}
+{"id": "n22", "text": "The language of Tern-9 is Kotlin, which new contributors must know."}
+{"id": "n23", "text": "Unlike Osprey-5, whose retirement date is handled elsewhere, the retirement date of Tern-9 is March 12, 2028. Nobody should assume the retirement date of Tern-9 applies to Osprey-5, the retirement date differs."}
+{"id": "n24", "text": "Unlike Osprey-5, whose datacenter is handled elsewhere, the datacenter of Dunlin-4 is the Dublin datacenter. Nobody should assume the datacenter of Dunlin-4 applies to Osprey-5, the datacenter differs. An older draft of this note was archived."}
+{"id": "n25", "text": "Swift-3 was granted a budget of $2715k this year; an unspent budget does not roll over. The page was last reviewed in the spring."}
+{"id": "n26", "text": "Unlike Curlew-7, whose owner is handled elsewhere, the owner of Osprey-5 is the Compass team. Nobody should assume the owner of Osprey-5 applies to Curlew-7, the owner differs."}
+{"id": "n27", "text": "Expect throttling at the rate limit for Swift-3, which is 250 requests per minute."}
+{"id": "n28", "text": "Unlike Ibis-7, whose rate limit is handled elsewhere, the rate limit of Curlew-7 is 2400 requests per minute. Nobody should assume the rate limit of Curlew-7 applies to Ibis-7, the rate limit differs."}
+{"id": "n29", "text": "Unlike Osprey-5, whose port is handled elsewhere, the port of Curlew-7 is 7782. Nobody should assume the port of Curlew-7 applies to Osprey-5, the port differs."}

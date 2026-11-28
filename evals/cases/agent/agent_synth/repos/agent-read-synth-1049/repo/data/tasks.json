@@ -1,0 +1,86 @@
+[
+ {
+  "name": "stage_ferry",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "lookup_tide",
+  "days": 7,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "rank_crate",
+  "days": 6,
+  "after": [
+   "lookup_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_cargo",
+  "days": 3,
+  "after": [
+   "rank_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_buoy",
+  "days": 1,
+  "after": [
+   "rank_crate",
+   "stage_ferry",
+   "lookup_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_keel",
+  "days": 6,
+  "after": [
+   "rank_crate",
+   "normalize_cargo",
+   "flush_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_pallet",
+  "days": 3,
+  "after": [
+   "rank_crate",
+   "apply_keel",
+   "lookup_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_cargo",
+  "days": 2,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "parse_pallet",
+  "days": 2,
+  "after": [
+   "estimate_cargo",
+   "rank_crate"
+  ],
+  "done": true
+ },
+ {
+  "name": "resolve_dock",
+  "days": 2,
+  "after": [
+   "flush_pallet",
+   "normalize_cargo",
+   "stage_ferry",
+   "parse_pallet"
+  ],
+  "done": false
+ }
+]

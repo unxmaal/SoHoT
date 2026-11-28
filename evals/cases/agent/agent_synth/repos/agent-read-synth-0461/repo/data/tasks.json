@@ -1,0 +1,103 @@
+[
+ {
+  "name": "apply_cargo",
+  "days": 9,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "lookup_harbor",
+  "days": 6,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "lookup_mast",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "parse_pallet",
+  "days": 4,
+  "after": [
+   "apply_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_hull",
+  "days": 1,
+  "after": [
+   "lookup_harbor",
+   "apply_cargo"
+  ],
+  "done": true
+ },
+ {
+  "name": "render_rope",
+  "days": 6,
+  "after": [
+   "apply_cargo",
+   "lookup_mast",
+   "lookup_harbor"
+  ],
+  "done": true
+ },
+ {
+  "name": "render_buoy",
+  "days": 6,
+  "after": [
+   "render_hull",
+   "apply_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_rope",
+  "days": 1,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "split_keel",
+  "days": 6,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "reconcile_mast",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "apply_quay",
+  "days": 4,
+  "after": [
+   "render_rope",
+   "render_hull",
+   "lookup_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_berth",
+  "days": 8,
+  "after": [
+   "render_rope",
+   "reconcile_mast",
+   "flush_rope"
+  ],
+  "done": true
+ },
+ {
+  "name": "resolve_tide",
+  "days": 1,
+  "after": [
+   "lookup_harbor",
+   "validate_berth"
+  ],
+  "done": false
+ }
+]

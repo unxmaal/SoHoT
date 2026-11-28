@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Plan around the retirement date of Plover-9: July 4, 2028 is when it goes dark."}
+{"id": "n01", "text": "Unlike Godwit-3, whose language is handled elsewhere, the language of Swift-4 is Swift. Nobody should assume the language of Swift-4 applies to Godwit-3, the language differs."}
+{"id": "n02", "text": "Unlike Plover-9, whose port is handled elsewhere, the port of Siskin-9 is 9195. Nobody should assume the port of Siskin-9 applies to Plover-9, the port differs."}
+{"id": "n03", "text": "Questions about Godwit-3 start with its owner, the Trellis team; they triage anything filed against it. A diagram is attached to the wiki entry."}
+{"id": "n04", "text": "The rate limit of Siskin-9 is 900 requests per minute; callers over it get a 429."}
+{"id": "n05", "text": "Bittern-5 was granted a budget of $2640k this year; an unspent budget does not roll over."}
+{"id": "n06", "text": "Swift-4 has one owner, the Harbor team, which approves each release and keeps the runbook current. Nothing about this has been disputed so far."}
+{"id": "n07", "text": "The retirement date for Osprey-7 is May 19, 2029; after that day it stops serving. A diagram is attached to the wiki entry."}
+{"id": "n08", "text": "The service Swift-4 takes traffic on port 7808, and the port is fixed across every environment."}
+{"id": "n09", "text": "Unlike Godwit-3, whose pager rotation is handled elsewhere, the pager rotation of Plover-9 is Jolene Abernathy. Nobody should assume the pager rotation of Plover-9 applies to Godwit-3, the pager rotation differs."}
+{"id": "n10", "text": "Unlike Swift-4, whose owner is handled elsewhere, the owner of Bittern-5 is the Quill team. Nobody should assume the owner of Bittern-5 applies to Swift-4, the owner differs."}
+{"id": "n11", "text": "For Bittern-5 the port is 6376. Changing the port needs a change ticket. The page was last reviewed in the spring."}
+{"id": "n12", "text": "The yearly budget for Osprey-7 is $835k, covering licences and hosting."}
+{"id": "n13", "text": "The language of Godwit-3 is Elixir, which new contributors must know."}
+{"id": "n14", "text": "Plover-9 listens on port 5169; anyone who cannot reach that port should check the firewall rules."}
+{"id": "n15", "text": "The service Osprey-7 takes traffic on port 3928, and the port is fixed across every environment. Details change slowly, so check the history first."}
+{"id": "n16", "text": "Unlike Swift-4, whose language is handled elsewhere, the language of Plover-9 is Rust. Nobody should assume the language of Plover-9 applies to Swift-4, the language differs."}
+{"id": "n17", "text": "The yearly budget for Swift-4 is $1545k, covering licences and hosting. An older draft of this note was archived."}
+{"id": "n18", "text": "Plan around the retirement date of Godwit-3: March 6, 2027 is when it goes dark."}
+{"id": "n19", "text": "Godwit-3 runs in the Cairo datacenter, next to its database. The page was last reviewed in the spring."}
+{"id": "n20", "text": "Questions about Osprey-7 start with its owner, the Ember team; they triage anything filed against it."}
+{"id": "n21", "text": "Talia Nakamura is on the pager rotation of Swift-4 this month, with a deputy as backup. The entry was reformatted last quarter."}
+{"id": "n22", "text": "Unlike Siskin-9, whose datacenter is handled elsewhere, the datacenter of Bittern-5 is the Oslo datacenter. Nobody should assume the datacenter of Bittern-5 applies to Siskin-9, the datacenter differs."}
+{"id": "n23", "text": "Unlike Osprey-7, whose budget is handled elsewhere, the budget of Siskin-9 is $3420k. Nobody should assume the budget of Siskin-9 applies to Osprey-7, the budget differs. Details change slowly, so check the history first."}
+{"id": "n24", "text": "Unlike Plover-9, whose pager rotation is handled elsewhere, the pager rotation of Godwit-3 is Mateo Underhill. Nobody should assume the pager rotation of Godwit-3 applies to Plover-9, the pager rotation differs."}
+{"id": "n25", "text": "Unlike Bittern-5, whose datacenter is handled elsewhere, the datacenter of Siskin-9 is the Lima datacenter. Nobody should assume the datacenter of Siskin-9 applies to Bittern-5, the datacenter differs."}
+{"id": "n26", "text": "Unlike Plover-9, whose retirement date is handled elsewhere, the retirement date of Siskin-9 is September 7, 2028. Nobody should assume the retirement date of Siskin-9 applies to Plover-9, the retirement date differs."}
+{"id": "n27", "text": "Unlike Swift-4, whose owner is handled elsewhere, the owner of Plover-9 is the Ledger team. Nobody should assume the owner of Plover-9 applies to Swift-4, the owner differs."}
+{"id": "n28", "text": "Jolene Fairbanks is on the pager rotation of Osprey-7 this month, with a deputy as backup."}
+{"id": "n29", "text": "Unlike Siskin-9, whose retirement date is handled elsewhere, the retirement date of Bittern-5 is April 22, 2029. Nobody should assume the retirement date of Bittern-5 applies to Siskin-9, the retirement date differs."}

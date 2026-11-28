@@ -1,0 +1,175 @@
+[
+ {
+  "name": "allocate_lantern",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "stage_ferry",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "reconcile_mast",
+  "days": 1,
+  "after": [
+   "stage_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_mooring",
+  "days": 6,
+  "after": [
+   "reconcile_mast",
+   "stage_ferry",
+   "allocate_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_barge",
+  "days": 2,
+  "after": [
+   "reconcile_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_lantern",
+  "days": 1,
+  "after": [
+   "allocate_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_quay",
+  "days": 7,
+  "after": [
+   "reconcile_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_mast",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "normalize_keel",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "apply_rope",
+  "days": 7,
+  "after": [
+   "stage_ferry",
+   "reconcile_quay",
+   "stage_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_ferry",
+  "days": 7,
+  "after": [
+   "stage_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_pallet",
+  "days": 1,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "stage_buoy",
+  "days": 8,
+  "after": [
+   "allocate_mast"
+  ],
+  "done": true
+ },
+ {
+  "name": "render_keel",
+  "days": 1,
+  "after": [
+   "normalize_keel",
+   "split_pallet",
+   "reconcile_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_rope",
+  "days": 8,
+  "after": [
+   "apply_rope",
+   "allocate_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_dock",
+  "days": 6,
+  "after": [
+   "render_keel",
+   "stage_lantern",
+   "allocate_lantern"
+  ],
+  "done": true
+ },
+ {
+  "name": "resolve_mooring",
+  "days": 7,
+  "after": [
+   "split_pallet",
+   "stage_dock",
+   "parse_barge"
+  ],
+  "done": true
+ },
+ {
+  "name": "apply_mast",
+  "days": 7,
+  "after": [
+   "allocate_mast",
+   "reconcile_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_quay",
+  "days": 4,
+  "after": [
+   "normalize_keel",
+   "stage_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_keel",
+  "days": 7,
+  "after": [
+   "validate_quay"
+  ],
+  "done": true
+ },
+ {
+  "name": "load_dock",
+  "days": 2,
+  "after": [
+   "stage_ferry",
+   "stage_rope",
+   "lookup_keel"
+  ],
+  "done": false
+ }
+]

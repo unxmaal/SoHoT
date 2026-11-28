@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Plan around the retirement date of Ibis-3: August 18, 2029 is when it goes dark."}
+{"id": "n01", "text": "Ibis-3 is implemented in OCaml; the language was chosen for its tooling. The entry was reformatted last quarter."}
+{"id": "n02", "text": "Unlike Kestrel-5, whose owner is handled elsewhere, the owner of Wren-9 is the Ledger team. Nobody should assume the owner of Wren-9 applies to Kestrel-5, the owner differs."}
+{"id": "n03", "text": "The primary datacenter of Tern-7 is Nairobi; failover is handled by operations."}
+{"id": "n04", "text": "Unlike Dunlin-8, whose port is handled elsewhere, the port of Wren-9 is 4608. Nobody should assume the port of Wren-9 applies to Dunlin-8, the port differs."}
+{"id": "n05", "text": "Unlike Tern-7, whose budget is handled elsewhere, the budget of Wren-9 is $2735k. Nobody should assume the budget of Wren-9 applies to Tern-7, the budget differs."}
+{"id": "n06", "text": "Unlike Wren-9, whose owner is handled elsewhere, the owner of Teal-3 is the Ledger team. Nobody should assume the owner of Teal-3 applies to Wren-9, the owner differs."}
+{"id": "n07", "text": "Unlike Teal-3, whose rate limit is handled elsewhere, the rate limit of Kestrel-5 is 2950 requests per minute. Nobody should assume the rate limit of Kestrel-5 applies to Teal-3, the rate limit differs."}
+{"id": "n08", "text": "Wendell Castellan is on the pager rotation of Teal-3 this month, with a deputy as backup."}
+{"id": "n09", "text": "Questions about Kestrel-5 start with its owner, the Compass team; they triage anything filed against it."}
+{"id": "n10", "text": "The language of Teal-3 is Go, which new contributors must know."}
+{"id": "n11", "text": "Unlike Tern-7, whose port is handled elsewhere, the port of Dunlin-8 is 9541. Nobody should assume the port of Dunlin-8 applies to Tern-7, the port differs."}
+{"id": "n12", "text": "Dunlin-8 is implemented in Go; the language was chosen for its tooling."}
+{"id": "n13", "text": "The primary datacenter of Ibis-3 is Cairo; failover is handled by operations."}
+{"id": "n14", "text": "Unlike Teal-3, whose retirement date is handled elsewhere, the retirement date of Wren-9 is October 11, 2029. Nobody should assume the retirement date of Wren-9 applies to Teal-3, the retirement date differs. Nothing about this has been disputed so far."}
+{"id": "n15", "text": "Unlike Ibis-3, whose pager rotation is handled elsewhere, the pager rotation of Wren-9 is Elena Abernathy. Nobody should assume the pager rotation of Wren-9 applies to Ibis-3, the pager rotation differs."}
+{"id": "n16", "text": "The yearly budget for Tern-7 is $2305k, covering licences and hosting. A diagram is attached to the wiki entry."}
+{"id": "n17", "text": "Unlike Wren-9, whose port is handled elsewhere, the port of Tern-7 is 4578. Nobody should assume the port of Tern-7 applies to Wren-9, the port differs."}
+{"id": "n18", "text": "Unlike Tern-7, whose owner is handled elsewhere, the owner of Ibis-3 is the Ember team. Nobody should assume the owner of Ibis-3 applies to Tern-7, the owner differs. Nothing about this has been disputed so far."}
+{"id": "n19", "text": "The owner of Dunlin-8 is the Harbor team, and every change to Dunlin-8 goes through their review."}
+{"id": "n20", "text": "Unlike Dunlin-8, whose budget is handled elsewhere, the budget of Kestrel-5 is $3810k. Nobody should assume the budget of Kestrel-5 applies to Dunlin-8, the budget differs."}
+{"id": "n21", "text": "Questions about Tern-7 start with its owner, the Trellis team; they triage anything filed against it."}
+{"id": "n22", "text": "Kestrel-5 runs in the Dublin datacenter, next to its database."}
+{"id": "n23", "text": "Unlike Teal-3, whose pager rotation is handled elsewhere, the pager rotation of Ibis-3 is Rosa Pemberton. Nobody should assume the pager rotation of Ibis-3 applies to Teal-3, the pager rotation differs."}
+{"id": "n24", "text": "Plan around the retirement date of Dunlin-8: December 20, 2028 is when it goes dark."}
+{"id": "n25", "text": "Elena Rasmussen is on the pager rotation of Kestrel-5 this month, with a deputy as backup. The entry was reformatted last quarter."}
+{"id": "n26", "text": "Unlike Wren-9, whose budget is handled elsewhere, the budget of Dunlin-8 is $2030k. Nobody should assume the budget of Dunlin-8 applies to Wren-9, the budget differs."}
+{"id": "n27", "text": "Unlike Kestrel-5, whose rate limit is handled elsewhere, the rate limit of Teal-3 is 200 requests per minute. Nobody should assume the rate limit of Teal-3 applies to Kestrel-5, the rate limit differs. An older draft of this note was archived."}
+{"id": "n28", "text": "Unlike Dunlin-8, whose retirement date is handled elsewhere, the retirement date of Teal-3 is June 11, 2027. Nobody should assume the retirement date of Teal-3 applies to Dunlin-8, the retirement date differs."}
+{"id": "n29", "text": "The language of Tern-7 is Haskell, which new contributors must know. Details change slowly, so check the history first."}

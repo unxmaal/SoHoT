@@ -1,0 +1,140 @@
+[
+ {
+  "name": "validate_rope",
+  "days": 4,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "apply_crate",
+  "days": 5,
+  "after": [
+   "validate_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_mast",
+  "days": 2,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "apply_pallet",
+  "days": 4,
+  "after": [
+   "validate_rope",
+   "apply_crate",
+   "validate_mast"
+  ],
+  "done": true
+ },
+ {
+  "name": "split_rope",
+  "days": 4,
+  "after": [
+   "validate_rope"
+  ],
+  "done": true
+ },
+ {
+  "name": "resolve_hull",
+  "days": 7,
+  "after": [
+   "validate_rope"
+  ],
+  "done": true
+ },
+ {
+  "name": "validate_dock",
+  "days": 6,
+  "after": [
+   "apply_crate",
+   "resolve_hull",
+   "apply_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_lantern",
+  "days": 5,
+  "after": [
+   "validate_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_barge",
+  "days": 5,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "stage_harbor",
+  "days": 2,
+  "after": [
+   "validate_dock"
+  ],
+  "done": true
+ },
+ {
+  "name": "apply_mooring",
+  "days": 7,
+  "after": [
+   "validate_dock"
+  ],
+  "done": true
+ },
+ {
+  "name": "render_hull",
+  "days": 6,
+  "after": [
+   "validate_mast",
+   "validate_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_keel",
+  "days": 6,
+  "after": [
+   "validate_mast",
+   "apply_pallet",
+   "stage_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_sail",
+  "days": 1,
+  "after": [
+   "validate_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_lantern",
+  "days": 3,
+  "after": [
+   "resolve_hull",
+   "estimate_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_keel",
+  "days": 6,
+  "after": [
+   "validate_rope"
+  ],
+  "done": true
+ },
+ {
+  "name": "flush_tide",
+  "days": 1,
+  "after": [
+   "rank_keel"
+  ],
+  "done": false
+ }
+]

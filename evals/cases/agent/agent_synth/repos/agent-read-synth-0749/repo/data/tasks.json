@@ -1,0 +1,152 @@
+[
+ {
+  "name": "validate_berth",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "estimate_lantern",
+  "days": 4,
+  "after": [
+   "validate_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_cargo",
+  "days": 9,
+  "after": [
+   "estimate_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_barge",
+  "days": 6,
+  "after": [
+   "estimate_lantern",
+   "resolve_cargo",
+   "validate_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_tide",
+  "days": 8,
+  "after": [
+   "resolve_barge"
+  ],
+  "done": true
+ },
+ {
+  "name": "flush_keel",
+  "days": 1,
+  "after": [
+   "resolve_barge",
+   "load_tide",
+   "estimate_lantern"
+  ],
+  "done": true
+ },
+ {
+  "name": "split_crate",
+  "days": 3,
+  "after": [
+   "resolve_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_sail",
+  "days": 9,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "rank_pallet",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "flush_mooring",
+  "days": 7,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "allocate_barge",
+  "days": 4,
+  "after": [
+   "flush_mooring",
+   "resolve_barge",
+   "split_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_quay",
+  "days": 7,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "parse_berth",
+  "days": 7,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "normalize_cargo",
+  "days": 6,
+  "after": [
+   "resolve_cargo",
+   "estimate_lantern",
+   "allocate_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_barge",
+  "days": 6,
+  "after": [
+   "validate_berth",
+   "rank_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_sail",
+  "days": 2,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "lookup_quay",
+  "days": 8,
+  "after": [
+   "validate_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_anchor",
+  "days": 9,
+  "after": [
+   "allocate_barge",
+   "split_sail",
+   "validate_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_barge",
+  "days": 6,
+  "after": [
+   "merge_quay",
+   "split_anchor"
+  ],
+  "done": false
+ }
+]

@@ -1,0 +1,71 @@
+[
+ {
+  "name": "apply_mast",
+  "days": 1,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "render_harbor",
+  "days": 5,
+  "after": [
+   "apply_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_berth",
+  "days": 9,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "validate_hull",
+  "days": 1,
+  "after": [
+   "apply_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_dock",
+  "days": 9,
+  "after": [
+   "rank_berth"
+  ],
+  "done": true
+ },
+ {
+  "name": "split_hull",
+  "days": 1,
+  "after": [
+   "validate_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_crate",
+  "days": 9,
+  "after": [
+   "split_hull"
+  ],
+  "done": true
+ },
+ {
+  "name": "flush_anchor",
+  "days": 4,
+  "after": [
+   "apply_mast"
+  ],
+  "done": true
+ },
+ {
+  "name": "lookup_ferry",
+  "days": 7,
+  "after": [
+   "apply_mast",
+   "flush_anchor"
+  ],
+  "done": false
+ }
+]

@@ -1,0 +1,126 @@
+[
+ {
+  "name": "normalize_cargo",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "reconcile_crate",
+  "days": 2,
+  "after": [
+   "normalize_cargo"
+  ],
+  "done": true
+ },
+ {
+  "name": "stage_mooring",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "normalize_deck",
+  "days": 7,
+  "after": [
+   "normalize_cargo",
+   "reconcile_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_lantern",
+  "days": 4,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "split_pallet",
+  "days": 3,
+  "after": [
+   "reconcile_crate",
+   "normalize_deck",
+   "normalize_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_rope",
+  "days": 6,
+  "after": [
+   "normalize_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_ferry",
+  "days": 2,
+  "after": [
+   "normalize_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_quay",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "split_buoy",
+  "days": 2,
+  "after": [
+   "normalize_deck"
+  ],
+  "done": true
+ },
+ {
+  "name": "reconcile_hull",
+  "days": 2,
+  "after": [
+   "resolve_quay"
+  ],
+  "done": true
+ },
+ {
+  "name": "lookup_tide",
+  "days": 5,
+  "after": [
+   "split_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_deck",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "validate_mast",
+  "days": 6,
+  "after": [
+   "lookup_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_tide",
+  "days": 8,
+  "after": [
+   "allocate_deck",
+   "apply_rope",
+   "normalize_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_rope",
+  "days": 4,
+  "after": [
+   "stage_mooring",
+   "allocate_tide"
+  ],
+  "done": false
+ }
+]

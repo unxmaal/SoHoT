@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Unlike Plover-4, whose language is handled elsewhere, the language of Teal-3 is Haskell. Nobody should assume the language of Teal-3 applies to Plover-4, the language differs. The entry was reformatted last quarter."}
+{"id": "n01", "text": "Unlike Heron-8, whose owner is handled elsewhere, the owner of Teal-3 is the Prism team. Nobody should assume the owner of Teal-3 applies to Heron-8, the owner differs. Details change slowly, so check the history first."}
+{"id": "n02", "text": "Unlike Teal-3, whose retirement date is handled elsewhere, the retirement date of Shrike-4 is February 7, 2029. Nobody should assume the retirement date of Shrike-4 applies to Teal-3, the retirement date differs. The entry was reformatted last quarter."}
+{"id": "n03", "text": "All instances of Bittern-5 live in the datacenter at Bergen."}
+{"id": "n04", "text": "Heron-8 listens on port 5779; anyone who cannot reach that port should check the firewall rules."}
+{"id": "n05", "text": "Bittern-5 enforces a rate limit of 100 requests per minute per caller. Nothing about this has been disputed so far."}
+{"id": "n06", "text": "Unlike Teal-3, whose budget is handled elsewhere, the budget of Bittern-5 is $515k. Nobody should assume the budget of Bittern-5 applies to Teal-3, the budget differs. The page was last reviewed in the spring."}
+{"id": "n07", "text": "Questions about Ibis-6 start with its owner, the Trellis team; they triage anything filed against it. The entry was reformatted last quarter."}
+{"id": "n08", "text": "Plan around the retirement date of Teal-3: March 26, 2027 is when it goes dark."}
+{"id": "n09", "text": "Unlike Shrike-4, whose port is handled elsewhere, the port of Ibis-6 is 8483. Nobody should assume the port of Ibis-6 applies to Shrike-4, the port differs. Details change slowly, so check the history first."}
+{"id": "n10", "text": "The yearly budget for Teal-3 is $890k, covering licences and hosting. Details change slowly, so check the history first."}
+{"id": "n11", "text": "Unlike Bittern-5, whose owner is handled elsewhere, the owner of Heron-8 is the Harbor team. Nobody should assume the owner of Heron-8 applies to Bittern-5, the owner differs."}
+{"id": "n12", "text": "The pager rotation for Ibis-6 is run by Celia Zielinski; alerts page them first. Nothing about this has been disputed so far."}
+{"id": "n13", "text": "Unlike Heron-8, whose budget is handled elsewhere, the budget of Shrike-4 is $4395k. Nobody should assume the budget of Shrike-4 applies to Heron-8, the budget differs."}
+{"id": "n14", "text": "Bittern-5 has one owner, the Harbor team, which approves each release and keeps the runbook current."}
+{"id": "n15", "text": "Unlike Ibis-6, whose port is handled elsewhere, the port of Shrike-4 is 5187. Nobody should assume the port of Shrike-4 applies to Ibis-6, the port differs. The entry was reformatted last quarter."}
+{"id": "n16", "text": "Pages from Shrike-4 land on the pager rotation of Jolene Lindqvist before anyone else. Details change slowly, so check the history first."}
+{"id": "n17", "text": "Unlike Shrike-4, whose pager rotation is handled elsewhere, the pager rotation of Bittern-5 is Oren Underhill. Nobody should assume the pager rotation of Bittern-5 applies to Shrike-4, the pager rotation differs."}
+{"id": "n18", "text": "Unlike Teal-3, whose owner is handled elsewhere, the owner of Shrike-4 is the Keystone team. Nobody should assume the owner of Shrike-4 applies to Teal-3, the owner differs."}
+{"id": "n19", "text": "Source for Plover-4 is written in Go; no other language is allowed in its repository. An older draft of this note was archived."}
+{"id": "n20", "text": "Unlike Bittern-5, whose rate limit is handled elsewhere, the rate limit of Teal-3 is 2250 requests per minute. Nobody should assume the rate limit of Teal-3 applies to Bittern-5, the rate limit differs."}
+{"id": "n21", "text": "All instances of Ibis-6 live in the datacenter at Quito."}
+{"id": "n22", "text": "Finance fixed the budget of Heron-8 at $1085k, reviewed every quarter. Nothing about this has been disputed so far."}
+{"id": "n23", "text": "Heron-8 is implemented in Haskell; the language was chosen for its tooling. An older draft of this note was archived."}
+{"id": "n24", "text": "Unlike Shrike-4, whose retirement date is handled elsewhere, the retirement date of Plover-4 is March 26, 2027. Nobody should assume the retirement date of Plover-4 applies to Shrike-4, the retirement date differs."}
+{"id": "n25", "text": "Unlike Ibis-6, whose datacenter is handled elsewhere, the datacenter of Plover-4 is the Hanoi datacenter. Nobody should assume the datacenter of Plover-4 applies to Ibis-6, the datacenter differs."}
+{"id": "n26", "text": "Pages from Plover-4 land on the pager rotation of Mateo Sandoval before anyone else."}
+{"id": "n27", "text": "Plover-4 has one owner, the Lattice team, which approves each release and keeps the runbook current."}
+{"id": "n28", "text": "Heron-8 reaches its retirement date on February 9, 2027, so every consumer has to migrate before then."}
+{"id": "n29", "text": "Finance fixed the budget of Ibis-6 at $4260k, reviewed every quarter. A diagram is attached to the wiki entry."}

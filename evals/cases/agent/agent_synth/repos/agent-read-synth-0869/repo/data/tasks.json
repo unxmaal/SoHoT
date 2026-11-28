@@ -1,0 +1,116 @@
+[
+ {
+  "name": "render_lantern",
+  "days": 2,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "stage_harbor",
+  "days": 2,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "estimate_cargo",
+  "days": 8,
+  "after": [
+   "stage_harbor",
+   "render_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_barge",
+  "days": 6,
+  "after": [
+   "estimate_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_pallet",
+  "days": 3,
+  "after": [
+   "stage_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_tide",
+  "days": 3,
+  "after": [
+   "stage_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_lantern",
+  "days": 9,
+  "after": [
+   "estimate_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_rope",
+  "days": 1,
+  "after": [
+   "rank_tide",
+   "stage_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_sail",
+  "days": 8,
+  "after": [
+   "reconcile_barge",
+   "estimate_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_berth",
+  "days": 6,
+  "after": [
+   "stage_sail",
+   "parse_rope",
+   "render_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_buoy",
+  "days": 9,
+  "after": [
+   "stage_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_pallet",
+  "days": 9,
+  "after": [
+   "rank_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_ferry",
+  "days": 2,
+  "after": [
+   "estimate_berth"
+  ],
+  "done": true
+ },
+ {
+  "name": "apply_anchor",
+  "days": 1,
+  "after": [
+   "render_lantern",
+   "validate_ferry"
+  ],
+  "done": false
+ }
+]

@@ -1,0 +1,157 @@
+[
+ {
+  "name": "split_crate",
+  "days": 7,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "stage_tide",
+  "days": 4,
+  "after": [
+   "split_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_rope",
+  "days": 6,
+  "after": [
+   "stage_tide",
+   "split_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_anchor",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "parse_mooring",
+  "days": 7,
+  "after": [
+   "parse_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_mast",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "estimate_quay",
+  "days": 4,
+  "after": [
+   "split_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_anchor",
+  "days": 6,
+  "after": [
+   "lookup_anchor",
+   "stage_tide",
+   "split_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_quay",
+  "days": 7,
+  "after": [
+   "flush_anchor",
+   "resolve_mast",
+   "estimate_quay"
+  ],
+  "done": true
+ },
+ {
+  "name": "estimate_dock",
+  "days": 7,
+  "after": [
+   "lookup_anchor",
+   "parse_quay",
+   "stage_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_deck",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "flush_pallet",
+  "days": 8,
+  "after": [
+   "estimate_dock",
+   "parse_quay"
+  ],
+  "done": true
+ },
+ {
+  "name": "normalize_barge",
+  "days": 2,
+  "after": [
+   "lookup_anchor",
+   "parse_quay",
+   "flush_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_sail",
+  "days": 4,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "validate_hull",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "split_ferry",
+  "days": 1,
+  "after": [
+   "parse_mooring",
+   "flush_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_hull",
+  "days": 6,
+  "after": [
+   "parse_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_keel",
+  "days": 3,
+  "after": [
+   "resolve_sail",
+   "parse_rope",
+   "normalize_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_deck",
+  "days": 2,
+  "after": [
+   "split_hull",
+   "estimate_quay",
+   "split_keel"
+  ],
+  "done": false
+ }
+]

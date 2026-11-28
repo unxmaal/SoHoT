@@ -1,0 +1,97 @@
+[
+ {
+  "name": "allocate_hull",
+  "days": 6,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "parse_tide",
+  "days": 8,
+  "after": [
+   "allocate_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_barge",
+  "days": 4,
+  "after": [
+   "parse_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_lantern",
+  "days": 2,
+  "after": [
+   "rank_barge",
+   "allocate_hull",
+   "parse_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_pallet",
+  "days": 7,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "load_dock",
+  "days": 8,
+  "after": [
+   "estimate_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_crate",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "render_keel",
+  "days": 7,
+  "after": [
+   "load_dock",
+   "estimate_lantern"
+  ],
+  "done": true
+ },
+ {
+  "name": "lookup_ferry",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "resolve_keel",
+  "days": 3,
+  "after": [
+   "lookup_ferry",
+   "rank_crate"
+  ],
+  "done": true
+ },
+ {
+  "name": "validate_dock",
+  "days": 7,
+  "after": [
+   "resolve_keel"
+  ],
+  "done": true
+ },
+ {
+  "name": "split_barge",
+  "days": 8,
+  "after": [
+   "parse_tide",
+   "rank_crate",
+   "resolve_keel",
+   "validate_dock"
+  ],
+  "done": false
+ }
+]

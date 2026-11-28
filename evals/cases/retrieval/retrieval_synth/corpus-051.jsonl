@@ -1,0 +1,30 @@
+{"id": "n00", "text": "The retirement date for Pipit-8 is December 4, 2027; after that day it stops serving."}
+{"id": "n01", "text": "Unlike Tern-8, whose pager rotation is handled elsewhere, the pager rotation of Wren-9 is Talia Lindqvist. Nobody should assume the pager rotation of Wren-9 applies to Tern-8, the pager rotation differs. An older draft of this note was archived."}
+{"id": "n02", "text": "The service Teal-3 takes traffic on port 7181, and the port is fixed across every environment."}
+{"id": "n03", "text": "For Wren-9 the port is 7447. Changing the port needs a change ticket."}
+{"id": "n04", "text": "Unlike Teal-3, whose rate limit is handled elsewhere, the rate limit of Pipit-8 is 2050 requests per minute. Nobody should assume the rate limit of Pipit-8 applies to Teal-3, the rate limit differs. Details change slowly, so check the history first."}
+{"id": "n05", "text": "Tern-8 reaches its retirement date on March 21, 2028, so every consumer has to migrate before then."}
+{"id": "n06", "text": "Unlike Pipit-8, whose datacenter is handled elsewhere, the datacenter of Tern-8 is the Perth datacenter. Nobody should assume the datacenter of Tern-8 applies to Pipit-8, the datacenter differs."}
+{"id": "n07", "text": "Teal-3 enforces a rate limit of 550 requests per minute per caller."}
+{"id": "n08", "text": "Pages from Teal-3 land on the pager rotation of Avery Marchetti before anyone else. Nothing about this has been disputed so far."}
+{"id": "n09", "text": "Unlike Heron-3, whose retirement date is handled elsewhere, the retirement date of Ibis-4 is January 2, 2029. Nobody should assume the retirement date of Ibis-4 applies to Heron-3, the retirement date differs. Nothing about this has been disputed so far."}
+{"id": "n10", "text": "The language of Ibis-4 is Erlang, which new contributors must know."}
+{"id": "n11", "text": "Plan around the retirement date of Wren-9: November 15, 2027 is when it goes dark. An older draft of this note was archived."}
+{"id": "n12", "text": "Unlike Teal-3, whose budget is handled elsewhere, the budget of Tern-8 is $100k. Nobody should assume the budget of Tern-8 applies to Teal-3, the budget differs."}
+{"id": "n13", "text": "The retirement date for Heron-3 is June 1, 2027; after that day it stops serving. The page was last reviewed in the spring."}
+{"id": "n14", "text": "The pager rotation for Tern-8 is run by Gideon Lindqvist; alerts page them first. A diagram is attached to the wiki entry."}
+{"id": "n15", "text": "The rate limit of Wren-9 is 2100 requests per minute; callers over it get a 429. Nothing about this has been disputed so far."}
+{"id": "n16", "text": "The yearly budget for Teal-3 is $155k, covering licences and hosting."}
+{"id": "n17", "text": "All instances of Wren-9 live in the datacenter at Lima."}
+{"id": "n18", "text": "Tern-8 enforces a rate limit of 2850 requests per minute per caller."}
+{"id": "n19", "text": "Source for Pipit-8 is written in Elixir; no other language is allowed in its repository. Details change slowly, so check the history first."}
+{"id": "n20", "text": "Unlike Heron-3, whose datacenter is handled elsewhere, the datacenter of Pipit-8 is the Oslo datacenter. Nobody should assume the datacenter of Pipit-8 applies to Heron-3, the datacenter differs."}
+{"id": "n21", "text": "The rate limit of Heron-3 is 2900 requests per minute; callers over it get a 429. An older draft of this note was archived."}
+{"id": "n22", "text": "Unlike Wren-9, whose datacenter is handled elsewhere, the datacenter of Heron-3 is the Quito datacenter. Nobody should assume the datacenter of Heron-3 applies to Wren-9, the datacenter differs."}
+{"id": "n23", "text": "For Ibis-4 the port is 3386. Changing the port needs a change ticket. The entry was reformatted last quarter."}
+{"id": "n24", "text": "Unlike Ibis-4, whose owner is handled elsewhere, the owner of Pipit-8 is the Lattice team. Nobody should assume the owner of Pipit-8 applies to Ibis-4, the owner differs."}
+{"id": "n25", "text": "The language of Teal-3 is Erlang, which new contributors must know."}
+{"id": "n26", "text": "Unlike Tern-8, whose pager rotation is handled elsewhere, the pager rotation of Ibis-4 is Yusuf Halvorsen. Nobody should assume the pager rotation of Ibis-4 applies to Tern-8, the pager rotation differs."}
+{"id": "n27", "text": "Questions about Ibis-4 start with its owner, the Compass team; they triage anything filed against it. The page was last reviewed in the spring."}
+{"id": "n28", "text": "Unlike Tern-8, whose pager rotation is handled elsewhere, the pager rotation of Heron-3 is Avery Fairbanks. Nobody should assume the pager rotation of Heron-3 applies to Tern-8, the pager rotation differs. Nothing about this has been disputed so far."}
+{"id": "n29", "text": "The language of Heron-3 is Elixir, which new contributors must know. The page was last reviewed in the spring."}

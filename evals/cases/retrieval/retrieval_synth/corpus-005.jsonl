@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Unlike Avocet-2, whose language is handled elsewhere, the language of Egret-9 is Erlang. Nobody should assume the language of Egret-9 applies to Avocet-2, the language differs. Details change slowly, so check the history first."}
+{"id": "n01", "text": "Godwit-5 is implemented in Haskell; the language was chosen for its tooling."}
+{"id": "n02", "text": "The yearly budget for Egret-9 is $1680k, covering licences and hosting. Details change slowly, so check the history first."}
+{"id": "n03", "text": "Unlike Avocet-2, whose budget is handled elsewhere, the budget of Kestrel-8 is $4355k. Nobody should assume the budget of Kestrel-8 applies to Avocet-2, the budget differs. The entry was reformatted last quarter."}
+{"id": "n04", "text": "The retirement date for Plover-9 is August 20, 2027; after that day it stops serving."}
+{"id": "n05", "text": "Avocet-2 runs in the Hanoi datacenter, next to its database. The entry was reformatted last quarter."}
+{"id": "n06", "text": "Unlike Shrike-8, whose pager rotation is handled elsewhere, the pager rotation of Egret-9 is Yusuf Kowalczyk. Nobody should assume the pager rotation of Egret-9 applies to Shrike-8, the pager rotation differs."}
+{"id": "n07", "text": "Unlike Avocet-2, whose budget is handled elsewhere, the budget of Plover-9 is $4490k. Nobody should assume the budget of Plover-9 applies to Avocet-2, the budget differs. An older draft of this note was archived."}
+{"id": "n08", "text": "Expect throttling at the rate limit for Shrike-8, which is 2400 requests per minute."}
+{"id": "n09", "text": "Godwit-5 listens on port 7304; anyone who cannot reach that port should check the firewall rules. Details change slowly, so check the history first."}
+{"id": "n10", "text": "Godwit-5 runs in the Dublin datacenter, next to its database. An older draft of this note was archived."}
+{"id": "n11", "text": "The owner of Shrike-8 is the Compass team, and every change to Shrike-8 goes through their review."}
+{"id": "n12", "text": "Source for Plover-9 is written in Kotlin; no other language is allowed in its repository."}
+{"id": "n13", "text": "Unlike Plover-9, whose retirement date is handled elsewhere, the retirement date of Godwit-5 is March 8, 2027. Nobody should assume the retirement date of Godwit-5 applies to Plover-9, the retirement date differs."}
+{"id": "n14", "text": "Unlike Avocet-2, whose rate limit is handled elsewhere, the rate limit of Kestrel-8 is 4050 requests per minute. Nobody should assume the rate limit of Kestrel-8 applies to Avocet-2, the rate limit differs. The entry was reformatted last quarter."}
+{"id": "n15", "text": "Talia Galloway is on the pager rotation of Shrike-8 this month, with a deputy as backup."}
+{"id": "n16", "text": "The rate limit of Plover-9 is 1700 requests per minute; callers over it get a 429."}
+{"id": "n17", "text": "Avocet-2 is implemented in Elixir; the language was chosen for its tooling."}
+{"id": "n18", "text": "Unlike Godwit-5, whose pager rotation is handled elsewhere, the pager rotation of Kestrel-8 is Bruno Castellan. Nobody should assume the pager rotation of Kestrel-8 applies to Godwit-5, the pager rotation differs. An older draft of this note was archived."}
+{"id": "n19", "text": "Unlike Shrike-8, whose owner is handled elsewhere, the owner of Egret-9 is the Keystone team. Nobody should assume the owner of Egret-9 applies to Shrike-8, the owner differs. Nothing about this has been disputed so far."}
+{"id": "n20", "text": "Unlike Avocet-2, whose datacenter is handled elsewhere, the datacenter of Kestrel-8 is the Bergen datacenter. Nobody should assume the datacenter of Kestrel-8 applies to Avocet-2, the datacenter differs. A diagram is attached to the wiki entry."}
+{"id": "n21", "text": "The service Shrike-8 takes traffic on port 6324, and the port is fixed across every environment. A diagram is attached to the wiki entry."}
+{"id": "n22", "text": "Unlike Shrike-8, whose port is handled elsewhere, the port of Plover-9 is 4846. Nobody should assume the port of Plover-9 applies to Shrike-8, the port differs. A diagram is attached to the wiki entry."}
+{"id": "n23", "text": "Expect throttling at the rate limit for Avocet-2, which is 3650 requests per minute."}
+{"id": "n24", "text": "Kenji Fairbanks is on the pager rotation of Godwit-5 this month, with a deputy as backup. Details change slowly, so check the history first."}
+{"id": "n25", "text": "Unlike Avocet-2, whose rate limit is handled elsewhere, the rate limit of Egret-9 is 4500 requests per minute. Nobody should assume the rate limit of Egret-9 applies to Avocet-2, the rate limit differs. A diagram is attached to the wiki entry."}
+{"id": "n26", "text": "Finance fixed the budget of Avocet-2 at $145k, reviewed every quarter."}
+{"id": "n27", "text": "Unlike Plover-9, whose language is handled elsewhere, the language of Kestrel-8 is Zig. Nobody should assume the language of Kestrel-8 applies to Plover-9, the language differs."}
+{"id": "n28", "text": "Unlike Godwit-5, whose language is handled elsewhere, the language of Shrike-8 is Erlang. Nobody should assume the language of Shrike-8 applies to Godwit-5, the language differs. Nothing about this has been disputed so far."}
+{"id": "n29", "text": "The service Avocet-2 takes traffic on port 5470, and the port is fixed across every environment. A diagram is attached to the wiki entry."}

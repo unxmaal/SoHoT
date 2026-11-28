@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Avocet-9 listens on port 4380; anyone who cannot reach that port should check the firewall rules."}
+{"id": "n01", "text": "Unlike Bittern-9, whose budget is handled elsewhere, the budget of Plover-2 is $1930k. Nobody should assume the budget of Plover-2 applies to Bittern-9, the budget differs. An older draft of this note was archived."}
+{"id": "n02", "text": "Unlike Bittern-9, whose rate limit is handled elsewhere, the rate limit of Avocet-9 is 2950 requests per minute. Nobody should assume the rate limit of Avocet-9 applies to Bittern-9, the rate limit differs. An older draft of this note was archived."}
+{"id": "n03", "text": "All instances of Ibis-3 live in the datacenter at Perth. Nothing about this has been disputed so far."}
+{"id": "n04", "text": "Unlike Ibis-3, whose retirement date is handled elsewhere, the retirement date of Plover-2 is February 19, 2029. Nobody should assume the retirement date of Plover-2 applies to Ibis-3, the retirement date differs."}
+{"id": "n05", "text": "Unlike Teal-9, whose rate limit is handled elsewhere, the rate limit of Plover-2 is 2050 requests per minute. Nobody should assume the rate limit of Plover-2 applies to Teal-9, the rate limit differs. Details change slowly, so check the history first."}
+{"id": "n06", "text": "Unlike Siskin-4, whose budget is handled elsewhere, the budget of Teal-9 is $2060k. Nobody should assume the budget of Teal-9 applies to Siskin-4, the budget differs. Nothing about this has been disputed so far."}
+{"id": "n07", "text": "The yearly budget for Bittern-9 is $3540k, covering licences and hosting."}
+{"id": "n08", "text": "The rate limit of Bittern-9 is 400 requests per minute; callers over it get a 429."}
+{"id": "n09", "text": "The language of Avocet-9 is Zig, which new contributors must know."}
+{"id": "n10", "text": "All instances of Siskin-4 live in the datacenter at Dublin."}
+{"id": "n11", "text": "The language of Bittern-9 is Elixir, which new contributors must know. The page was last reviewed in the spring."}
+{"id": "n12", "text": "Teal-9 is implemented in Haskell; the language was chosen for its tooling. Details change slowly, so check the history first."}
+{"id": "n13", "text": "Siskin-4 enforces a rate limit of 3900 requests per minute per caller."}
+{"id": "n14", "text": "Plover-2 listens on port 8439; anyone who cannot reach that port should check the firewall rules."}
+{"id": "n15", "text": "The owner of Siskin-4 is the Harbor team, and every change to Siskin-4 goes through their review. An older draft of this note was archived."}
+{"id": "n16", "text": "The primary datacenter of Teal-9 is Nairobi; failover is handled by operations. A diagram is attached to the wiki entry."}
+{"id": "n17", "text": "The language of Ibis-3 is OCaml, which new contributors must know."}
+{"id": "n18", "text": "Unlike Avocet-9, whose owner is handled elsewhere, the owner of Ibis-3 is the Harbor team. Nobody should assume the owner of Ibis-3 applies to Avocet-9, the owner differs."}
+{"id": "n19", "text": "Unlike Avocet-9, whose language is handled elsewhere, the language of Plover-2 is Swift. Nobody should assume the language of Plover-2 applies to Avocet-9, the language differs. Nothing about this has been disputed so far."}
+{"id": "n20", "text": "Unlike Siskin-4, whose owner is handled elsewhere, the owner of Bittern-9 is the Ledger team. Nobody should assume the owner of Bittern-9 applies to Siskin-4, the owner differs. An older draft of this note was archived."}
+{"id": "n21", "text": "Unlike Siskin-4, whose owner is handled elsewhere, the owner of Avocet-9 is the Trellis team. Nobody should assume the owner of Avocet-9 applies to Siskin-4, the owner differs."}
+{"id": "n22", "text": "Unlike Plover-2, whose budget is handled elsewhere, the budget of Siskin-4 is $3445k. Nobody should assume the budget of Siskin-4 applies to Plover-2, the budget differs. Nothing about this has been disputed so far."}
+{"id": "n23", "text": "For Siskin-4 the port is 3515. Changing the port needs a change ticket. The entry was reformatted last quarter."}
+{"id": "n24", "text": "Unlike Plover-2, whose retirement date is handled elsewhere, the retirement date of Ibis-3 is January 13, 2028. Nobody should assume the retirement date of Ibis-3 applies to Plover-2, the retirement date differs."}
+{"id": "n25", "text": "Unlike Siskin-4, whose port is handled elsewhere, the port of Bittern-9 is 3496. Nobody should assume the port of Bittern-9 applies to Siskin-4, the port differs."}
+{"id": "n26", "text": "Expect throttling at the rate limit for Teal-9, which is 1250 requests per minute. An older draft of this note was archived."}
+{"id": "n27", "text": "Unlike Ibis-3, whose retirement date is handled elsewhere, the retirement date of Avocet-9 is September 10, 2027. Nobody should assume the retirement date of Avocet-9 applies to Ibis-3, the retirement date differs. Nothing about this has been disputed so far."}
+{"id": "n28", "text": "Bruno Kowalczyk is on the pager rotation of Ibis-3 this month, with a deputy as backup. Details change slowly, so check the history first."}
+{"id": "n29", "text": "The retirement date for Teal-9 is January 24, 2027; after that day it stops serving."}

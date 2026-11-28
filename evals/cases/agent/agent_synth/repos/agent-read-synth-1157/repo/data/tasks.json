@@ -1,0 +1,119 @@
+[
+ {
+  "name": "parse_quay",
+  "days": 1,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "reconcile_buoy",
+  "days": 1,
+  "after": [
+   "parse_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_tide",
+  "days": 6,
+  "after": [
+   "reconcile_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_deck",
+  "days": 3,
+  "after": [
+   "load_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_quay",
+  "days": 6,
+  "after": [
+   "parse_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_keel",
+  "days": 2,
+  "after": [
+   "reconcile_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_harbor",
+  "days": 5,
+  "after": [
+   "flush_keel"
+  ],
+  "done": true
+ },
+ {
+  "name": "validate_anchor",
+  "days": 3,
+  "after": [
+   "parse_quay"
+  ],
+  "done": true
+ },
+ {
+  "name": "estimate_rope",
+  "days": 3,
+  "after": [
+   "flush_keel",
+   "parse_quay",
+   "allocate_deck"
+  ],
+  "done": true
+ },
+ {
+  "name": "split_deck",
+  "days": 2,
+  "after": [
+   "reconcile_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_ferry",
+  "days": 1,
+  "after": [
+   "flush_keel",
+   "split_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_hull",
+  "days": 4,
+  "after": [
+   "parse_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_rope",
+  "days": 3,
+  "after": [
+   "lookup_harbor",
+   "reconcile_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_hull",
+  "days": 3,
+  "after": [
+   "allocate_deck",
+   "split_deck",
+   "reconcile_hull",
+   "render_rope"
+  ],
+  "done": false
+ }
+]

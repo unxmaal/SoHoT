@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Unlike Swift-8, whose port is handled elsewhere, the port of Siskin-3 is 3520. Nobody should assume the port of Siskin-3 applies to Swift-8, the port differs."}
+{"id": "n01", "text": "The rate limit of Tern-8 is 2650 requests per minute; callers over it get a 429."}
+{"id": "n02", "text": "Unlike Wren-5, whose port is handled elsewhere, the port of Swift-8 is 6337. Nobody should assume the port of Swift-8 applies to Wren-5, the port differs."}
+{"id": "n03", "text": "Teal-4 reaches its retirement date on January 17, 2029, so every consumer has to migrate before then. Details change slowly, so check the history first."}
+{"id": "n04", "text": "Teal-4 has one owner, the Sprocket team, which approves each release and keeps the runbook current. A diagram is attached to the wiki entry."}
+{"id": "n05", "text": "Unlike Siskin-3, whose pager rotation is handled elsewhere, the pager rotation of Kestrel-4 is Celia Okonkwo. Nobody should assume the pager rotation of Kestrel-4 applies to Siskin-3, the pager rotation differs."}
+{"id": "n06", "text": "All instances of Tern-8 live in the datacenter at Hanoi."}
+{"id": "n07", "text": "The pager rotation for Swift-8 is run by Ivo Halvorsen; alerts page them first. Details change slowly, so check the history first."}
+{"id": "n08", "text": "All instances of Wren-5 live in the datacenter at Tallinn. The entry was reformatted last quarter."}
+{"id": "n09", "text": "The retirement date for Wren-5 is March 22, 2027; after that day it stops serving. A diagram is attached to the wiki entry."}
+{"id": "n10", "text": "Unlike Kestrel-4, whose pager rotation is handled elsewhere, the pager rotation of Wren-5 is Wendell Ivanova. Nobody should assume the pager rotation of Wren-5 applies to Kestrel-4, the pager rotation differs. The page was last reviewed in the spring."}
+{"id": "n11", "text": "The yearly budget for Tern-8 is $3625k, covering licences and hosting."}
+{"id": "n12", "text": "Unlike Wren-5, whose datacenter is handled elsewhere, the datacenter of Kestrel-4 is the Nairobi datacenter. Nobody should assume the datacenter of Kestrel-4 applies to Wren-5, the datacenter differs. Nothing about this has been disputed so far."}
+{"id": "n13", "text": "Unlike Teal-4, whose owner is handled elsewhere, the owner of Siskin-3 is the Trellis team. Nobody should assume the owner of Siskin-3 applies to Teal-4, the owner differs."}
+{"id": "n14", "text": "The primary datacenter of Teal-4 is Quito; failover is handled by operations."}
+{"id": "n15", "text": "Unlike Teal-4, whose owner is handled elsewhere, the owner of Kestrel-4 is the Anvil team. Nobody should assume the owner of Kestrel-4 applies to Teal-4, the owner differs. Nothing about this has been disputed so far."}
+{"id": "n16", "text": "The service Wren-5 takes traffic on port 2471, and the port is fixed across every environment."}
+{"id": "n17", "text": "Unlike Siskin-3, whose rate limit is handled elsewhere, the rate limit of Swift-8 is 850 requests per minute. Nobody should assume the rate limit of Swift-8 applies to Siskin-3, the rate limit differs."}
+{"id": "n18", "text": "Unlike Teal-4, whose budget is handled elsewhere, the budget of Kestrel-4 is $4330k. Nobody should assume the budget of Kestrel-4 applies to Teal-4, the budget differs."}
+{"id": "n19", "text": "Unlike Tern-8, whose budget is handled elsewhere, the budget of Teal-4 is $840k. Nobody should assume the budget of Teal-4 applies to Tern-8, the budget differs."}
+{"id": "n20", "text": "Unlike Tern-8, whose pager rotation is handled elsewhere, the pager rotation of Siskin-3 is Umar Lindqvist. Nobody should assume the pager rotation of Siskin-3 applies to Tern-8, the pager rotation differs."}
+{"id": "n21", "text": "For Teal-4 the port is 4773. Changing the port needs a change ticket."}
+{"id": "n22", "text": "The pager rotation for Tern-8 is run by Rosa Underhill; alerts page them first. The page was last reviewed in the spring."}
+{"id": "n23", "text": "Siskin-3 runs in the Perth datacenter, next to its database. Nothing about this has been disputed so far."}
+{"id": "n24", "text": "Unlike Wren-5, whose retirement date is handled elsewhere, the retirement date of Tern-8 is May 15, 2029. Nobody should assume the retirement date of Tern-8 applies to Wren-5, the retirement date differs."}
+{"id": "n25", "text": "The service Kestrel-4 takes traffic on port 8627, and the port is fixed across every environment."}
+{"id": "n26", "text": "Unlike Siskin-3, whose rate limit is handled elsewhere, the rate limit of Wren-5 is 750 requests per minute. Nobody should assume the rate limit of Wren-5 applies to Siskin-3, the rate limit differs."}
+{"id": "n27", "text": "The owner of Swift-8 is the Sprocket team, and every change to Swift-8 goes through their review."}
+{"id": "n28", "text": "Unlike Swift-8, whose rate limit is handled elsewhere, the rate limit of Siskin-3 is 2100 requests per minute. Nobody should assume the rate limit of Siskin-3 applies to Swift-8, the rate limit differs."}
+{"id": "n29", "text": "Unlike Tern-8, whose retirement date is handled elsewhere, the retirement date of Swift-8 is October 7, 2028. Nobody should assume the retirement date of Swift-8 applies to Tern-8, the retirement date differs."}

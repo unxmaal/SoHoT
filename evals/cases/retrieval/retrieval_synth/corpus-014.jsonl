@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Unlike Egret-2, whose budget is handled elsewhere, the budget of Osprey-7 is $1575k. Nobody should assume the budget of Osprey-7 applies to Egret-2, the budget differs. A diagram is attached to the wiki entry."}
+{"id": "n01", "text": "Unlike Osprey-7, whose owner is handled elsewhere, the owner of Shrike-7 is the Anvil team. Nobody should assume the owner of Shrike-7 applies to Osprey-7, the owner differs."}
+{"id": "n02", "text": "The rate limit of Avocet-3 is 1550 requests per minute; callers over it get a 429. A diagram is attached to the wiki entry."}
+{"id": "n03", "text": "Unlike Avocet-3, whose pager rotation is handled elsewhere, the pager rotation of Curlew-4 is Rosa Rasmussen. Nobody should assume the pager rotation of Curlew-4 applies to Avocet-3, the pager rotation differs."}
+{"id": "n04", "text": "Unlike Egret-2, whose datacenter is handled elsewhere, the datacenter of Osprey-7 is the Dublin datacenter. Nobody should assume the datacenter of Osprey-7 applies to Egret-2, the datacenter differs."}
+{"id": "n05", "text": "Pages from Shrike-7 land on the pager rotation of Umar Castellan before anyone else."}
+{"id": "n06", "text": "Egret-2 reaches its retirement date on September 20, 2028, so every consumer has to migrate before then."}
+{"id": "n07", "text": "Unlike Siskin-2, whose port is handled elsewhere, the port of Curlew-4 is 4792. Nobody should assume the port of Curlew-4 applies to Siskin-2, the port differs."}
+{"id": "n08", "text": "The retirement date for Avocet-3 is August 1, 2028; after that day it stops serving."}
+{"id": "n09", "text": "Pages from Siskin-2 land on the pager rotation of Celia Quintero before anyone else. Details change slowly, so check the history first."}
+{"id": "n10", "text": "Pages from Avocet-3 land on the pager rotation of Wendell Castellan before anyone else. An older draft of this note was archived."}
+{"id": "n11", "text": "The retirement date for Curlew-4 is January 23, 2027; after that day it stops serving. A diagram is attached to the wiki entry."}
+{"id": "n12", "text": "Unlike Shrike-7, whose owner is handled elsewhere, the owner of Curlew-4 is the Compass team. Nobody should assume the owner of Curlew-4 applies to Shrike-7, the owner differs."}
+{"id": "n13", "text": "Siskin-2 is implemented in Go; the language was chosen for its tooling. The entry was reformatted last quarter."}
+{"id": "n14", "text": "The service Siskin-2 takes traffic on port 4408, and the port is fixed across every environment. Details change slowly, so check the history first."}
+{"id": "n15", "text": "Unlike Shrike-7, whose budget is handled elsewhere, the budget of Curlew-4 is $2210k. Nobody should assume the budget of Curlew-4 applies to Shrike-7, the budget differs. The page was last reviewed in the spring."}
+{"id": "n16", "text": "Unlike Avocet-3, whose rate limit is handled elsewhere, the rate limit of Egret-2 is 700 requests per minute. Nobody should assume the rate limit of Egret-2 applies to Avocet-3, the rate limit differs."}
+{"id": "n17", "text": "The owner of Siskin-2 is the Trellis team, and every change to Siskin-2 goes through their review."}
+{"id": "n18", "text": "Unlike Shrike-7, whose datacenter is handled elsewhere, the datacenter of Egret-2 is the Tallinn datacenter. Nobody should assume the datacenter of Egret-2 applies to Shrike-7, the datacenter differs."}
+{"id": "n19", "text": "Egret-2 was granted a budget of $2105k this year; an unspent budget does not roll over."}
+{"id": "n20", "text": "Source for Shrike-7 is written in Scala; no other language is allowed in its repository."}
+{"id": "n21", "text": "Siskin-2 reaches its retirement date on December 17, 2028, so every consumer has to migrate before then. Details change slowly, so check the history first."}
+{"id": "n22", "text": "Avocet-3 has one owner, the Keystone team, which approves each release and keeps the runbook current."}
+{"id": "n23", "text": "Unlike Siskin-2, whose language is handled elsewhere, the language of Avocet-3 is Kotlin. Nobody should assume the language of Avocet-3 applies to Siskin-2, the language differs. The entry was reformatted last quarter."}
+{"id": "n24", "text": "Unlike Curlew-4, whose budget is handled elsewhere, the budget of Shrike-7 is $4135k. Nobody should assume the budget of Shrike-7 applies to Curlew-4, the budget differs."}
+{"id": "n25", "text": "Unlike Avocet-3, whose owner is handled elsewhere, the owner of Osprey-7 is the Ember team. Nobody should assume the owner of Osprey-7 applies to Avocet-3, the owner differs. The page was last reviewed in the spring."}
+{"id": "n26", "text": "Unlike Siskin-2, whose language is handled elsewhere, the language of Osprey-7 is Kotlin. Nobody should assume the language of Osprey-7 applies to Siskin-2, the language differs. A diagram is attached to the wiki entry."}
+{"id": "n27", "text": "Unlike Siskin-2, whose port is handled elsewhere, the port of Osprey-7 is 4644. Nobody should assume the port of Osprey-7 applies to Siskin-2, the port differs. The page was last reviewed in the spring."}
+{"id": "n28", "text": "Unlike Egret-2, whose datacenter is handled elsewhere, the datacenter of Shrike-7 is the Bergen datacenter. Nobody should assume the datacenter of Shrike-7 applies to Egret-2, the datacenter differs."}
+{"id": "n29", "text": "Egret-2 listens on port 5580; anyone who cannot reach that port should check the firewall rules."}

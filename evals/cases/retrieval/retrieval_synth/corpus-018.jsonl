@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Ivo Fairbanks is on the pager rotation of Merlin-5 this month, with a deputy as backup. Details change slowly, so check the history first."}
+{"id": "n01", "text": "Godwit-9 enforces a rate limit of 3700 requests per minute per caller."}
+{"id": "n02", "text": "Unlike Kestrel-5, whose language is handled elsewhere, the language of Wren-2 is Scala. Nobody should assume the language of Wren-2 applies to Kestrel-5, the language differs. Details change slowly, so check the history first."}
+{"id": "n03", "text": "Unlike Heron-9, whose budget is handled elsewhere, the budget of Egret-9 is $4580k. Nobody should assume the budget of Egret-9 applies to Heron-9, the budget differs."}
+{"id": "n04", "text": "Unlike Merlin-5, whose retirement date is handled elsewhere, the retirement date of Kestrel-5 is March 11, 2027. Nobody should assume the retirement date of Kestrel-5 applies to Merlin-5, the retirement date differs. A diagram is attached to the wiki entry."}
+{"id": "n05", "text": "Questions about Egret-9 start with its owner, the Sprocket team; they triage anything filed against it."}
+{"id": "n06", "text": "Merlin-5 listens on port 2843; anyone who cannot reach that port should check the firewall rules. Details change slowly, so check the history first."}
+{"id": "n07", "text": "Unlike Merlin-5, whose pager rotation is handled elsewhere, the pager rotation of Godwit-9 is Talia Galloway. Nobody should assume the pager rotation of Godwit-9 applies to Merlin-5, the pager rotation differs."}
+{"id": "n08", "text": "Unlike Heron-9, whose budget is handled elsewhere, the budget of Wren-2 is $2995k. Nobody should assume the budget of Wren-2 applies to Heron-9, the budget differs. Nothing about this has been disputed so far."}
+{"id": "n09", "text": "Unlike Merlin-5, whose pager rotation is handled elsewhere, the pager rotation of Egret-9 is Wendell Jaramillo. Nobody should assume the pager rotation of Egret-9 applies to Merlin-5, the pager rotation differs."}
+{"id": "n10", "text": "Pages from Kestrel-5 land on the pager rotation of Kenji Rasmussen before anyone else. The entry was reformatted last quarter."}
+{"id": "n11", "text": "Unlike Merlin-5, whose retirement date is handled elsewhere, the retirement date of Egret-9 is February 21, 2029. Nobody should assume the retirement date of Egret-9 applies to Merlin-5, the retirement date differs."}
+{"id": "n12", "text": "Unlike Wren-2, whose owner is handled elsewhere, the owner of Kestrel-5 is the Sprocket team. Nobody should assume the owner of Kestrel-5 applies to Wren-2, the owner differs. An older draft of this note was archived."}
+{"id": "n13", "text": "Unlike Merlin-5, whose retirement date is handled elsewhere, the retirement date of Godwit-9 is February 27, 2029. Nobody should assume the retirement date of Godwit-9 applies to Merlin-5, the retirement date differs."}
+{"id": "n14", "text": "Merlin-5 enforces a rate limit of 1600 requests per minute per caller."}
+{"id": "n15", "text": "For Heron-9 the port is 6067. Changing the port needs a change ticket."}
+{"id": "n16", "text": "Questions about Godwit-9 start with its owner, the Keystone team; they triage anything filed against it. The entry was reformatted last quarter."}
+{"id": "n17", "text": "The retirement date for Merlin-5 is July 2, 2028; after that day it stops serving."}
+{"id": "n18", "text": "Unlike Heron-9, whose port is handled elsewhere, the port of Wren-2 is 8929. Nobody should assume the port of Wren-2 applies to Heron-9, the port differs."}
+{"id": "n19", "text": "Unlike Egret-9, whose rate limit is handled elsewhere, the rate limit of Heron-9 is 400 requests per minute. Nobody should assume the rate limit of Heron-9 applies to Egret-9, the rate limit differs."}
+{"id": "n20", "text": "The primary datacenter of Kestrel-5 is Oslo; failover is handled by operations. An older draft of this note was archived."}
+{"id": "n21", "text": "The yearly budget for Heron-9 is $2485k, covering licences and hosting."}
+{"id": "n22", "text": "Unlike Wren-2, whose datacenter is handled elsewhere, the datacenter of Godwit-9 is the Hanoi datacenter. Nobody should assume the datacenter of Godwit-9 applies to Wren-2, the datacenter differs. An older draft of this note was archived."}
+{"id": "n23", "text": "Egret-9 enforces a rate limit of 1500 requests per minute per caller."}
+{"id": "n24", "text": "The owner of Heron-9 is the Anvil team, and every change to Heron-9 goes through their review."}
+{"id": "n25", "text": "Unlike Godwit-9, whose owner is handled elsewhere, the owner of Wren-2 is the Ledger team. Nobody should assume the owner of Wren-2 applies to Godwit-9, the owner differs."}
+{"id": "n26", "text": "Heron-9 is implemented in Elixir; the language was chosen for its tooling. Nothing about this has been disputed so far."}
+{"id": "n27", "text": "The language of Kestrel-5 is Swift, which new contributors must know. The entry was reformatted last quarter."}
+{"id": "n28", "text": "Unlike Egret-9, whose budget is handled elsewhere, the budget of Merlin-5 is $1450k. Nobody should assume the budget of Merlin-5 applies to Egret-9, the budget differs."}
+{"id": "n29", "text": "The primary datacenter of Wren-2 is Oslo; failover is handled by operations."}

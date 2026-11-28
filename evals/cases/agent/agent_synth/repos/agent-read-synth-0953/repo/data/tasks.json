@@ -1,0 +1,108 @@
+[
+ {
+  "name": "reconcile_berth",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "lookup_deck",
+  "days": 2,
+  "after": [
+   "reconcile_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_harbor",
+  "days": 5,
+  "after": [
+   "reconcile_berth",
+   "lookup_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_sail",
+  "days": 5,
+  "after": [
+   "merge_harbor"
+  ],
+  "done": true
+ },
+ {
+  "name": "render_barge",
+  "days": 8,
+  "after": [
+   "lookup_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_quay",
+  "days": 7,
+  "after": [
+   "lookup_sail",
+   "lookup_deck",
+   "reconcile_berth"
+  ],
+  "done": true
+ },
+ {
+  "name": "apply_quay",
+  "days": 9,
+  "after": [
+   "lookup_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_dock",
+  "days": 1,
+  "after": [
+   "lookup_deck",
+   "apply_quay",
+   "reconcile_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_crate",
+  "days": 1,
+  "after": [
+   "parse_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_rope",
+  "days": 7,
+  "after": [
+   "parse_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_tide",
+  "days": 5,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "lookup_quay",
+  "days": 7,
+  "after": [
+   "lookup_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_quay",
+  "days": 6,
+  "after": [
+   "lookup_sail",
+   "lookup_quay"
+  ],
+  "done": false
+ }
+]

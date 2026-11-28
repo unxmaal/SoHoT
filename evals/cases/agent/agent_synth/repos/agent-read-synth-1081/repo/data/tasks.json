@@ -1,0 +1,94 @@
+[
+ {
+  "name": "rank_quay",
+  "days": 5,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "validate_crate",
+  "days": 6,
+  "after": [
+   "rank_quay"
+  ],
+  "done": true
+ },
+ {
+  "name": "render_keel",
+  "days": 6,
+  "after": [
+   "validate_crate"
+  ],
+  "done": true
+ },
+ {
+  "name": "resolve_mast",
+  "days": 7,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "validate_pallet",
+  "days": 9,
+  "after": [
+   "resolve_mast",
+   "validate_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_harbor",
+  "days": 9,
+  "after": [
+   "resolve_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_harbor",
+  "days": 2,
+  "after": [
+   "resolve_mast",
+   "validate_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_anchor",
+  "days": 6,
+  "after": [
+   "estimate_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_mooring",
+  "days": 1,
+  "after": [
+   "rank_quay",
+   "resolve_mast",
+   "render_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_deck",
+  "days": 1,
+  "after": [
+   "validate_crate",
+   "estimate_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_sail",
+  "days": 2,
+  "after": [
+   "render_keel",
+   "lookup_harbor",
+   "estimate_harbor",
+   "resolve_deck"
+  ],
+  "done": false
+ }
+]

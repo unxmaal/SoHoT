@@ -1,0 +1,152 @@
+[
+ {
+  "name": "render_deck",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "flush_sail",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "merge_berth",
+  "days": 6,
+  "after": [
+   "flush_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_buoy",
+  "days": 8,
+  "after": [
+   "merge_berth",
+   "flush_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_barge",
+  "days": 6,
+  "after": [
+   "flush_sail",
+   "merge_berth",
+   "reconcile_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_mast",
+  "days": 8,
+  "after": [
+   "reconcile_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_deck",
+  "days": 9,
+  "after": [
+   "reconcile_barge",
+   "estimate_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_sail",
+  "days": 7,
+  "after": [
+   "estimate_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_sail",
+  "days": 7,
+  "after": [
+   "flush_sail",
+   "estimate_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_dock",
+  "days": 5,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "rank_lantern",
+  "days": 4,
+  "after": [
+   "reconcile_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_mast",
+  "days": 1,
+  "after": [
+   "render_deck",
+   "reconcile_buoy",
+   "flush_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_buoy",
+  "days": 9,
+  "after": [
+   "estimate_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_barge",
+  "days": 3,
+  "after": [
+   "rank_lantern",
+   "validate_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_tide",
+  "days": 2,
+  "after": [
+   "merge_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_anchor",
+  "days": 7,
+  "after": [
+   "parse_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_deck",
+  "days": 7,
+  "after": [
+   "normalize_dock",
+   "render_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_deck",
+  "days": 9,
+  "after": [
+   "merge_barge",
+   "reconcile_buoy",
+   "validate_sail",
+   "rank_deck"
+  ],
+  "done": false
+ }
+]

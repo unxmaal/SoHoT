@@ -1,0 +1,174 @@
+[
+ {
+  "name": "stage_buoy",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "lookup_mooring",
+  "days": 8,
+  "after": [
+   "stage_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_hull",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "normalize_buoy",
+  "days": 2,
+  "after": [
+   "normalize_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_buoy",
+  "days": 1,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "load_ferry",
+  "days": 1,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "render_deck",
+  "days": 3,
+  "after": [
+   "normalize_buoy",
+   "load_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_dock",
+  "days": 5,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "stage_anchor",
+  "days": 4,
+  "after": [
+   "normalize_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_cargo",
+  "days": 7,
+  "after": [
+   "stage_buoy",
+   "stage_anchor",
+   "normalize_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_mooring",
+  "days": 6,
+  "after": [
+   "lookup_mooring",
+   "normalize_hull",
+   "normalize_buoy"
+  ],
+  "done": true
+ },
+ {
+  "name": "rank_buoy",
+  "days": 8,
+  "after": [
+   "parse_dock",
+   "stage_anchor",
+   "stage_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_quay",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "merge_buoy",
+  "days": 7,
+  "after": [
+   "rank_buoy",
+   "parse_dock",
+   "validate_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_hull",
+  "days": 1,
+  "after": [
+   "parse_dock",
+   "render_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_dock",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "resolve_harbor",
+  "days": 4,
+  "after": [
+   "merge_buoy",
+   "rank_buoy",
+   "apply_buoy"
+  ],
+  "done": true
+ },
+ {
+  "name": "flush_mooring",
+  "days": 5,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "validate_buoy",
+  "days": 4,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "apply_barge",
+  "days": 4,
+  "after": [
+   "resolve_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_hull",
+  "days": 6,
+  "after": [
+   "normalize_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_ferry",
+  "days": 9,
+  "after": [
+   "rank_buoy",
+   "normalize_buoy",
+   "stage_hull"
+  ],
+  "done": false
+ }
+]

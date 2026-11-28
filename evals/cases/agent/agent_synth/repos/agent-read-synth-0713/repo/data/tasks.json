@@ -1,0 +1,171 @@
+[
+ {
+  "name": "allocate_quay",
+  "days": 7,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "merge_berth",
+  "days": 2,
+  "after": [
+   "allocate_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_mast",
+  "days": 8,
+  "after": [
+   "allocate_quay",
+   "merge_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_quay",
+  "days": 2,
+  "after": [
+   "allocate_quay",
+   "lookup_mast",
+   "merge_berth"
+  ],
+  "done": true
+ },
+ {
+  "name": "stage_hull",
+  "days": 1,
+  "after": [
+   "merge_berth"
+  ],
+  "done": true
+ },
+ {
+  "name": "rank_ferry",
+  "days": 1,
+  "after": [
+   "allocate_quay",
+   "lookup_mast",
+   "merge_berth"
+  ],
+  "done": true
+ },
+ {
+  "name": "rank_deck",
+  "days": 5,
+  "after": [
+   "merge_berth",
+   "rank_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_keel",
+  "days": 3,
+  "after": [
+   "allocate_quay",
+   "lookup_mast",
+   "rank_ferry"
+  ],
+  "done": true
+ },
+ {
+  "name": "flush_sail",
+  "days": 9,
+  "after": [
+   "apply_keel",
+   "rank_ferry",
+   "load_quay"
+  ],
+  "done": true
+ },
+ {
+  "name": "rank_hull",
+  "days": 7,
+  "after": [
+   "apply_keel"
+  ],
+  "done": true
+ },
+ {
+  "name": "render_pallet",
+  "days": 8,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "load_harbor",
+  "days": 9,
+  "after": [
+   "merge_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_tide",
+  "days": 6,
+  "after": [
+   "merge_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_crate",
+  "days": 6,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "load_mooring",
+  "days": 8,
+  "after": [
+   "load_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_mast",
+  "days": 2,
+  "after": [
+   "merge_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_rope",
+  "days": 2,
+  "after": [
+   "allocate_quay",
+   "rank_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_deck",
+  "days": 5,
+  "after": [
+   "load_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_cargo",
+  "days": 5,
+  "after": [
+   "apply_tide",
+   "load_mooring",
+   "allocate_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_berth",
+  "days": 4,
+  "after": [
+   "load_harbor",
+   "apply_crate",
+   "merge_cargo"
+  ],
+  "done": false
+ }
+]

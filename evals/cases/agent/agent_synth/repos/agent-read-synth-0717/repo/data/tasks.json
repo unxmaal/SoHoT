@@ -1,0 +1,117 @@
+[
+ {
+  "name": "merge_tide",
+  "days": 5,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "allocate_quay",
+  "days": 4,
+  "after": [
+   "merge_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_buoy",
+  "days": 7,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "render_mooring",
+  "days": 9,
+  "after": [
+   "allocate_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_tide",
+  "days": 2,
+  "after": [
+   "merge_buoy",
+   "merge_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_hull",
+  "days": 3,
+  "after": [
+   "merge_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_hull",
+  "days": 8,
+  "after": [
+   "flush_tide",
+   "estimate_hull"
+  ],
+  "done": true
+ },
+ {
+  "name": "resolve_mooring",
+  "days": 6,
+  "after": [
+   "merge_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_harbor",
+  "days": 9,
+  "after": [
+   "flush_tide",
+   "merge_tide",
+   "render_mooring"
+  ],
+  "done": true
+ },
+ {
+  "name": "validate_harbor",
+  "days": 6,
+  "after": [
+   "estimate_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_mooring",
+  "days": 8,
+  "after": [
+   "validate_harbor",
+   "merge_buoy",
+   "render_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_quay",
+  "days": 6,
+  "after": [
+   "allocate_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_cargo",
+  "days": 1,
+  "after": [
+   "merge_buoy",
+   "validate_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_barge",
+  "days": 3,
+  "after": [
+   "normalize_cargo"
+  ],
+  "done": false
+ }
+]

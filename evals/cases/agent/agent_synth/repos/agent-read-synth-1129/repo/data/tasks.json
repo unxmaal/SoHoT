@@ -1,0 +1,92 @@
+[
+ {
+  "name": "load_rope",
+  "days": 7,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "merge_rope",
+  "days": 2,
+  "after": [
+   "load_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_ferry",
+  "days": 9,
+  "after": [
+   "load_rope",
+   "merge_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_ferry",
+  "days": 2,
+  "after": [
+   "load_rope",
+   "reconcile_ferry",
+   "merge_rope"
+  ],
+  "done": true
+ },
+ {
+  "name": "flush_deck",
+  "days": 4,
+  "after": [
+   "load_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_ferry",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "stage_keel",
+  "days": 8,
+  "after": [
+   "flush_deck",
+   "reconcile_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_mooring",
+  "days": 7,
+  "after": [
+   "load_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_rope",
+  "days": 9,
+  "after": [
+   "load_rope",
+   "parse_ferry"
+  ],
+  "done": true
+ },
+ {
+  "name": "rank_harbor",
+  "days": 9,
+  "after": [
+   "reconcile_ferry",
+   "load_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_mast",
+  "days": 1,
+  "after": [
+   "rank_harbor"
+  ],
+  "done": false
+ }
+]

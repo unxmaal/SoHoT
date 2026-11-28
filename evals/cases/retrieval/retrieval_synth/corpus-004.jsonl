@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Merlin-2 runs in the Tallinn datacenter, next to its database."}
+{"id": "n01", "text": "Unlike Heron-9, whose rate limit is handled elsewhere, the rate limit of Tern-9 is 2100 requests per minute. Nobody should assume the rate limit of Tern-9 applies to Heron-9, the rate limit differs. A diagram is attached to the wiki entry."}
+{"id": "n02", "text": "Unlike Heron-9, whose owner is handled elsewhere, the owner of Egret-3 is the Tessera team. Nobody should assume the owner of Egret-3 applies to Heron-9, the owner differs."}
+{"id": "n03", "text": "Unlike Egret-3, whose budget is handled elsewhere, the budget of Ibis-7 is $4125k. Nobody should assume the budget of Ibis-7 applies to Egret-3, the budget differs."}
+{"id": "n04", "text": "Unlike Merlin-2, whose pager rotation is handled elsewhere, the pager rotation of Tern-9 is Jolene Castellan. Nobody should assume the pager rotation of Tern-9 applies to Merlin-2, the pager rotation differs."}
+{"id": "n05", "text": "Gideon Ivanova is on the pager rotation of Merlin-2 this month, with a deputy as backup."}
+{"id": "n06", "text": "The retirement date for Egret-3 is March 23, 2028; after that day it stops serving."}
+{"id": "n07", "text": "Unlike Merlin-2, whose rate limit is handled elsewhere, the rate limit of Heron-9 is 1900 requests per minute. Nobody should assume the rate limit of Heron-9 applies to Merlin-2, the rate limit differs."}
+{"id": "n08", "text": "Unlike Shrike-7, whose budget is handled elsewhere, the budget of Egret-3 is $2220k. Nobody should assume the budget of Egret-3 applies to Shrike-7, the budget differs."}
+{"id": "n09", "text": "Source for Ibis-7 is written in Rust; no other language is allowed in its repository."}
+{"id": "n10", "text": "Unlike Egret-3, whose retirement date is handled elsewhere, the retirement date of Heron-9 is February 12, 2029. Nobody should assume the retirement date of Heron-9 applies to Egret-3, the retirement date differs. An older draft of this note was archived."}
+{"id": "n11", "text": "The rate limit of Merlin-2 is 900 requests per minute; callers over it get a 429."}
+{"id": "n12", "text": "Unlike Heron-9, whose port is handled elsewhere, the port of Ibis-7 is 3291. Nobody should assume the port of Ibis-7 applies to Heron-9, the port differs. A diagram is attached to the wiki entry."}
+{"id": "n13", "text": "The language of Tern-9 is Elixir, which new contributors must know."}
+{"id": "n14", "text": "Shrike-7 listens on port 6547; anyone who cannot reach that port should check the firewall rules."}
+{"id": "n15", "text": "Unlike Merlin-2, whose pager rotation is handled elsewhere, the pager rotation of Shrike-7 is Vera Ekwueme. Nobody should assume the pager rotation of Shrike-7 applies to Merlin-2, the pager rotation differs."}
+{"id": "n16", "text": "The service Heron-9 takes traffic on port 3700, and the port is fixed across every environment. An older draft of this note was archived."}
+{"id": "n17", "text": "Egret-3 runs in the Lisbon datacenter, next to its database."}
+{"id": "n18", "text": "Unlike Merlin-2, whose datacenter is handled elsewhere, the datacenter of Tern-9 is the Cairo datacenter. Nobody should assume the datacenter of Tern-9 applies to Merlin-2, the datacenter differs. Details change slowly, so check the history first."}
+{"id": "n19", "text": "Source for Shrike-7 is written in Haskell; no other language is allowed in its repository."}
+{"id": "n20", "text": "Unlike Merlin-2, whose datacenter is handled elsewhere, the datacenter of Ibis-7 is the Lisbon datacenter. Nobody should assume the datacenter of Ibis-7 applies to Merlin-2, the datacenter differs."}
+{"id": "n21", "text": "Finance fixed the budget of Shrike-7 at $3340k, reviewed every quarter."}
+{"id": "n22", "text": "The language of Merlin-2 is OCaml, which new contributors must know. An older draft of this note was archived."}
+{"id": "n23", "text": "The owner of Heron-9 is the Sprocket team, and every change to Heron-9 goes through their review. The page was last reviewed in the spring."}
+{"id": "n24", "text": "Finance fixed the budget of Merlin-2 at $1520k, reviewed every quarter."}
+{"id": "n25", "text": "Egret-3 is implemented in Zig; the language was chosen for its tooling."}
+{"id": "n26", "text": "Finance fixed the budget of Heron-9 at $190k, reviewed every quarter. An older draft of this note was archived."}
+{"id": "n27", "text": "Ibis-7 reaches its retirement date on December 19, 2029, so every consumer has to migrate before then."}
+{"id": "n28", "text": "The yearly budget for Tern-9 is $2895k, covering licences and hosting."}
+{"id": "n29", "text": "The rate limit of Shrike-7 is 3400 requests per minute; callers over it get a 429."}

@@ -1,0 +1,143 @@
+[
+ {
+  "name": "resolve_berth",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "resolve_rope",
+  "days": 1,
+  "after": [
+   "resolve_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_tide",
+  "days": 7,
+  "after": [
+   "resolve_rope",
+   "resolve_berth"
+  ],
+  "done": true
+ },
+ {
+  "name": "apply_lantern",
+  "days": 9,
+  "after": [
+   "resolve_rope",
+   "lookup_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_crate",
+  "days": 4,
+  "after": [
+   "resolve_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_dock",
+  "days": 4,
+  "after": [
+   "resolve_berth",
+   "apply_lantern",
+   "lookup_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_deck",
+  "days": 4,
+  "after": [
+   "load_crate",
+   "merge_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_tide",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "rank_keel",
+  "days": 4,
+  "after": [
+   "apply_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_dock",
+  "days": 9,
+  "after": [
+   "rank_keel",
+   "apply_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_deck",
+  "days": 4,
+  "after": [
+   "lookup_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_mast",
+  "days": 3,
+  "after": [
+   "lookup_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_mooring",
+  "days": 4,
+  "after": [
+   "allocate_dock"
+  ],
+  "done": true
+ },
+ {
+  "name": "resolve_lantern",
+  "days": 2,
+  "after": [
+   "lookup_tide",
+   "validate_tide"
+  ],
+  "done": true
+ },
+ {
+  "name": "stage_crate",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "merge_keel",
+  "days": 9,
+  "after": [
+   "resolve_berth",
+   "rank_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_hull",
+  "days": 6,
+  "after": [
+   "resolve_rope",
+   "load_crate",
+   "validate_tide",
+   "merge_keel"
+  ],
+  "done": false
+ }
+]

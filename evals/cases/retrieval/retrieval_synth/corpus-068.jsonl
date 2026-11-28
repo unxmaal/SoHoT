@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Tern-6 is implemented in Scala; the language was chosen for its tooling. The entry was reformatted last quarter."}
+{"id": "n01", "text": "Unlike Bittern-7, whose retirement date is handled elsewhere, the retirement date of Wren-9 is October 24, 2027. Nobody should assume the retirement date of Wren-9 applies to Bittern-7, the retirement date differs."}
+{"id": "n02", "text": "All instances of Wren-9 live in the datacenter at Tallinn. The page was last reviewed in the spring."}
+{"id": "n03", "text": "Unlike Ibis-7, whose retirement date is handled elsewhere, the retirement date of Bittern-7 is January 2, 2029. Nobody should assume the retirement date of Bittern-7 applies to Ibis-7, the retirement date differs."}
+{"id": "n04", "text": "All instances of Ibis-7 live in the datacenter at Oslo. A diagram is attached to the wiki entry."}
+{"id": "n05", "text": "Unlike Curlew-4, whose budget is handled elsewhere, the budget of Heron-7 is $4280k. Nobody should assume the budget of Heron-7 applies to Curlew-4, the budget differs. The entry was reformatted last quarter."}
+{"id": "n06", "text": "Expect throttling at the rate limit for Curlew-4, which is 2300 requests per minute."}
+{"id": "n07", "text": "Bittern-7 runs in the Lisbon datacenter, next to its database. The page was last reviewed in the spring."}
+{"id": "n08", "text": "Unlike Wren-9, whose pager rotation is handled elsewhere, the pager rotation of Tern-6 is Hana Okonkwo. Nobody should assume the pager rotation of Tern-6 applies to Wren-9, the pager rotation differs. The entry was reformatted last quarter."}
+{"id": "n09", "text": "The pager rotation for Heron-7 is run by Avery Lindqvist; alerts page them first."}
+{"id": "n10", "text": "Curlew-4 is implemented in Go; the language was chosen for its tooling. A diagram is attached to the wiki entry."}
+{"id": "n11", "text": "Finance fixed the budget of Bittern-7 at $2545k, reviewed every quarter."}
+{"id": "n12", "text": "The retirement date for Ibis-7 is July 7, 2029; after that day it stops serving."}
+{"id": "n13", "text": "Expect throttling at the rate limit for Heron-7, which is 1600 requests per minute. A diagram is attached to the wiki entry."}
+{"id": "n14", "text": "Unlike Bittern-7, whose port is handled elsewhere, the port of Curlew-4 is 5578. Nobody should assume the port of Curlew-4 applies to Bittern-7, the port differs. An older draft of this note was archived."}
+{"id": "n15", "text": "Finance fixed the budget of Tern-6 at $1530k, reviewed every quarter."}
+{"id": "n16", "text": "Finance fixed the budget of Curlew-4 at $4285k, reviewed every quarter."}
+{"id": "n17", "text": "Expect throttling at the rate limit for Wren-9, which is 2000 requests per minute. The page was last reviewed in the spring."}
+{"id": "n18", "text": "The owner of Heron-7 is the Harbor team, and every change to Heron-7 goes through their review."}
+{"id": "n19", "text": "Source for Ibis-7 is written in OCaml; no other language is allowed in its repository."}
+{"id": "n20", "text": "Vera Lindqvist is on the pager rotation of Wren-9 this month, with a deputy as backup."}
+{"id": "n21", "text": "Expect throttling at the rate limit for Ibis-7, which is 100 requests per minute."}
+{"id": "n22", "text": "Quinn Ivanova is on the pager rotation of Bittern-7 this month, with a deputy as backup."}
+{"id": "n23", "text": "Plan around the retirement date of Tern-6: May 17, 2027 is when it goes dark."}
+{"id": "n24", "text": "The rate limit of Tern-6 is 3800 requests per minute; callers over it get a 429. Details change slowly, so check the history first."}
+{"id": "n25", "text": "Source for Heron-7 is written in Scala; no other language is allowed in its repository."}
+{"id": "n26", "text": "Unlike Wren-9, whose pager rotation is handled elsewhere, the pager rotation of Curlew-4 is Avery Thorne. Nobody should assume the pager rotation of Curlew-4 applies to Wren-9, the pager rotation differs."}
+{"id": "n27", "text": "Unlike Heron-7, whose pager rotation is handled elsewhere, the pager rotation of Ibis-7 is Mateo Thorne. Nobody should assume the pager rotation of Ibis-7 applies to Heron-7, the pager rotation differs. Details change slowly, so check the history first."}
+{"id": "n28", "text": "Source for Wren-9 is written in Haskell; no other language is allowed in its repository. A diagram is attached to the wiki entry."}
+{"id": "n29", "text": "The service Bittern-7 takes traffic on port 7825, and the port is fixed across every environment."}

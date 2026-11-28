@@ -1,0 +1,179 @@
+[
+ {
+  "name": "load_mooring",
+  "days": 1,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "apply_lantern",
+  "days": 7,
+  "after": [
+   "load_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_rope",
+  "days": 9,
+  "after": [
+   "apply_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_ferry",
+  "days": 1,
+  "after": [
+   "apply_lantern",
+   "load_mooring",
+   "allocate_rope"
+  ],
+  "done": true
+ },
+ {
+  "name": "split_harbor",
+  "days": 6,
+  "after": [
+   "allocate_rope",
+   "apply_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_rope",
+  "days": 2,
+  "after": [
+   "load_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_keel",
+  "days": 7,
+  "after": [
+   "estimate_rope",
+   "allocate_rope"
+  ],
+  "done": true
+ },
+ {
+  "name": "validate_barge",
+  "days": 7,
+  "after": [
+   "allocate_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_harbor",
+  "days": 1,
+  "after": [
+   "split_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_anchor",
+  "days": 4,
+  "after": [
+   "allocate_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_crate",
+  "days": 4,
+  "after": [
+   "estimate_rope",
+   "apply_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_tide",
+  "days": 9,
+  "after": [
+   "parse_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_rope",
+  "days": 6,
+  "after": [
+   "allocate_ferry",
+   "stage_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_quay",
+  "days": 6,
+  "after": [
+   "stage_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_ferry",
+  "days": 4,
+  "after": [
+   "stage_tide",
+   "parse_keel",
+   "allocate_ferry"
+  ],
+  "done": true
+ },
+ {
+  "name": "rank_crate",
+  "days": 6,
+  "after": [
+   "apply_lantern",
+   "lookup_crate",
+   "flush_quay"
+  ],
+  "done": true
+ },
+ {
+  "name": "flush_lantern",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "split_anchor",
+  "days": 9,
+  "after": [
+   "apply_harbor",
+   "parse_keel",
+   "rank_crate"
+  ],
+  "done": true
+ },
+ {
+  "name": "lookup_quay",
+  "days": 6,
+  "after": [
+   "load_mooring",
+   "stage_tide",
+   "lookup_crate"
+  ],
+  "done": true
+ },
+ {
+  "name": "estimate_barge",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "stage_deck",
+  "days": 1,
+  "after": [
+   "stage_rope",
+   "estimate_barge"
+  ],
+  "done": false
+ }
+]

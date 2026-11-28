@@ -1,0 +1,68 @@
+[
+ {
+  "name": "parse_keel",
+  "days": 2,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "validate_barge",
+  "days": 7,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "merge_hull",
+  "days": 9,
+  "after": [
+   "parse_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_buoy",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "split_lantern",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "validate_deck",
+  "days": 3,
+  "after": [
+   "split_lantern"
+  ],
+  "done": true
+ },
+ {
+  "name": "resolve_berth",
+  "days": 5,
+  "after": [
+   "validate_deck"
+  ],
+  "done": true
+ },
+ {
+  "name": "estimate_buoy",
+  "days": 5,
+  "after": [
+   "split_lantern",
+   "merge_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_anchor",
+  "days": 7,
+  "after": [
+   "split_lantern",
+   "estimate_buoy"
+  ],
+  "done": false
+ }
+]

@@ -1,0 +1,170 @@
+[
+ {
+  "name": "load_tide",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "render_berth",
+  "days": 8,
+  "after": [
+   "load_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_pallet",
+  "days": 5,
+  "after": [
+   "render_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_harbor",
+  "days": 5,
+  "after": [
+   "load_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_buoy",
+  "days": 7,
+  "after": [
+   "render_berth",
+   "load_tide",
+   "rank_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_mooring",
+  "days": 3,
+  "after": [
+   "render_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_tide",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "load_mast",
+  "days": 6,
+  "after": [
+   "allocate_harbor",
+   "flush_tide",
+   "render_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_crate",
+  "days": 1,
+  "after": [
+   "flush_tide",
+   "allocate_harbor",
+   "load_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_crate",
+  "days": 6,
+  "after": [
+   "load_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_mooring",
+  "days": 7,
+  "after": [
+   "flush_tide",
+   "estimate_crate",
+   "load_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_ferry",
+  "days": 1,
+  "after": [
+   "stage_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_mast",
+  "days": 9,
+  "after": [
+   "rank_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_buoy",
+  "days": 5,
+  "after": [
+   "rank_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_cargo",
+  "days": 1,
+  "after": [
+   "render_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_hull",
+  "days": 3,
+  "after": [
+   "rank_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_tide",
+  "days": 7,
+  "after": [
+   "load_mast",
+   "load_tide",
+   "stage_crate"
+  ],
+  "done": true
+ },
+ {
+  "name": "merge_quay",
+  "days": 7,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "flush_quay",
+  "days": 6,
+  "after": [
+   "allocate_harbor",
+   "merge_quay",
+   "merge_ferry"
+  ],
+  "done": true
+ },
+ {
+  "name": "normalize_barge",
+  "days": 7,
+  "after": [
+   "allocate_buoy",
+   "rank_pallet",
+   "flush_quay"
+  ],
+  "done": false
+ }
+]

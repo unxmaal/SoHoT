@@ -1,0 +1,187 @@
+[
+ {
+  "name": "allocate_sail",
+  "days": 2,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "split_harbor",
+  "days": 6,
+  "after": [
+   "allocate_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_rope",
+  "days": 6,
+  "after": [
+   "allocate_sail",
+   "split_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_pallet",
+  "days": 6,
+  "after": [
+   "allocate_sail",
+   "resolve_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_dock",
+  "days": 4,
+  "after": [
+   "resolve_rope",
+   "allocate_sail",
+   "split_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_keel",
+  "days": 2,
+  "after": [
+   "split_harbor",
+   "allocate_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_hull",
+  "days": 3,
+  "after": [
+   "stage_keel",
+   "allocate_sail",
+   "reconcile_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_sail",
+  "days": 8,
+  "after": [
+   "allocate_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_cargo",
+  "days": 5,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "split_pallet",
+  "days": 3,
+  "after": [
+   "normalize_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_cargo",
+  "days": 8,
+  "after": [
+   "lookup_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_hull",
+  "days": 1,
+  "after": [
+   "normalize_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_ferry",
+  "days": 8,
+  "after": [
+   "normalize_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_berth",
+  "days": 5,
+  "after": [
+   "validate_pallet",
+   "resolve_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_crate",
+  "days": 8,
+  "after": [
+   "allocate_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_mooring",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "flush_barge",
+  "days": 1,
+  "after": [
+   "load_hull",
+   "reconcile_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_berth",
+  "days": 5,
+  "after": [
+   "resolve_rope",
+   "reconcile_dock",
+   "reconcile_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_mast",
+  "days": 3,
+  "after": [
+   "validate_pallet",
+   "normalize_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_mast",
+  "days": 9,
+  "after": [
+   "stage_keel",
+   "validate_berth"
+  ],
+  "done": true
+ },
+ {
+  "name": "allocate_mooring",
+  "days": 3,
+  "after": [
+   "load_crate",
+   "rank_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_dock",
+  "days": 7,
+  "after": [
+   "load_hull",
+   "allocate_mooring"
+  ],
+  "done": false
+ }
+]

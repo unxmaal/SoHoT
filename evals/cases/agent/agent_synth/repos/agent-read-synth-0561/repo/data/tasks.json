@@ -1,0 +1,120 @@
+[
+ {
+  "name": "lookup_barge",
+  "days": 2,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "split_sail",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "parse_mast",
+  "days": 6,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "stage_rope",
+  "days": 6,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "parse_cargo",
+  "days": 6,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "load_ferry",
+  "days": 8,
+  "after": [
+   "parse_mast",
+   "split_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_barge",
+  "days": 4,
+  "after": [
+   "parse_mast",
+   "lookup_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_buoy",
+  "days": 8,
+  "after": [
+   "parse_cargo",
+   "stage_rope",
+   "parse_mast"
+  ],
+  "done": true
+ },
+ {
+  "name": "apply_tide",
+  "days": 7,
+  "after": [
+   "parse_mast",
+   "parse_barge"
+  ],
+  "done": true
+ },
+ {
+  "name": "flush_dock",
+  "days": 8,
+  "after": [
+   "split_sail",
+   "parse_cargo"
+  ],
+  "done": true
+ },
+ {
+  "name": "normalize_berth",
+  "days": 6,
+  "after": [
+   "stage_buoy",
+   "parse_cargo",
+   "lookup_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_anchor",
+  "days": 1,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "allocate_anchor",
+  "days": 2,
+  "after": [
+   "lookup_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_tide",
+  "days": 1,
+  "after": [
+   "load_ferry"
+  ],
+  "done": true
+ },
+ {
+  "name": "merge_mooring",
+  "days": 5,
+  "after": [
+   "stage_tide",
+   "parse_cargo",
+   "lookup_barge"
+  ],
+  "done": false
+ }
+]

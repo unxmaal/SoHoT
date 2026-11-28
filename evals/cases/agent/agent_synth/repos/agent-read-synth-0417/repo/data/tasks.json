@@ -1,0 +1,98 @@
+[
+ {
+  "name": "flush_mast",
+  "days": 6,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "stage_lantern",
+  "days": 2,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "lookup_dock",
+  "days": 2,
+  "after": [
+   "stage_lantern",
+   "flush_mast"
+  ],
+  "done": true
+ },
+ {
+  "name": "rank_mast",
+  "days": 9,
+  "after": [
+   "flush_mast",
+   "lookup_dock",
+   "stage_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_barge",
+  "days": 4,
+  "after": [
+   "lookup_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_berth",
+  "days": 8,
+  "after": [
+   "parse_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_lantern",
+  "days": 2,
+  "after": [
+   "validate_berth"
+  ],
+  "done": true
+ },
+ {
+  "name": "estimate_hull",
+  "days": 9,
+  "after": [
+   "stage_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_barge",
+  "days": 6,
+  "after": [
+   "stage_lantern",
+   "validate_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_lantern",
+  "days": 6,
+  "after": [
+   "flush_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_dock",
+  "days": 2,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "normalize_keel",
+  "days": 1,
+  "after": [
+   "allocate_lantern",
+   "flush_mast",
+   "normalize_dock"
+  ],
+  "done": false
+ }
+]

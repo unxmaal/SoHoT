@@ -1,0 +1,81 @@
+[
+ {
+  "name": "load_dock",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "lookup_tide",
+  "days": 2,
+  "after": [
+   "load_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_anchor",
+  "days": 5,
+  "after": [
+   "lookup_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_pallet",
+  "days": 8,
+  "after": [
+   "load_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_cargo",
+  "days": 7,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "reconcile_sail",
+  "days": 7,
+  "after": [
+   "allocate_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_cargo",
+  "days": 1,
+  "after": [
+   "lookup_cargo",
+   "lookup_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_quay",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "merge_keel",
+  "days": 2,
+  "after": [
+   "lookup_tide",
+   "reconcile_quay",
+   "split_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_crate",
+  "days": 7,
+  "after": [
+   "lookup_anchor",
+   "merge_keel",
+   "reconcile_sail"
+  ],
+  "done": false
+ }
+]

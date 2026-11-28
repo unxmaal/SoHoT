@@ -1,0 +1,105 @@
+[
+ {
+  "name": "validate_dock",
+  "days": 2,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "estimate_anchor",
+  "days": 3,
+  "after": [
+   "validate_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_mooring",
+  "days": 1,
+  "after": [
+   "validate_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_keel",
+  "days": 2,
+  "after": [
+   "validate_dock",
+   "estimate_anchor",
+   "allocate_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_rope",
+  "days": 6,
+  "after": [
+   "validate_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_anchor",
+  "days": 6,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "parse_buoy",
+  "days": 5,
+  "after": [
+   "parse_rope"
+  ],
+  "done": true
+ },
+ {
+  "name": "allocate_dock",
+  "days": 2,
+  "after": [
+   "validate_dock",
+   "allocate_mooring",
+   "parse_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_crate",
+  "days": 9,
+  "after": [
+   "allocate_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_sail",
+  "days": 6,
+  "after": [
+   "allocate_dock",
+   "estimate_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_quay",
+  "days": 9,
+  "after": [
+   "validate_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_dock",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "lookup_hull",
+  "days": 1,
+  "after": [
+   "normalize_dock"
+  ],
+  "done": false
+ }
+]

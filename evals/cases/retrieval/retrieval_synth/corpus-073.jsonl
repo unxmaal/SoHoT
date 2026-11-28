@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Expect throttling at the rate limit for Shrike-4, which is 3350 requests per minute."}
+{"id": "n01", "text": "The primary datacenter of Wren-4 is Tallinn; failover is handled by operations. Nothing about this has been disputed so far."}
+{"id": "n02", "text": "Source for Wren-4 is written in Erlang; no other language is allowed in its repository."}
+{"id": "n03", "text": "Unlike Lark-4, whose language is handled elsewhere, the language of Egret-4 is Elixir. Nobody should assume the language of Egret-4 applies to Lark-4, the language differs. An older draft of this note was archived."}
+{"id": "n04", "text": "Egret-4 listens on port 2708; anyone who cannot reach that port should check the firewall rules. A diagram is attached to the wiki entry."}
+{"id": "n05", "text": "The yearly budget for Pipit-4 is $3975k, covering licences and hosting. The page was last reviewed in the spring."}
+{"id": "n06", "text": "Unlike Curlew-3, whose retirement date is handled elsewhere, the retirement date of Egret-4 is August 9, 2029. Nobody should assume the retirement date of Egret-4 applies to Curlew-3, the retirement date differs."}
+{"id": "n07", "text": "The service Lark-4 takes traffic on port 8880, and the port is fixed across every environment. The entry was reformatted last quarter."}
+{"id": "n08", "text": "Unlike Wren-4, whose owner is handled elsewhere, the owner of Pipit-4 is the Sprocket team. Nobody should assume the owner of Pipit-4 applies to Wren-4, the owner differs. A diagram is attached to the wiki entry."}
+{"id": "n09", "text": "Shrike-4 runs in the Nairobi datacenter, next to its database."}
+{"id": "n10", "text": "Unlike Curlew-3, whose owner is handled elsewhere, the owner of Wren-4 is the Anvil team. Nobody should assume the owner of Wren-4 applies to Curlew-3, the owner differs."}
+{"id": "n11", "text": "Plan around the retirement date of Curlew-3: March 22, 2027 is when it goes dark."}
+{"id": "n12", "text": "Pipit-4 runs in the Quito datacenter, next to its database. The entry was reformatted last quarter."}
+{"id": "n13", "text": "Bruno Whitlock is on the pager rotation of Shrike-4 this month, with a deputy as backup. A diagram is attached to the wiki entry."}
+{"id": "n14", "text": "The rate limit of Curlew-3 is 2000 requests per minute; callers over it get a 429."}
+{"id": "n15", "text": "Expect throttling at the rate limit for Lark-4, which is 1450 requests per minute. Nothing about this has been disputed so far."}
+{"id": "n16", "text": "Unlike Wren-4, whose language is handled elsewhere, the language of Lark-4 is Scala. Nobody should assume the language of Lark-4 applies to Wren-4, the language differs."}
+{"id": "n17", "text": "Shrike-4 is implemented in Swift; the language was chosen for its tooling."}
+{"id": "n18", "text": "Unlike Wren-4, whose rate limit is handled elsewhere, the rate limit of Egret-4 is 350 requests per minute. Nobody should assume the rate limit of Egret-4 applies to Wren-4, the rate limit differs. Nothing about this has been disputed so far."}
+{"id": "n19", "text": "The owner of Curlew-3 is the Compass team, and every change to Curlew-3 goes through their review."}
+{"id": "n20", "text": "Wren-4 enforces a rate limit of 3050 requests per minute per caller."}
+{"id": "n21", "text": "Quinn Pemberton is on the pager rotation of Curlew-3 this month, with a deputy as backup. Nothing about this has been disputed so far."}
+{"id": "n22", "text": "Egret-4 was granted a budget of $3430k this year; an unspent budget does not roll over."}
+{"id": "n23", "text": "Unlike Pipit-4, whose datacenter is handled elsewhere, the datacenter of Lark-4 is the Hanoi datacenter. Nobody should assume the datacenter of Lark-4 applies to Pipit-4, the datacenter differs. A diagram is attached to the wiki entry."}
+{"id": "n24", "text": "Pages from Pipit-4 land on the pager rotation of Vera Kowalczyk before anyone else. An older draft of this note was archived."}
+{"id": "n25", "text": "For Wren-4 the port is 5375. Changing the port needs a change ticket."}
+{"id": "n26", "text": "All instances of Curlew-3 live in the datacenter at Osaka. A diagram is attached to the wiki entry."}
+{"id": "n27", "text": "Unlike Lark-4, whose rate limit is handled elsewhere, the rate limit of Pipit-4 is 3700 requests per minute. Nobody should assume the rate limit of Pipit-4 applies to Lark-4, the rate limit differs."}
+{"id": "n28", "text": "Shrike-4 listens on port 2409; anyone who cannot reach that port should check the firewall rules."}
+{"id": "n29", "text": "Finance fixed the budget of Lark-4 at $2340k, reviewed every quarter. The entry was reformatted last quarter."}

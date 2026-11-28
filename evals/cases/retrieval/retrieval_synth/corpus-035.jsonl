@@ -1,0 +1,30 @@
+{"id": "n00", "text": "The pager rotation for Godwit-4 is run by Soren Sandoval; alerts page them first."}
+{"id": "n01", "text": "Jolene Whitlock is on the pager rotation of Swift-8 this month, with a deputy as backup."}
+{"id": "n02", "text": "Unlike Kestrel-2, whose owner is handled elsewhere, the owner of Pipit-4 is the Tessera team. Nobody should assume the owner of Pipit-4 applies to Kestrel-2, the owner differs."}
+{"id": "n03", "text": "The rate limit of Godwit-4 is 3050 requests per minute; callers over it get a 429."}
+{"id": "n04", "text": "Pages from Shrike-2 land on the pager rotation of Talia Marchetti before anyone else."}
+{"id": "n05", "text": "Unlike Merlin-5, whose rate limit is handled elsewhere, the rate limit of Swift-8 is 1500 requests per minute. Nobody should assume the rate limit of Swift-8 applies to Merlin-5, the rate limit differs."}
+{"id": "n06", "text": "The yearly budget for Merlin-5 is $3190k, covering licences and hosting."}
+{"id": "n07", "text": "Unlike Merlin-5, whose language is handled elsewhere, the language of Shrike-2 is Rust. Nobody should assume the language of Shrike-2 applies to Merlin-5, the language differs. Nothing about this has been disputed so far."}
+{"id": "n08", "text": "Unlike Pipit-4, whose datacenter is handled elsewhere, the datacenter of Godwit-4 is the Tallinn datacenter. Nobody should assume the datacenter of Godwit-4 applies to Pipit-4, the datacenter differs. Details change slowly, so check the history first."}
+{"id": "n09", "text": "Unlike Godwit-4, whose rate limit is handled elsewhere, the rate limit of Pipit-4 is 2100 requests per minute. Nobody should assume the rate limit of Pipit-4 applies to Godwit-4, the rate limit differs."}
+{"id": "n10", "text": "Unlike Swift-8, whose pager rotation is handled elsewhere, the pager rotation of Kestrel-2 is Wendell Valdivia. Nobody should assume the pager rotation of Kestrel-2 applies to Swift-8, the pager rotation differs."}
+{"id": "n11", "text": "Unlike Swift-8, whose retirement date is handled elsewhere, the retirement date of Kestrel-2 is November 11, 2029. Nobody should assume the retirement date of Kestrel-2 applies to Swift-8, the retirement date differs."}
+{"id": "n12", "text": "The pager rotation for Merlin-5 is run by Ivo Marchetti; alerts page them first."}
+{"id": "n13", "text": "Unlike Swift-8, whose retirement date is handled elsewhere, the retirement date of Shrike-2 is June 3, 2028. Nobody should assume the retirement date of Shrike-2 applies to Swift-8, the retirement date differs. A diagram is attached to the wiki entry."}
+{"id": "n14", "text": "Unlike Pipit-4, whose rate limit is handled elsewhere, the rate limit of Merlin-5 is 300 requests per minute. Nobody should assume the rate limit of Merlin-5 applies to Pipit-4, the rate limit differs."}
+{"id": "n15", "text": "Unlike Godwit-4, whose datacenter is handled elsewhere, the datacenter of Pipit-4 is the Tallinn datacenter. Nobody should assume the datacenter of Pipit-4 applies to Godwit-4, the datacenter differs. The page was last reviewed in the spring."}
+{"id": "n16", "text": "Merlin-5 listens on port 7656; anyone who cannot reach that port should check the firewall rules."}
+{"id": "n17", "text": "Shrike-2 has one owner, the Prism team, which approves each release and keeps the runbook current. An older draft of this note was archived."}
+{"id": "n18", "text": "Unlike Kestrel-2, whose language is handled elsewhere, the language of Merlin-5 is Kotlin. Nobody should assume the language of Merlin-5 applies to Kestrel-2, the language differs."}
+{"id": "n19", "text": "Unlike Shrike-2, whose language is handled elsewhere, the language of Kestrel-2 is Go. Nobody should assume the language of Kestrel-2 applies to Shrike-2, the language differs."}
+{"id": "n20", "text": "Unlike Swift-8, whose budget is handled elsewhere, the budget of Shrike-2 is $2345k. Nobody should assume the budget of Shrike-2 applies to Swift-8, the budget differs."}
+{"id": "n21", "text": "Unlike Merlin-5, whose rate limit is handled elsewhere, the rate limit of Kestrel-2 is 1150 requests per minute. Nobody should assume the rate limit of Kestrel-2 applies to Merlin-5, the rate limit differs."}
+{"id": "n22", "text": "Unlike Pipit-4, whose port is handled elsewhere, the port of Godwit-4 is 6687. Nobody should assume the port of Godwit-4 applies to Pipit-4, the port differs. The entry was reformatted last quarter."}
+{"id": "n23", "text": "Unlike Swift-8, whose owner is handled elsewhere, the owner of Kestrel-2 is the Anvil team. Nobody should assume the owner of Kestrel-2 applies to Swift-8, the owner differs."}
+{"id": "n24", "text": "Finance fixed the budget of Swift-8 at $2400k, reviewed every quarter. The entry was reformatted last quarter."}
+{"id": "n25", "text": "Finance fixed the budget of Pipit-4 at $4285k, reviewed every quarter. An older draft of this note was archived."}
+{"id": "n26", "text": "The retirement date for Swift-8 is December 28, 2028; after that day it stops serving."}
+{"id": "n27", "text": "Godwit-4 reaches its retirement date on June 6, 2027, so every consumer has to migrate before then. The page was last reviewed in the spring."}
+{"id": "n28", "text": "Swift-8 has one owner, the Sprocket team, which approves each release and keeps the runbook current. The entry was reformatted last quarter."}
+{"id": "n29", "text": "Unlike Godwit-4, whose port is handled elsewhere, the port of Pipit-4 is 3780. Nobody should assume the port of Pipit-4 applies to Godwit-4, the port differs."}

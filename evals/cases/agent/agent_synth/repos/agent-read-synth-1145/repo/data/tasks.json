@@ -1,0 +1,106 @@
+[
+ {
+  "name": "lookup_hull",
+  "days": 6,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "estimate_barge",
+  "days": 9,
+  "after": [
+   "lookup_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_berth",
+  "days": 2,
+  "after": [
+   "estimate_barge",
+   "lookup_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_lantern",
+  "days": 4,
+  "after": [
+   "lookup_berth",
+   "lookup_hull",
+   "estimate_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_anchor",
+  "days": 8,
+  "after": [
+   "lookup_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_tide",
+  "days": 2,
+  "after": [
+   "rank_lantern",
+   "estimate_barge",
+   "flush_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_keel",
+  "days": 6,
+  "after": [
+   "rank_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_rope",
+  "days": 4,
+  "after": [
+   "flush_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_buoy",
+  "days": 2,
+  "after": [
+   "estimate_barge",
+   "split_tide"
+  ],
+  "done": true
+ },
+ {
+  "name": "split_lantern",
+  "days": 3,
+  "after": [
+   "normalize_keel",
+   "split_tide"
+  ],
+  "done": true
+ },
+ {
+  "name": "reconcile_pallet",
+  "days": 1,
+  "after": [
+   "lookup_rope"
+  ],
+  "done": true
+ },
+ {
+  "name": "validate_pallet",
+  "days": 6,
+  "after": [
+   "split_lantern",
+   "parse_buoy",
+   "lookup_berth",
+   "reconcile_pallet"
+  ],
+  "done": false
+ }
+]

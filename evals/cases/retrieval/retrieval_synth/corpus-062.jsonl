@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Unlike Wren-8, whose port is handled elsewhere, the port of Pipit-3 is 5769. Nobody should assume the port of Pipit-3 applies to Wren-8, the port differs. Details change slowly, so check the history first."}
+{"id": "n01", "text": "Unlike Pipit-3, whose rate limit is handled elsewhere, the rate limit of Merlin-4 is 4050 requests per minute. Nobody should assume the rate limit of Merlin-4 applies to Pipit-3, the rate limit differs."}
+{"id": "n02", "text": "Unlike Pipit-3, whose port is handled elsewhere, the port of Merlin-4 is 5996. Nobody should assume the port of Merlin-4 applies to Pipit-3, the port differs. The page was last reviewed in the spring."}
+{"id": "n03", "text": "Unlike Wren-8, whose port is handled elsewhere, the port of Tern-5 is 4761. Nobody should assume the port of Tern-5 applies to Wren-8, the port differs."}
+{"id": "n04", "text": "Unlike Merlin-4, whose rate limit is handled elsewhere, the rate limit of Tern-5 is 1200 requests per minute. Nobody should assume the rate limit of Tern-5 applies to Merlin-4, the rate limit differs. Nothing about this has been disputed so far."}
+{"id": "n05", "text": "Unlike Wren-8, whose rate limit is handled elsewhere, the rate limit of Heron-2 is 500 requests per minute. Nobody should assume the rate limit of Heron-2 applies to Wren-8, the rate limit differs. A diagram is attached to the wiki entry."}
+{"id": "n06", "text": "Unlike Merlin-4, whose budget is handled elsewhere, the budget of Wren-8 is $1580k. Nobody should assume the budget of Wren-8 applies to Merlin-4, the budget differs. The entry was reformatted last quarter."}
+{"id": "n07", "text": "Pipit-3 runs in the Lisbon datacenter, next to its database. The entry was reformatted last quarter."}
+{"id": "n08", "text": "The service Wren-8 takes traffic on port 6119, and the port is fixed across every environment."}
+{"id": "n09", "text": "Wren-8 has one owner, the Harbor team, which approves each release and keeps the runbook current."}
+{"id": "n10", "text": "The owner of Merlin-4 is the Harbor team, and every change to Merlin-4 goes through their review. Nothing about this has been disputed so far."}
+{"id": "n11", "text": "Unlike Merlin-4, whose language is handled elsewhere, the language of Tern-5 is Erlang. Nobody should assume the language of Tern-5 applies to Merlin-4, the language differs. Nothing about this has been disputed so far."}
+{"id": "n12", "text": "Gideon Kowalczyk is on the pager rotation of Heron-2 this month, with a deputy as backup."}
+{"id": "n13", "text": "Unlike Pipit-3, whose rate limit is handled elsewhere, the rate limit of Wren-8 is 1500 requests per minute. Nobody should assume the rate limit of Wren-8 applies to Pipit-3, the rate limit differs. The entry was reformatted last quarter."}
+{"id": "n14", "text": "The pager rotation for Tern-5 is run by Talia Valdivia; alerts page them first. The page was last reviewed in the spring."}
+{"id": "n15", "text": "Unlike Tern-5, whose rate limit is handled elsewhere, the rate limit of Pipit-3 is 2300 requests per minute. Nobody should assume the rate limit of Pipit-3 applies to Tern-5, the rate limit differs."}
+{"id": "n16", "text": "Farah Fairbanks is on the pager rotation of Wren-8 this month, with a deputy as backup."}
+{"id": "n17", "text": "Pipit-3 has one owner, the Keystone team, which approves each release and keeps the runbook current. Details change slowly, so check the history first."}
+{"id": "n18", "text": "Unlike Tern-5, whose port is handled elsewhere, the port of Ibis-9 is 3421. Nobody should assume the port of Ibis-9 applies to Tern-5, the port differs."}
+{"id": "n19", "text": "The yearly budget for Pipit-3 is $1660k, covering licences and hosting."}
+{"id": "n20", "text": "Heron-2 has one owner, the Keystone team, which approves each release and keeps the runbook current."}
+{"id": "n21", "text": "Unlike Tern-5, whose language is handled elsewhere, the language of Merlin-4 is Swift. Nobody should assume the language of Merlin-4 applies to Tern-5, the language differs. An older draft of this note was archived."}
+{"id": "n22", "text": "Unlike Pipit-3, whose datacenter is handled elsewhere, the datacenter of Tern-5 is the Nairobi datacenter. Nobody should assume the datacenter of Tern-5 applies to Pipit-3, the datacenter differs."}
+{"id": "n23", "text": "Unlike Merlin-4, whose budget is handled elsewhere, the budget of Ibis-9 is $2940k. Nobody should assume the budget of Ibis-9 applies to Merlin-4, the budget differs."}
+{"id": "n24", "text": "The pager rotation for Ibis-9 is run by Nadia Halvorsen; alerts page them first."}
+{"id": "n25", "text": "Heron-2 listens on port 7909; anyone who cannot reach that port should check the firewall rules. Nothing about this has been disputed so far."}
+{"id": "n26", "text": "Unlike Merlin-4, whose owner is handled elsewhere, the owner of Ibis-9 is the Harbor team. Nobody should assume the owner of Ibis-9 applies to Merlin-4, the owner differs."}
+{"id": "n27", "text": "The yearly budget for Merlin-4 is $2860k, covering licences and hosting. The entry was reformatted last quarter."}
+{"id": "n28", "text": "Unlike Wren-8, whose rate limit is handled elsewhere, the rate limit of Ibis-9 is 4400 requests per minute. Nobody should assume the rate limit of Ibis-9 applies to Wren-8, the rate limit differs."}
+{"id": "n29", "text": "Heron-2 reaches its retirement date on March 19, 2027, so every consumer has to migrate before then. A diagram is attached to the wiki entry."}

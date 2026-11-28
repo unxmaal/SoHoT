@@ -1,0 +1,67 @@
+[
+ {
+  "name": "reconcile_keel",
+  "days": 6,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "render_barge",
+  "days": 7,
+  "after": [
+   "reconcile_keel"
+  ],
+  "done": true
+ },
+ {
+  "name": "validate_quay",
+  "days": 4,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "lookup_mooring",
+  "days": 1,
+  "after": [
+   "reconcile_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_dock",
+  "days": 7,
+  "after": [
+   "reconcile_keel",
+   "render_barge",
+   "validate_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_mooring",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "normalize_mast",
+  "days": 2,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "split_tide",
+  "days": 2,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "load_lantern",
+  "days": 9,
+  "after": [
+   "estimate_mooring",
+   "split_tide"
+  ],
+  "done": false
+ }
+]

@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Unlike Egret-8, whose datacenter is handled elsewhere, the datacenter of Tern-9 is the Bergen datacenter. Nobody should assume the datacenter of Tern-9 applies to Egret-8, the datacenter differs. The page was last reviewed in the spring."}
+{"id": "n01", "text": "Finance fixed the budget of Merlin-8 at $3400k, reviewed every quarter."}
+{"id": "n02", "text": "Unlike Shrike-5, whose rate limit is handled elsewhere, the rate limit of Egret-8 is 3600 requests per minute. Nobody should assume the rate limit of Egret-8 applies to Shrike-5, the rate limit differs. A diagram is attached to the wiki entry."}
+{"id": "n03", "text": "Plan around the retirement date of Osprey-6: March 9, 2028 is when it goes dark. A diagram is attached to the wiki entry."}
+{"id": "n04", "text": "Source for Bittern-6 is written in OCaml; no other language is allowed in its repository. Nothing about this has been disputed so far."}
+{"id": "n05", "text": "Unlike Tern-9, whose rate limit is handled elsewhere, the rate limit of Shrike-5 is 350 requests per minute. Nobody should assume the rate limit of Shrike-5 applies to Tern-9, the rate limit differs."}
+{"id": "n06", "text": "Finance fixed the budget of Shrike-5 at $1080k, reviewed every quarter."}
+{"id": "n07", "text": "Unlike Merlin-8, whose retirement date is handled elsewhere, the retirement date of Bittern-6 is June 22, 2029. Nobody should assume the retirement date of Bittern-6 applies to Merlin-8, the retirement date differs."}
+{"id": "n08", "text": "Unlike Tern-9, whose owner is handled elsewhere, the owner of Osprey-6 is the Ember team. Nobody should assume the owner of Osprey-6 applies to Tern-9, the owner differs."}
+{"id": "n09", "text": "All instances of Egret-8 live in the datacenter at Bergen. An older draft of this note was archived."}
+{"id": "n10", "text": "Questions about Tern-9 start with its owner, the Keystone team; they triage anything filed against it."}
+{"id": "n11", "text": "Plan around the retirement date of Merlin-8: June 15, 2027 is when it goes dark. Details change slowly, so check the history first."}
+{"id": "n12", "text": "Egret-8 listens on port 4250; anyone who cannot reach that port should check the firewall rules."}
+{"id": "n13", "text": "For Shrike-5 the port is 6466. Changing the port needs a change ticket. The entry was reformatted last quarter."}
+{"id": "n14", "text": "The pager rotation for Egret-8 is run by Jolene Whitlock; alerts page them first."}
+{"id": "n15", "text": "Pages from Osprey-6 land on the pager rotation of Farah Dunmore before anyone else."}
+{"id": "n16", "text": "Osprey-6 was granted a budget of $4585k this year; an unspent budget does not roll over. Details change slowly, so check the history first."}
+{"id": "n17", "text": "Unlike Osprey-6, whose owner is handled elsewhere, the owner of Merlin-8 is the Tessera team. Nobody should assume the owner of Merlin-8 applies to Osprey-6, the owner differs. The entry was reformatted last quarter."}
+{"id": "n18", "text": "The primary datacenter of Shrike-5 is Osaka; failover is handled by operations."}
+{"id": "n19", "text": "Merlin-8 is implemented in OCaml; the language was chosen for its tooling."}
+{"id": "n20", "text": "The yearly budget for Bittern-6 is $4095k, covering licences and hosting."}
+{"id": "n21", "text": "For Merlin-8 the port is 5892. Changing the port needs a change ticket. A diagram is attached to the wiki entry."}
+{"id": "n22", "text": "All instances of Bittern-6 live in the datacenter at Hanoi."}
+{"id": "n23", "text": "The language of Shrike-5 is Haskell, which new contributors must know."}
+{"id": "n24", "text": "Unlike Egret-8, whose pager rotation is handled elsewhere, the pager rotation of Tern-9 is Jolene Nakamura. Nobody should assume the pager rotation of Tern-9 applies to Egret-8, the pager rotation differs. The entry was reformatted last quarter."}
+{"id": "n25", "text": "Unlike Shrike-5, whose rate limit is handled elsewhere, the rate limit of Tern-9 is 3250 requests per minute. Nobody should assume the rate limit of Tern-9 applies to Shrike-5, the rate limit differs. An older draft of this note was archived."}
+{"id": "n26", "text": "Unlike Shrike-5, whose language is handled elsewhere, the language of Osprey-6 is Scala. Nobody should assume the language of Osprey-6 applies to Shrike-5, the language differs. The entry was reformatted last quarter."}
+{"id": "n27", "text": "Tern-9 was granted a budget of $3800k this year; an unspent budget does not roll over."}
+{"id": "n28", "text": "Unlike Tern-9, whose pager rotation is handled elsewhere, the pager rotation of Bittern-6 is Oren Lindqvist. Nobody should assume the pager rotation of Bittern-6 applies to Tern-9, the pager rotation differs. Nothing about this has been disputed so far."}
+{"id": "n29", "text": "Unlike Merlin-8, whose owner is handled elsewhere, the owner of Egret-8 is the Trellis team. Nobody should assume the owner of Egret-8 applies to Merlin-8, the owner differs. An older draft of this note was archived."}

@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Siskin-8 listens on port 4272; anyone who cannot reach that port should check the firewall rules. Nothing about this has been disputed so far."}
+{"id": "n01", "text": "Unlike Siskin-8, whose owner is handled elsewhere, the owner of Shrike-3 is the Tessera team. Nobody should assume the owner of Shrike-3 applies to Siskin-8, the owner differs. An older draft of this note was archived."}
+{"id": "n02", "text": "Pages from Shrike-3 land on the pager rotation of Celia Zielinski before anyone else. The entry was reformatted last quarter."}
+{"id": "n03", "text": "Questions about Curlew-7 start with its owner, the Sprocket team; they triage anything filed against it."}
+{"id": "n04", "text": "Unlike Curlew-7, whose port is handled elsewhere, the port of Kestrel-4 is 4911. Nobody should assume the port of Kestrel-4 applies to Curlew-7, the port differs."}
+{"id": "n05", "text": "Curlew-7 listens on port 7515; anyone who cannot reach that port should check the firewall rules."}
+{"id": "n06", "text": "Teal-7 is implemented in Haskell; the language was chosen for its tooling."}
+{"id": "n07", "text": "Unlike Teal-7, whose pager rotation is handled elsewhere, the pager rotation of Kestrel-4 is Elena Dunmore. Nobody should assume the pager rotation of Kestrel-4 applies to Teal-7, the pager rotation differs."}
+{"id": "n08", "text": "Unlike Curlew-7, whose owner is handled elsewhere, the owner of Ibis-7 is the Lattice team. Nobody should assume the owner of Ibis-7 applies to Curlew-7, the owner differs. Nothing about this has been disputed so far."}
+{"id": "n09", "text": "Finance fixed the budget of Shrike-3 at $2590k, reviewed every quarter. Nothing about this has been disputed so far."}
+{"id": "n10", "text": "Unlike Kestrel-4, whose retirement date is handled elsewhere, the retirement date of Ibis-7 is April 5, 2029. Nobody should assume the retirement date of Ibis-7 applies to Kestrel-4, the retirement date differs."}
+{"id": "n11", "text": "Unlike Teal-7, whose pager rotation is handled elsewhere, the pager rotation of Siskin-8 is Talia Valdivia. Nobody should assume the pager rotation of Siskin-8 applies to Teal-7, the pager rotation differs."}
+{"id": "n12", "text": "The owner of Siskin-8 is the Sprocket team, and every change to Siskin-8 goes through their review."}
+{"id": "n13", "text": "Finance fixed the budget of Ibis-7 at $130k, reviewed every quarter."}
+{"id": "n14", "text": "The owner of Kestrel-4 is the Prism team, and every change to Kestrel-4 goes through their review. Details change slowly, so check the history first."}
+{"id": "n15", "text": "Unlike Ibis-7, whose datacenter is handled elsewhere, the datacenter of Teal-7 is the Perth datacenter. Nobody should assume the datacenter of Teal-7 applies to Ibis-7, the datacenter differs. An older draft of this note was archived."}
+{"id": "n16", "text": "Unlike Curlew-7, whose owner is handled elsewhere, the owner of Teal-7 is the Quill team. Nobody should assume the owner of Teal-7 applies to Curlew-7, the owner differs. The page was last reviewed in the spring."}
+{"id": "n17", "text": "The pager rotation for Teal-7 is run by Elena Pemberton; alerts page them first."}
+{"id": "n18", "text": "Unlike Curlew-7, whose rate limit is handled elsewhere, the rate limit of Ibis-7 is 1500 requests per minute. Nobody should assume the rate limit of Ibis-7 applies to Curlew-7, the rate limit differs."}
+{"id": "n19", "text": "The yearly budget for Kestrel-4 is $4185k, covering licences and hosting."}
+{"id": "n20", "text": "Curlew-7 was granted a budget of $1875k this year; an unspent budget does not roll over. An older draft of this note was archived."}
+{"id": "n21", "text": "Plan around the retirement date of Kestrel-4: April 4, 2027 is when it goes dark. Nothing about this has been disputed so far."}
+{"id": "n22", "text": "The yearly budget for Teal-7 is $1200k, covering licences and hosting."}
+{"id": "n23", "text": "Siskin-8 enforces a rate limit of 4200 requests per minute per caller."}
+{"id": "n24", "text": "Unlike Ibis-7, whose retirement date is handled elsewhere, the retirement date of Shrike-3 is September 24, 2029. Nobody should assume the retirement date of Shrike-3 applies to Ibis-7, the retirement date differs."}
+{"id": "n25", "text": "Expect throttling at the rate limit for Curlew-7, which is 1100 requests per minute."}
+{"id": "n26", "text": "The primary datacenter of Ibis-7 is Oslo; failover is handled by operations. A diagram is attached to the wiki entry."}
+{"id": "n27", "text": "Unlike Shrike-3, whose datacenter is handled elsewhere, the datacenter of Curlew-7 is the Quito datacenter. Nobody should assume the datacenter of Curlew-7 applies to Shrike-3, the datacenter differs."}
+{"id": "n28", "text": "The yearly budget for Siskin-8 is $3125k, covering licences and hosting. An older draft of this note was archived."}
+{"id": "n29", "text": "Unlike Ibis-7, whose datacenter is handled elsewhere, the datacenter of Shrike-3 is the Hanoi datacenter. Nobody should assume the datacenter of Shrike-3 applies to Ibis-7, the datacenter differs. A diagram is attached to the wiki entry."}

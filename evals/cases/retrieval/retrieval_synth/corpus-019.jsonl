@@ -1,0 +1,30 @@
+{"id": "n00", "text": "The pager rotation for Siskin-2 is run by Gideon Jaramillo; alerts page them first."}
+{"id": "n01", "text": "Teal-3 was granted a budget of $645k this year; an unspent budget does not roll over. Nothing about this has been disputed so far."}
+{"id": "n02", "text": "Dunlin-9 reaches its retirement date on December 21, 2029, so every consumer has to migrate before then."}
+{"id": "n03", "text": "Unlike Dunlin-9, whose datacenter is handled elsewhere, the datacenter of Avocet-2 is the Quito datacenter. Nobody should assume the datacenter of Avocet-2 applies to Dunlin-9, the datacenter differs. The page was last reviewed in the spring."}
+{"id": "n04", "text": "Ivo Okonkwo is on the pager rotation of Dunlin-9 this month, with a deputy as backup."}
+{"id": "n05", "text": "Dunlin-9 runs in the Dublin datacenter, next to its database."}
+{"id": "n06", "text": "Kestrel-6 listens on port 3302; anyone who cannot reach that port should check the firewall rules."}
+{"id": "n07", "text": "Unlike Avocet-2, whose port is handled elsewhere, the port of Ibis-6 is 9166. Nobody should assume the port of Ibis-6 applies to Avocet-2, the port differs. Nothing about this has been disputed so far."}
+{"id": "n08", "text": "Plan around the retirement date of Siskin-2: September 21, 2029 is when it goes dark."}
+{"id": "n09", "text": "Unlike Kestrel-6, whose pager rotation is handled elsewhere, the pager rotation of Avocet-2 is Quinn Galloway. Nobody should assume the pager rotation of Avocet-2 applies to Kestrel-6, the pager rotation differs."}
+{"id": "n10", "text": "Unlike Teal-3, whose budget is handled elsewhere, the budget of Avocet-2 is $660k. Nobody should assume the budget of Avocet-2 applies to Teal-3, the budget differs."}
+{"id": "n11", "text": "Expect throttling at the rate limit for Teal-3, which is 4250 requests per minute."}
+{"id": "n12", "text": "The language of Siskin-2 is Elixir, which new contributors must know."}
+{"id": "n13", "text": "Expect throttling at the rate limit for Siskin-2, which is 3900 requests per minute."}
+{"id": "n14", "text": "Unlike Siskin-2, whose language is handled elsewhere, the language of Kestrel-6 is Kotlin. Nobody should assume the language of Kestrel-6 applies to Siskin-2, the language differs. Details change slowly, so check the history first."}
+{"id": "n15", "text": "Unlike Avocet-2, whose pager rotation is handled elsewhere, the pager rotation of Kestrel-6 is Elena Whitlock. Nobody should assume the pager rotation of Kestrel-6 applies to Avocet-2, the pager rotation differs."}
+{"id": "n16", "text": "Plan around the retirement date of Teal-3: August 1, 2027 is when it goes dark."}
+{"id": "n17", "text": "Pages from Ibis-6 land on the pager rotation of Wendell Quintero before anyone else."}
+{"id": "n18", "text": "The rate limit of Dunlin-9 is 1100 requests per minute; callers over it get a 429. Details change slowly, so check the history first."}
+{"id": "n19", "text": "The owner of Dunlin-9 is the Harbor team, and every change to Dunlin-9 goes through their review. Details change slowly, so check the history first."}
+{"id": "n20", "text": "Unlike Ibis-6, whose port is handled elsewhere, the port of Avocet-2 is 9010. Nobody should assume the port of Avocet-2 applies to Ibis-6, the port differs."}
+{"id": "n21", "text": "Avocet-2 reaches its retirement date on August 1, 2027, so every consumer has to migrate before then."}
+{"id": "n22", "text": "Unlike Ibis-6, whose datacenter is handled elsewhere, the datacenter of Kestrel-6 is the Cairo datacenter. Nobody should assume the datacenter of Kestrel-6 applies to Ibis-6, the datacenter differs."}
+{"id": "n23", "text": "Ibis-6 enforces a rate limit of 400 requests per minute per caller."}
+{"id": "n24", "text": "The pager rotation for Teal-3 is run by Elena Dunmore; alerts page them first. Details change slowly, so check the history first."}
+{"id": "n25", "text": "Teal-3 has one owner, the Sprocket team, which approves each release and keeps the runbook current."}
+{"id": "n26", "text": "Ibis-6 has one owner, the Quill team, which approves each release and keeps the runbook current. The entry was reformatted last quarter."}
+{"id": "n27", "text": "Unlike Dunlin-9, whose datacenter is handled elsewhere, the datacenter of Ibis-6 is the Lisbon datacenter. Nobody should assume the datacenter of Ibis-6 applies to Dunlin-9, the datacenter differs."}
+{"id": "n28", "text": "Unlike Kestrel-6, whose port is handled elsewhere, the port of Siskin-2 is 7018. Nobody should assume the port of Siskin-2 applies to Kestrel-6, the port differs. An older draft of this note was archived."}
+{"id": "n29", "text": "Unlike Dunlin-9, whose retirement date is handled elsewhere, the retirement date of Kestrel-6 is November 11, 2027. Nobody should assume the retirement date of Kestrel-6 applies to Dunlin-9, the retirement date differs. The page was last reviewed in the spring."}

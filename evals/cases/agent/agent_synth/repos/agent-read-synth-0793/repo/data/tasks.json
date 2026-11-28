@@ -1,0 +1,172 @@
+[
+ {
+  "name": "allocate_lantern",
+  "days": 6,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "resolve_barge",
+  "days": 2,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "render_ferry",
+  "days": 4,
+  "after": [
+   "allocate_lantern",
+   "resolve_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_deck",
+  "days": 5,
+  "after": [
+   "render_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_mast",
+  "days": 6,
+  "after": [
+   "render_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_tide",
+  "days": 1,
+  "after": [
+   "allocate_lantern"
+  ],
+  "done": true
+ },
+ {
+  "name": "resolve_anchor",
+  "days": 6,
+  "after": [
+   "resolve_barge",
+   "allocate_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_hull",
+  "days": 1,
+  "after": [
+   "allocate_lantern",
+   "lookup_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_rope",
+  "days": 4,
+  "after": [
+   "apply_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_dock",
+  "days": 6,
+  "after": [
+   "render_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_cargo",
+  "days": 1,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "split_ferry",
+  "days": 7,
+  "after": [
+   "lookup_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_pallet",
+  "days": 6,
+  "after": [
+   "split_ferry",
+   "load_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_ferry",
+  "days": 6,
+  "after": [
+   "allocate_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_dock",
+  "days": 7,
+  "after": [
+   "allocate_lantern",
+   "apply_hull"
+  ],
+  "done": true
+ },
+ {
+  "name": "lookup_rope",
+  "days": 9,
+  "after": [
+   "apply_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_hull",
+  "days": 2,
+  "after": [
+   "lookup_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_quay",
+  "days": 7,
+  "after": [
+   "reconcile_rope",
+   "apply_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_mooring",
+  "days": 9,
+  "after": [
+   "resolve_anchor",
+   "split_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_lantern",
+  "days": 6,
+  "after": [
+   "split_ferry"
+  ],
+  "done": true
+ },
+ {
+  "name": "parse_quay",
+  "days": 4,
+  "after": [
+   "load_mast",
+   "flush_lantern"
+  ],
+  "done": false
+ }
+]

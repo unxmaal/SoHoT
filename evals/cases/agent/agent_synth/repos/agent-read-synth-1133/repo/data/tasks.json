@@ -1,0 +1,122 @@
+[
+ {
+  "name": "merge_dock",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "merge_mooring",
+  "days": 6,
+  "after": [
+   "merge_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_berth",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "parse_berth",
+  "days": 7,
+  "after": [
+   "merge_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_berth",
+  "days": 4,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "resolve_quay",
+  "days": 9,
+  "after": [
+   "reconcile_berth",
+   "split_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_dock",
+  "days": 3,
+  "after": [
+   "resolve_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_keel",
+  "days": 2,
+  "after": [
+   "split_berth",
+   "resolve_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_dock",
+  "days": 4,
+  "after": [
+   "resolve_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_crate",
+  "days": 7,
+  "after": [
+   "allocate_dock",
+   "resolve_quay",
+   "validate_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_sail",
+  "days": 9,
+  "after": [
+   "resolve_quay",
+   "merge_mooring",
+   "allocate_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_crate",
+  "days": 1,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "parse_cargo",
+  "days": 6,
+  "after": [
+   "allocate_crate",
+   "validate_keel",
+   "resolve_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_hull",
+  "days": 7,
+  "after": [
+   "allocate_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_mast",
+  "days": 8,
+  "after": [
+   "reconcile_hull"
+  ],
+  "done": false
+ }
+]

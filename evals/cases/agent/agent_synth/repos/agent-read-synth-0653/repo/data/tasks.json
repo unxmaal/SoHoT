@@ -1,0 +1,87 @@
+[
+ {
+  "name": "normalize_barge",
+  "days": 9,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "reconcile_lantern",
+  "days": 5,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "render_crate",
+  "days": 4,
+  "after": [
+   "normalize_barge",
+   "reconcile_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_crate",
+  "days": 6,
+  "after": [
+   "normalize_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_lantern",
+  "days": 2,
+  "after": [
+   "render_crate",
+   "reconcile_lantern",
+   "split_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_deck",
+  "days": 5,
+  "after": [
+   "render_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_ferry",
+  "days": 6,
+  "after": [
+   "reconcile_lantern",
+   "flush_lantern",
+   "normalize_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_quay",
+  "days": 5,
+  "after": [
+   "render_ferry",
+   "reconcile_lantern"
+  ],
+  "done": true
+ },
+ {
+  "name": "lookup_rope",
+  "days": 2,
+  "after": [
+   "render_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_deck",
+  "days": 1,
+  "after": [
+   "render_ferry",
+   "render_crate",
+   "merge_quay",
+   "lookup_rope"
+  ],
+  "done": false
+ }
+]

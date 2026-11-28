@@ -1,0 +1,9 @@
+order,region,qty,cents,status
+O1000,north,9,8740,ok
+O1001,north,8,9640,ok
+O1002,west,17,7305,ok
+O1003,west,7,1560,ok
+O1004,north,32,8240,ok
+O1005,north,38,1270,ok
+O1006,east,37,7940,ok
+O1007,north,40,915,ok

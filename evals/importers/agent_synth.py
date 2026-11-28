@@ -17,7 +17,9 @@ from evals.importers import Imported, provenance
 LANE = "agent"
 VERSION = "1"
 SEED = 603
-COUNT = 360
+BASE = 360
+HARD_COUNT = 800
+COUNT = BASE + HARD_COUNT
 SOURCE = f"generated:evals.importers.agent_synth v{VERSION} seed {SEED}"
 DATASET = "SoHoT generated agent cases"
 URL = "https://github.com/unxmaal/SoHoT/blob/main/evals/importers/agent_synth.py"
@@ -348,12 +350,15 @@ ENVS = ("development", "staging", "production")
 CONSTANTS = ("RETRY_LIMIT", "BATCH_SIZE", "MAX_WORKERS", "PAGE_SIZE", "FLUSH_EVERY", "QUEUE_DEPTH",
              "CHUNK_BYTES", "IDLE_TIMEOUT_S")
 #: Kinds and the hand set's family each id carries.
-KINDS = {"fix": "fix", "trace": "fix", "edit": "edit", "rename": "refactor", "move": "refactor",
-         "config": "read", "locate": "read", "constant": "read"}
+KINDS_BASE = {"fix": "fix", "trace": "fix", "edit": "edit", "rename": "refactor", "move": "refactor",
+              "config": "read", "locate": "read", "constant": "read"}
+#: Read kinds past item BASE whose answer only running the repo gives; a model skimming for a stated value misses them.
+HARD = {"tally": "read", "flow": "read", "shadow": "read", "graph": "read"}
+KINDS = {**KINDS_BASE, **HARD}
 #: Kinds whose untouched repo fails its own visible tests.
 BUGGY = ("fix", "trace")
 MAX_STEPS = {"fix": 16, "trace": 16, "edit": 12, "rename": 16, "move": 16, "config": 12, "locate": 12,
-             "constant": 12}
+             "constant": 12, "tally": 14, "flow": 14, "shadow": 14, "graph": 14}
 
 
 # --- running the references ---------------------------------------------------
@@ -776,6 +781,210 @@ def _constant(rng, pkg: str) -> dict:
             "check": {"module": f"{pkg}.client", "name": name}}
 
 
+# --- the hard read kinds: the answer is what the repo computes, which no line of it states -----------
+
+def _execute(files: dict, setup: str, exprs: list[str]) -> list:
+    """Import the repo from a scratch copy on disk, run `setup`, then evaluate each of `exprs`."""
+    import importlib
+    import tempfile
+    from pathlib import Path
+    with tempfile.TemporaryDirectory() as tmp:
+        for rel, text in files.items():
+            path = Path(tmp, rel)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(text, encoding="utf-8")
+        before = set(sys.modules)
+        sys.path.insert(0, tmp)
+        importlib.invalidate_caches()
+        try:
+            ns: dict = {}
+            exec(setup, ns)  # noqa: S102
+            return [eval(e, ns) for e in exprs]  # noqa: S307
+        finally:
+            sys.path.remove(tmp)
+            for name in set(sys.modules) - before:
+                if str(getattr(sys.modules[name], "__file__", "") or "").startswith(tmp):
+                    del sys.modules[name]
+
+
+def _slips(answer: int, *wrong: int, need: int = 2) -> list[str]:
+    """The distinct wrong totals a skim or a dropped rule would give, as text; fewer than `need` redraws the repo."""
+    out = sorted({w for w in wrong if w != answer and w > 0})
+    if len(out) < need:
+        raise _Redraw
+    return [str(w) for w in out]
+
+
+REGIONS = ("north", "south", "east", "west", "coast", "inland")
+
+
+def _line(qty, cents, region, tiers, sur, strict=False, discount=True, surcharge=True):
+    pct = 0
+    for floor, p in tiers:
+        if (qty > floor if strict else qty >= floor):
+            pct = p
+            break
+    net = qty * cents * (100 - pct * discount) // 100
+    return net * (100 + sur[region] * surcharge) // 100
+
+
+def _tally(rng, pkg: str) -> dict:
+    regs = rng.sample(REGIONS, 4)
+    sur = {r: rng.choice((0, 2, 3, 5, 8)) for r in regs}
+    floors = sorted(rng.sample(range(5, 30), 2))
+    pcts = sorted(rng.sample((3, 5, 8, 10, 12, 15, 20), 2))
+    tiers = ((floors[1], pcts[1]), (floors[0], pcts[0]))
+    counted = rng.choice((("ok",), ("ok", "hold")))
+    rows = [(f"O{2000 + i}", rng.choice(regs), rng.randint(1, 40), rng.randrange(150, 9900, 5),
+             rng.choice(("ok", "ok", "ok", "hold", "void"))) for i in range(rng.randint(24, 90))]
+    # A row sitting exactly on a tier floor makes the comparison operator matter.
+    rows[0] = (rows[0][0], rows[0][1], floors[0], rows[0][3], "ok")
+    old = [(f"O{1000 + i}", rng.choice(regs), rng.randint(1, 40), rng.randrange(150, 9900, 5), "ok") for i in range(8)]
+
+    def total(rs, only=counted, **kw):
+        return sum(_line(q, c, r, tiers, sur, **kw) for _, r, q, c, s in rs if s in only)
+
+    def csv_text(rs):
+        return "order,region,qty,cents,status\n" + "".join(",".join(map(str, r)) + "\n" for r in rs)
+
+    files = {f"{pkg}/__init__.py": "",
+             f"{pkg}/rates.py": ("\"\"\"Quantity discounts and regional surcharges, in whole percent.\"\"\"\n"
+                                 f"TIERS = {tiers!r}\nSURCHARGE = {sur!r}\n"),
+             f"{pkg}/pricing.py": (f"\"\"\"Price of one order line.\"\"\"\nfrom {pkg}.rates import SURCHARGE, TIERS\n\n\n"
+                                   "def discount(qty):\n    for floor, pct in TIERS:\n        if qty >= floor:\n"
+                                   "            return pct\n    return 0\n\n\n"
+                                   "def line(qty, cents, region):\n    net = qty * cents * (100 - discount(qty)) // 100\n"
+                                   "    return net * (100 + SURCHARGE[region]) // 100\n"),
+             f"{pkg}/report.py": ("\"\"\"Totals over the order export.\"\"\"\nimport csv\nfrom pathlib import Path\n\n"
+                                  f"from {pkg}.pricing import line\n\nCOUNTED = {counted!r}\n"
+                                  "ORDERS = Path(__file__).resolve().parent.parent / \"data\" / \"orders.csv\"\n\n\n"
+                                  "def rows():\n    with open(ORDERS, newline=\"\", encoding=\"utf-8\") as fh:\n"
+                                  "        return list(csv.DictReader(fh))\n\n\n"
+                                  "def grand_total():\n    return sum(line(int(r[\"qty\"]), int(r[\"cents\"]), r[\"region\"])\n"
+                                  "               for r in rows() if r[\"status\"] in COUNTED)\n"),
+             "data/orders.csv": csv_text(rows), "data/orders_archive.csv": csv_text(old),
+             "README.txt": "Order totals. The export in data/orders.csv is what grand_total() reads.\n"}
+    [answer] = _execute(files, f"from {pkg} import report", ["report.grand_total()"])
+    assert answer == total(rows), (answer, total(rows))
+    other = ("ok",) if len(counted) > 1 else ("ok", "hold")
+    slips = _slips(answer, total(rows, only=("ok", "hold", "void")), total(rows, only=other),
+                   total(rows, discount=False), total(rows, surcharge=False), total(rows, strict=True))
+    return {"prompt": f"What does {pkg}.report.grand_total() return for the data in this repo? Answer with the integer.",
+            "files": files, "answer": str(answer), "decoys": slips,
+            "check": {"setup": f"from {pkg} import report", "expr": "report.grand_total()"}}
+
+
+def _flow(rng, pkg: str) -> dict:
+    style = rng.choice(("default", "global", "cache"))
+    mod, off, k = rng.randint(7, 19), rng.randint(2, 30), rng.randint(2, 9)
+    limit, bias = rng.randint(40, 90), rng.randint(1, 12)
+    ops = ("(v * {a} + {b}) % {m}", "v ^ {a}", "v // {a} + {b}", "v + {a} if v % 2 else v - {b}", "abs(v - {m}) + {b}")
+    exprs = [rng.choice(ops).format(a=rng.randint(2, 9), b=rng.randint(1, 30), m=rng.randint(40, 120))
+             for _ in range(rng.randint(0, 7))]
+    steps = [f"{v}_step" for v in rng.sample(VERBS, len(exprs))]
+    a = rng.randint(-60, 60)
+    b = a if style == "cache" and rng.random() < 0.5 else rng.choice([v for v in range(-60, 61) if v != a])
+    stage = {"default": ("TRAIL = []\n\n\ndef step(n, seen=TRAIL):\n    seen.append(n)\n" f"    return n + {k} * len(seen)\n"),
+             "global": ("CALLS = 0\n\n\ndef step(n):\n    global CALLS\n    CALLS += 1\n" f"    return n + {k} * CALLS\n"),
+             "cache": ("import functools\n\nSEEN = []\n\n\n@functools.lru_cache(maxsize=None)\ndef step(n):\n"
+                       f"    SEEN.append(n)\n    return n + {k} * len(SEEN)\n")}[style]
+    files = {f"{pkg}/__init__.py": "",
+             f"{pkg}/clean.py": f"\"\"\"Input cleanup.\"\"\"\n\n\ndef normalize(n):\n    return abs(n) % {mod} + {off}\n",
+             f"{pkg}/stage.py": f"\"\"\"The stateful stage.\"\"\"\n{stage}",
+             f"{pkg}/entry.py": (f"\"\"\"Entry point.\"\"\"\nfrom {pkg}.clean import normalize\nfrom {pkg}.stage import step\n"
+                                 + "".join(f"from {pkg}.stages import {nm}\n" for nm in steps) +
+                                 f"\nLIMIT = {limit}\n\n\ndef run(n):\n    value = step(normalize(n))\n"
+                                 + "".join(f"    value = {nm}.apply(value)\n" for nm in steps) +
+                                 f"    if value > LIMIT:\n        value -= LIMIT // 2\n    return value + {bias}\n")}
+    if steps:
+        files[f"{pkg}/stages/__init__.py"] = ""
+    for nm, expr in zip(steps, exprs):
+        files[f"{pkg}/stages/{nm}.py"] = f"\"\"\"One step of the pipeline.\"\"\"\n\n\ndef apply(v):\n    return {expr}\n"
+    setup = f"from {pkg} import entry"
+    fresh = _execute(files, setup, [f"entry.run({b})"])[0]
+    first, second, third = _execute(files, setup, [f"entry.run({a})", f"entry.run({b})", f"entry.run({b})"])
+    extra = []
+    if style == "cache":
+        plain = {**files, f"{pkg}/stage.py": files[f"{pkg}/stage.py"].replace("@functools.lru_cache(maxsize=None)\n", "")}
+        extra = [_execute(plain, setup, [f"entry.run({a})", f"entry.run({b})"])[1]]
+    slips = _slips(second, fresh, first, third, *extra, need=1)
+    return {"prompt": (f"Starting from a fresh interpreter, {pkg}.entry.run({a}) is called and then {pkg}.entry.run({b}). "
+                       "What does the second call return? Answer with the integer."),
+            "files": files, "answer": str(second), "decoys": slips,
+            "check": {"setup": setup, "exprs": [f"entry.run({a})", f"entry.run({b})"], "pick": 1}}
+
+
+def _shadow(rng, pkg: str) -> dict:
+    base, mult = rng.randint(20, 400), rng.randint(2, 9)
+    p1, p2 = rng.randint(500, 900), rng.randint(5, 90)
+    readers = {"static": f"from {pkg}.config import LIMIT\n\n\ndef capacity():\n    return LIMIT * {mult}\n",
+               "bound": f"from {pkg} import config\n\n\ndef capacity(limit=config.LIMIT):\n    return limit * {mult}\n",
+               "live": f"from {pkg} import config\n\n\ndef capacity():\n    return config.LIMIT * {mult}\n"}
+    tuners = {"first": f"from {pkg} import config\n\nconfig.LIMIT = {p1}\n",
+              "second": f"from {pkg} import config\n\nconfig.LIMIT += {p2}\n"}
+    order = rng.sample([*readers, *tuners], 5)
+    files = {f"{pkg}/config.py": f"\"\"\"Limits.\"\"\"\nLIMIT = {base}\n"}
+    files.update({f"{pkg}/{m}.py": text for m, text in {**readers, **tuners}.items()})
+    files[f"{pkg}/__init__.py"] = "".join(f"from {pkg} import {m}  # noqa: F401\n" for m in order)
+    reader = rng.choice(list(readers))
+    setup = f"import {pkg}\nfrom {pkg} import {reader}"
+    [answer] = _execute(files, setup, [f"{reader}.capacity()"])
+    value, seen = base, {}
+    for m in order:
+        if m == "first":
+            value = p1
+        elif m == "second":
+            value += p2
+        else:
+            seen[m] = value
+    assert answer == (value if reader == "live" else seen[reader]) * mult, (order, reader, answer)
+    slips = _slips(answer, base * mult, value * mult, (p1 * mult), (base + p2) * mult, (p1 + p2) * mult)
+    return {"prompt": (f"After `import {pkg}`, what does {pkg}.{reader}.capacity() return? Answer with the integer."),
+            "files": files, "answer": str(answer), "decoys": slips,
+            "check": {"setup": setup, "expr": f"{reader}.capacity()"}}
+
+
+def _graph(rng, pkg: str) -> dict:
+    n = rng.randint(9, 26)
+    names = _ident(rng, n)
+    lag = rng.choice((0, 1, 2))
+    tasks = []
+    for i, name in enumerate(names):
+        deps = rng.sample(names[:i], min(i, rng.choice((0, 1, 1, 2, 3)))) if i else []
+        tasks.append({"name": name, "days": rng.randint(1, 9), "after": deps, "done": rng.random() < 0.25})
+    # The last task depends on the one before it, so the answer is a long chain rather than a stub.
+    if names[-2] not in tasks[-1]["after"]:
+        tasks[-1]["after"].append(names[-2])
+    tasks[-1]["done"] = False
+    by = {t["name"]: t for t in tasks}
+
+    def finish(name, done=True, lagged=True, add=False):
+        t = by[name]
+        days = 0 if (t["done"] and done) else t["days"]
+        ends = [finish(d, done, lagged, add) + (lag if lagged else 0) for d in t["after"]]
+        return days + ((sum(ends) if add else max(ends)) if ends else 0)
+
+    import json as _json
+    last = names[-1]
+    files = {f"{pkg}/__init__.py": "",
+             f"{pkg}/plan.py": ("\"\"\"Finish dates of the planned tasks.\"\"\"\nimport json\nfrom pathlib import Path\n\n"
+                                f"LAG = {lag}\nTASKS = json.loads((Path(__file__).resolve().parent.parent / \"data\" / "
+                                "\"tasks.json\").read_text(encoding=\"utf-8\"))\nBY_NAME = {t[\"name\"]: t for t in TASKS}\n\n\n"
+                                "def duration(task):\n    return 0 if task.get(\"done\") else task[\"days\"]\n\n\n"
+                                "def finish(name):\n    task = BY_NAME[name]\n"
+                                "    ends = [finish(dep) + LAG for dep in task[\"after\"]]\n"
+                                "    return duration(task) + max(ends, default=0)\n"),
+             "data/tasks.json": _json.dumps(tasks, indent=1) + "\n"}
+    setup = f"from {pkg} import plan"
+    [answer] = _execute(files, setup, [f"plan.finish({last!r})"])
+    assert answer == finish(last), (answer, finish(last))
+    slips = _slips(answer, finish(last, done=False), finish(last, lagged=False),
+                   finish(last, add=True), sum(t["days"] for t in tasks), sum(0 if t["done"] else t["days"] for t in tasks))
+    return {"prompt": f"What does {pkg}.plan.finish({last!r}) return? Answer with the integer.",
+            "files": files, "answer": str(answer), "decoys": slips,
+            "check": {"setup": setup, "expr": f"plan.finish({last!r})"}}
+
+
 def scene(row: dict) -> dict:
     """The repo, prompt and grade of one row."""
     rng = random.Random(f"{_KEY}:{VERSION}:{row['seed']}:{row['item']}:{row['attempt']}")
@@ -788,7 +997,9 @@ def scene(row: dict) -> dict:
     if kind in ("rename", "move"):
         return _refactor(rng, pkg, kind == "move")
     return {"config": lambda: _config(rng), "locate": lambda: _locate(rng, pkg),
-            "constant": lambda: _constant(rng, pkg)}[kind]()
+            "constant": lambda: _constant(rng, pkg), "tally": lambda: _tally(rng, pkg),
+            "flow": lambda: _flow(rng, pkg), "shadow": lambda: _shadow(rng, pkg),
+            "graph": lambda: _graph(rng, pkg)}[kind]()
 
 
 def _scene(row: dict) -> dict:
@@ -800,11 +1011,12 @@ def _scene(row: dict) -> dict:
 
 
 def fetch(seed: int = SEED, count: int = COUNT) -> list[dict]:
-    """The seeded draws, kinds in equal turn."""
-    kinds = sorted(KINDS)
+    """The seeded draws: the first BASE items cycle the base kinds, the rest the hard ones, each in equal turn."""
+    base, hard = sorted(KINDS_BASE), sorted(HARD)
     out = []
     for i in range(count):
-        row = {"item": i, "seed": seed, "kind": kinds[i % len(kinds)], "attempt": 0}
+        kind = base[i % len(base)] if i < BASE else hard[(i - BASE) % len(hard)]
+        row = {"item": i, "seed": seed, "kind": kind, "attempt": 0}
         _scene(row)
         out.append(row)
     return out

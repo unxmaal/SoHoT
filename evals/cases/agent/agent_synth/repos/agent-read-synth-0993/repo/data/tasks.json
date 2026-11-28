@@ -1,0 +1,159 @@
+[
+ {
+  "name": "rank_mooring",
+  "days": 2,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "render_mast",
+  "days": 2,
+  "after": [
+   "rank_mooring"
+  ],
+  "done": true
+ },
+ {
+  "name": "allocate_hull",
+  "days": 7,
+  "after": [
+   "rank_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_harbor",
+  "days": 6,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "estimate_deck",
+  "days": 8,
+  "after": [
+   "stage_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_sail",
+  "days": 3,
+  "after": [
+   "render_mast",
+   "estimate_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_dock",
+  "days": 6,
+  "after": [
+   "render_mast",
+   "estimate_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_buoy",
+  "days": 8,
+  "after": [
+   "rank_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_hull",
+  "days": 5,
+  "after": [
+   "estimate_dock",
+   "estimate_deck",
+   "allocate_hull"
+  ],
+  "done": true
+ },
+ {
+  "name": "apply_mast",
+  "days": 1,
+  "after": [
+   "rank_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_rope",
+  "days": 2,
+  "after": [
+   "render_mast"
+  ],
+  "done": true
+ },
+ {
+  "name": "reconcile_tide",
+  "days": 6,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "estimate_crate",
+  "days": 4,
+  "after": [
+   "reconcile_tide",
+   "parse_rope",
+   "rank_mooring"
+  ],
+  "done": true
+ },
+ {
+  "name": "stage_ferry",
+  "days": 5,
+  "after": [
+   "estimate_dock",
+   "allocate_hull",
+   "reconcile_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_quay",
+  "days": 4,
+  "after": [
+   "stage_harbor",
+   "load_sail",
+   "estimate_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_rope",
+  "days": 3,
+  "after": [
+   "estimate_deck",
+   "parse_rope",
+   "estimate_crate"
+  ],
+  "done": true
+ },
+ {
+  "name": "stage_buoy",
+  "days": 1,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "estimate_sail",
+  "days": 8,
+  "after": [
+   "rank_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_tide",
+  "days": 6,
+  "after": [
+   "rank_hull",
+   "estimate_sail"
+  ],
+  "done": false
+ }
+]

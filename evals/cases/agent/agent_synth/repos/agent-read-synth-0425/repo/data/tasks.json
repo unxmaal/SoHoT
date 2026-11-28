@@ -1,0 +1,85 @@
+[
+ {
+  "name": "flush_crate",
+  "days": 1,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "resolve_crate",
+  "days": 7,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "rank_ferry",
+  "days": 5,
+  "after": [
+   "resolve_crate",
+   "flush_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_dock",
+  "days": 8,
+  "after": [
+   "flush_crate",
+   "rank_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_pallet",
+  "days": 1,
+  "after": [
+   "flush_crate",
+   "rank_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_harbor",
+  "days": 8,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "merge_mast",
+  "days": 5,
+  "after": [
+   "split_dock"
+  ],
+  "done": true
+ },
+ {
+  "name": "render_keel",
+  "days": 5,
+  "after": [
+   "flush_crate"
+  ],
+  "done": true
+ },
+ {
+  "name": "resolve_berth",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "rank_sail",
+  "days": 4,
+  "after": [
+   "validate_harbor"
+  ],
+  "done": true
+ },
+ {
+  "name": "normalize_rope",
+  "days": 2,
+  "after": [
+   "rank_sail"
+  ],
+  "done": false
+ }
+]

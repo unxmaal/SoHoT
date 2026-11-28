@@ -1,0 +1,132 @@
+[
+ {
+  "name": "estimate_harbor",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "lookup_deck",
+  "days": 4,
+  "after": [
+   "estimate_harbor"
+  ],
+  "done": true
+ },
+ {
+  "name": "resolve_lantern",
+  "days": 2,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "validate_harbor",
+  "days": 6,
+  "after": [
+   "resolve_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_lantern",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "estimate_dock",
+  "days": 3,
+  "after": [
+   "resolve_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_buoy",
+  "days": 1,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "stage_anchor",
+  "days": 1,
+  "after": [
+   "stage_buoy"
+  ],
+  "done": true
+ },
+ {
+  "name": "stage_ferry",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "allocate_keel",
+  "days": 2,
+  "after": [
+   "stage_buoy"
+  ],
+  "done": true
+ },
+ {
+  "name": "resolve_quay",
+  "days": 5,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "apply_anchor",
+  "days": 9,
+  "after": [
+   "estimate_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_hull",
+  "days": 5,
+  "after": [
+   "lookup_deck",
+   "load_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_crate",
+  "days": 1,
+  "after": [
+   "stage_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_rope",
+  "days": 8,
+  "after": [
+   "validate_harbor",
+   "stage_ferry",
+   "estimate_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_cargo",
+  "days": 7,
+  "after": [
+   "stage_buoy",
+   "allocate_keel",
+   "validate_harbor"
+  ],
+  "done": true
+ },
+ {
+  "name": "stage_mast",
+  "days": 3,
+  "after": [
+   "apply_anchor",
+   "allocate_cargo"
+  ],
+  "done": false
+ }
+]

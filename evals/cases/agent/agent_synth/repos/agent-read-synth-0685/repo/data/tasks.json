@@ -1,0 +1,157 @@
+[
+ {
+  "name": "apply_berth",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "stage_ferry",
+  "days": 2,
+  "after": [
+   "apply_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_buoy",
+  "days": 3,
+  "after": [
+   "stage_ferry",
+   "apply_berth"
+  ],
+  "done": true
+ },
+ {
+  "name": "lookup_quay",
+  "days": 1,
+  "after": [
+   "apply_berth",
+   "stage_ferry",
+   "render_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_hull",
+  "days": 2,
+  "after": [
+   "apply_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_deck",
+  "days": 8,
+  "after": [
+   "merge_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_lantern",
+  "days": 8,
+  "after": [
+   "lookup_quay",
+   "stage_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_harbor",
+  "days": 5,
+  "after": [
+   "merge_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_hull",
+  "days": 3,
+  "after": [
+   "render_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_rope",
+  "days": 2,
+  "after": [
+   "estimate_deck",
+   "render_buoy",
+   "apply_berth"
+  ],
+  "done": true
+ },
+ {
+  "name": "validate_harbor",
+  "days": 1,
+  "after": [
+   "merge_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_ferry",
+  "days": 6,
+  "after": [
+   "apply_hull",
+   "rank_rope",
+   "stage_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_pallet",
+  "days": 3,
+  "after": [
+   "apply_hull",
+   "stage_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_mooring",
+  "days": 9,
+  "after": [
+   "merge_hull",
+   "apply_hull"
+  ],
+  "done": true
+ },
+ {
+  "name": "render_sail",
+  "days": 9,
+  "after": [
+   "apply_lantern",
+   "parse_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_sail",
+  "days": 3,
+  "after": [
+   "lookup_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_mooring",
+  "days": 9,
+  "after": [
+   "merge_hull",
+   "stage_ferry"
+  ],
+  "done": true
+ },
+ {
+  "name": "load_mooring",
+  "days": 6,
+  "after": [
+   "rank_harbor",
+   "allocate_mooring"
+  ],
+  "done": false
+ }
+]

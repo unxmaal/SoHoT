@@ -1,0 +1,30 @@
+{"id": "n00", "text": "The yearly budget for Dunlin-4 is $4460k, covering licences and hosting."}
+{"id": "n01", "text": "For Avocet-8 the port is 3142. Changing the port needs a change ticket."}
+{"id": "n02", "text": "Source for Bittern-9 is written in Erlang; no other language is allowed in its repository."}
+{"id": "n03", "text": "Swift-8 was granted a budget of $775k this year; an unspent budget does not roll over."}
+{"id": "n04", "text": "Merlin-4 enforces a rate limit of 2750 requests per minute per caller."}
+{"id": "n05", "text": "Elena Jaramillo is on the pager rotation of Kestrel-3 this month, with a deputy as backup."}
+{"id": "n06", "text": "Unlike Dunlin-4, whose port is handled elsewhere, the port of Bittern-9 is 4727. Nobody should assume the port of Bittern-9 applies to Dunlin-4, the port differs."}
+{"id": "n07", "text": "Unlike Merlin-4, whose budget is handled elsewhere, the budget of Bittern-9 is $2440k. Nobody should assume the budget of Bittern-9 applies to Merlin-4, the budget differs. The page was last reviewed in the spring."}
+{"id": "n08", "text": "The service Kestrel-3 takes traffic on port 2339, and the port is fixed across every environment. An older draft of this note was archived."}
+{"id": "n09", "text": "Unlike Swift-8, whose retirement date is handled elsewhere, the retirement date of Dunlin-4 is February 7, 2029. Nobody should assume the retirement date of Dunlin-4 applies to Swift-8, the retirement date differs."}
+{"id": "n10", "text": "Unlike Kestrel-3, whose owner is handled elsewhere, the owner of Merlin-4 is the Lattice team. Nobody should assume the owner of Merlin-4 applies to Kestrel-3, the owner differs."}
+{"id": "n11", "text": "Unlike Kestrel-3, whose pager rotation is handled elsewhere, the pager rotation of Swift-8 is Oren Kowalczyk. Nobody should assume the pager rotation of Swift-8 applies to Kestrel-3, the pager rotation differs. The page was last reviewed in the spring."}
+{"id": "n12", "text": "Dunlin-4 runs in the Cairo datacenter, next to its database. An older draft of this note was archived."}
+{"id": "n13", "text": "Unlike Merlin-4, whose owner is handled elsewhere, the owner of Swift-8 is the Trellis team. Nobody should assume the owner of Swift-8 applies to Merlin-4, the owner differs."}
+{"id": "n14", "text": "Unlike Avocet-8, whose port is handled elsewhere, the port of Merlin-4 is 9620. Nobody should assume the port of Merlin-4 applies to Avocet-8, the port differs."}
+{"id": "n15", "text": "The rate limit of Dunlin-4 is 3950 requests per minute; callers over it get a 429."}
+{"id": "n16", "text": "Kestrel-3 has one owner, the Trellis team, which approves each release and keeps the runbook current. Details change slowly, so check the history first."}
+{"id": "n17", "text": "Merlin-4 runs in the Cairo datacenter, next to its database."}
+{"id": "n18", "text": "Unlike Dunlin-4, whose datacenter is handled elsewhere, the datacenter of Kestrel-3 is the Bergen datacenter. Nobody should assume the datacenter of Kestrel-3 applies to Dunlin-4, the datacenter differs. Nothing about this has been disputed so far."}
+{"id": "n19", "text": "Expect throttling at the rate limit for Kestrel-3, which is 1800 requests per minute. Nothing about this has been disputed so far."}
+{"id": "n20", "text": "Unlike Dunlin-4, whose retirement date is handled elsewhere, the retirement date of Swift-8 is March 11, 2027. Nobody should assume the retirement date of Swift-8 applies to Dunlin-4, the retirement date differs. An older draft of this note was archived."}
+{"id": "n21", "text": "The pager rotation for Bittern-9 is run by Umar Lindqvist; alerts page them first."}
+{"id": "n22", "text": "The yearly budget for Merlin-4 is $2730k, covering licences and hosting."}
+{"id": "n23", "text": "The rate limit of Bittern-9 is 350 requests per minute; callers over it get a 429."}
+{"id": "n24", "text": "The primary datacenter of Avocet-8 is Cairo; failover is handled by operations."}
+{"id": "n25", "text": "Avocet-8 enforces a rate limit of 1350 requests per minute per caller."}
+{"id": "n26", "text": "Unlike Avocet-8, whose language is handled elsewhere, the language of Swift-8 is Scala. Nobody should assume the language of Swift-8 applies to Avocet-8, the language differs."}
+{"id": "n27", "text": "Unlike Swift-8, whose language is handled elsewhere, the language of Avocet-8 is Kotlin. Nobody should assume the language of Avocet-8 applies to Swift-8, the language differs."}
+{"id": "n28", "text": "The service Dunlin-4 takes traffic on port 5054, and the port is fixed across every environment."}
+{"id": "n29", "text": "Finance fixed the budget of Avocet-8 at $4035k, reviewed every quarter. An older draft of this note was archived."}

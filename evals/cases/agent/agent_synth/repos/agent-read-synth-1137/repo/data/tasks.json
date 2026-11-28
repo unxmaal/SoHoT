@@ -1,0 +1,108 @@
+[
+ {
+  "name": "load_deck",
+  "days": 5,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "flush_anchor",
+  "days": 6,
+  "after": [
+   "load_deck"
+  ],
+  "done": true
+ },
+ {
+  "name": "rank_lantern",
+  "days": 2,
+  "after": [
+   "load_deck",
+   "flush_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_anchor",
+  "days": 1,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "normalize_cargo",
+  "days": 4,
+  "after": [
+   "rank_lantern"
+  ],
+  "done": true
+ },
+ {
+  "name": "validate_crate",
+  "days": 6,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "flush_keel",
+  "days": 1,
+  "after": [
+   "validate_crate",
+   "rank_anchor"
+  ],
+  "done": true
+ },
+ {
+  "name": "load_dock",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "reconcile_dock",
+  "days": 3,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "stage_harbor",
+  "days": 1,
+  "after": [
+   "rank_lantern",
+   "flush_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_quay",
+  "days": 1,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "reconcile_harbor",
+  "days": 7,
+  "after": [
+   "flush_keel",
+   "stage_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_ferry",
+  "days": 2,
+  "after": [
+   "rank_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_harbor",
+  "days": 8,
+  "after": [
+   "reconcile_quay",
+   "estimate_ferry",
+   "load_dock"
+  ],
+  "done": false
+ }
+]

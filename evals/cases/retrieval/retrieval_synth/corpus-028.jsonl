@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Unlike Wren-4, whose budget is handled elsewhere, the budget of Avocet-5 is $2530k. Nobody should assume the budget of Avocet-5 applies to Wren-4, the budget differs."}
+{"id": "n01", "text": "Heron-4 enforces a rate limit of 3350 requests per minute per caller. Details change slowly, so check the history first."}
+{"id": "n02", "text": "Unlike Avocet-5, whose owner is handled elsewhere, the owner of Wren-4 is the Ledger team. Nobody should assume the owner of Wren-4 applies to Avocet-5, the owner differs. An older draft of this note was archived."}
+{"id": "n03", "text": "The rate limit of Merlin-2 is 450 requests per minute; callers over it get a 429."}
+{"id": "n04", "text": "The pager rotation for Wren-4 is run by Umar Marchetti; alerts page them first."}
+{"id": "n05", "text": "For Avocet-5 the port is 4545. Changing the port needs a change ticket."}
+{"id": "n06", "text": "Unlike Wren-4, whose owner is handled elsewhere, the owner of Lark-3 is the Keystone team. Nobody should assume the owner of Lark-3 applies to Wren-4, the owner differs."}
+{"id": "n07", "text": "Quinn Quintero is on the pager rotation of Merlin-2 this month, with a deputy as backup."}
+{"id": "n08", "text": "Unlike Egret-4, whose datacenter is handled elsewhere, the datacenter of Merlin-2 is the Quito datacenter. Nobody should assume the datacenter of Merlin-2 applies to Egret-4, the datacenter differs."}
+{"id": "n09", "text": "Heron-4 listens on port 4795; anyone who cannot reach that port should check the firewall rules."}
+{"id": "n10", "text": "The primary datacenter of Egret-4 is Hanoi; failover is handled by operations."}
+{"id": "n11", "text": "Unlike Egret-4, whose rate limit is handled elsewhere, the rate limit of Lark-3 is 3350 requests per minute. Nobody should assume the rate limit of Lark-3 applies to Egret-4, the rate limit differs."}
+{"id": "n12", "text": "Source for Avocet-5 is written in Rust; no other language is allowed in its repository. An older draft of this note was archived."}
+{"id": "n13", "text": "Heron-4 reaches its retirement date on March 28, 2028, so every consumer has to migrate before then."}
+{"id": "n14", "text": "Unlike Heron-4, whose rate limit is handled elsewhere, the rate limit of Egret-4 is 3150 requests per minute. Nobody should assume the rate limit of Egret-4 applies to Heron-4, the rate limit differs."}
+{"id": "n15", "text": "Source for Merlin-2 is written in Kotlin; no other language is allowed in its repository."}
+{"id": "n16", "text": "Unlike Avocet-5, whose language is handled elsewhere, the language of Wren-4 is Scala. Nobody should assume the language of Wren-4 applies to Avocet-5, the language differs. The page was last reviewed in the spring."}
+{"id": "n17", "text": "Unlike Heron-4, whose retirement date is handled elsewhere, the retirement date of Wren-4 is January 1, 2028. Nobody should assume the retirement date of Wren-4 applies to Heron-4, the retirement date differs. The page was last reviewed in the spring."}
+{"id": "n18", "text": "Wren-4 was granted a budget of $1035k this year; an unspent budget does not roll over."}
+{"id": "n19", "text": "For Egret-4 the port is 3122. Changing the port needs a change ticket. A diagram is attached to the wiki entry."}
+{"id": "n20", "text": "All instances of Lark-3 live in the datacenter at Dublin."}
+{"id": "n21", "text": "Unlike Avocet-5, whose budget is handled elsewhere, the budget of Heron-4 is $510k. Nobody should assume the budget of Heron-4 applies to Avocet-5, the budget differs. The page was last reviewed in the spring."}
+{"id": "n22", "text": "Plan around the retirement date of Egret-4: March 6, 2029 is when it goes dark."}
+{"id": "n23", "text": "The pager rotation for Egret-4 is run by Hana Kowalczyk; alerts page them first."}
+{"id": "n24", "text": "The pager rotation for Heron-4 is run by Priya Halvorsen; alerts page them first. A diagram is attached to the wiki entry."}
+{"id": "n25", "text": "Unlike Wren-4, whose owner is handled elsewhere, the owner of Avocet-5 is the Compass team. Nobody should assume the owner of Avocet-5 applies to Wren-4, the owner differs."}
+{"id": "n26", "text": "Questions about Merlin-2 start with its owner, the Sprocket team; they triage anything filed against it."}
+{"id": "n27", "text": "All instances of Avocet-5 live in the datacenter at Bergen."}
+{"id": "n28", "text": "Unlike Merlin-2, whose pager rotation is handled elsewhere, the pager rotation of Lark-3 is Bruno Dunmore. Nobody should assume the pager rotation of Lark-3 applies to Merlin-2, the pager rotation differs. The entry was reformatted last quarter."}
+{"id": "n29", "text": "Unlike Egret-4, whose port is handled elsewhere, the port of Lark-3 is 8459. Nobody should assume the port of Lark-3 applies to Egret-4, the port differs. The entry was reformatted last quarter."}

@@ -1,0 +1,130 @@
+[
+ {
+  "name": "validate_rope",
+  "days": 7,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "merge_deck",
+  "days": 8,
+  "after": [
+   "validate_rope"
+  ],
+  "done": true
+ },
+ {
+  "name": "stage_harbor",
+  "days": 6,
+  "after": [
+   "validate_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_barge",
+  "days": 6,
+  "after": [
+   "merge_deck",
+   "validate_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_ferry",
+  "days": 5,
+  "after": [
+   "validate_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_rope",
+  "days": 5,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "reconcile_anchor",
+  "days": 2,
+  "after": [
+   "apply_rope",
+   "merge_deck",
+   "allocate_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_quay",
+  "days": 1,
+  "after": [
+   "apply_rope",
+   "validate_rope",
+   "validate_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_mooring",
+  "days": 2,
+  "after": [
+   "reconcile_anchor",
+   "validate_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_buoy",
+  "days": 3,
+  "after": [
+   "validate_ferry",
+   "stage_harbor",
+   "apply_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_sail",
+  "days": 3,
+  "after": [
+   "stage_harbor",
+   "apply_quay",
+   "apply_rope"
+  ],
+  "done": true
+ },
+ {
+  "name": "rank_crate",
+  "days": 4,
+  "after": [
+   "stage_harbor",
+   "validate_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_berth",
+  "days": 8,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "resolve_lantern",
+  "days": 9,
+  "after": [
+   "lookup_mooring",
+   "reconcile_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_berth",
+  "days": 5,
+  "after": [
+   "reconcile_anchor",
+   "estimate_buoy",
+   "resolve_lantern"
+  ],
+  "done": false
+ }
+]

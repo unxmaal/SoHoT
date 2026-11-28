@@ -1,0 +1,158 @@
+[
+ {
+  "name": "normalize_cargo",
+  "days": 5,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "parse_keel",
+  "days": 5,
+  "after": [
+   "normalize_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_harbor",
+  "days": 1,
+  "after": [
+   "normalize_cargo",
+   "parse_keel"
+  ],
+  "done": true
+ },
+ {
+  "name": "lookup_pallet",
+  "days": 3,
+  "after": [
+   "parse_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_buoy",
+  "days": 7,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "split_quay",
+  "days": 3,
+  "after": [
+   "estimate_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_cargo",
+  "days": 7,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "apply_tide",
+  "days": 7,
+  "after": [
+   "stage_buoy",
+   "normalize_cargo",
+   "estimate_harbor"
+  ],
+  "done": true
+ },
+ {
+  "name": "validate_harbor",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "load_mooring",
+  "days": 2,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "load_harbor",
+  "days": 4,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "rank_keel",
+  "days": 1,
+  "after": [
+   "lookup_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_keel",
+  "days": 6,
+  "after": [
+   "load_mooring"
+  ],
+  "done": true
+ },
+ {
+  "name": "flush_ferry",
+  "days": 8,
+  "after": [
+   "estimate_harbor"
+  ],
+  "done": true
+ },
+ {
+  "name": "stage_crate",
+  "days": 4,
+  "after": [
+   "load_mooring",
+   "split_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_harbor",
+  "days": 4,
+  "after": [
+   "split_quay"
+  ],
+  "done": true
+ },
+ {
+  "name": "flush_mast",
+  "days": 1,
+  "after": [
+   "flush_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_anchor",
+  "days": 7,
+  "after": [
+   "load_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_pallet",
+  "days": 6,
+  "after": [
+   "flush_ferry",
+   "rank_keel",
+   "flush_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_tide",
+  "days": 7,
+  "after": [
+   "rank_keel",
+   "estimate_harbor",
+   "split_pallet"
+  ],
+  "done": false
+ }
+]

@@ -1,0 +1,97 @@
+[
+ {
+  "name": "normalize_dock",
+  "days": 2,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "lookup_quay",
+  "days": 6,
+  "after": [
+   "normalize_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_dock",
+  "days": 8,
+  "after": [
+   "normalize_dock",
+   "lookup_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_crate",
+  "days": 4,
+  "after": [
+   "normalize_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_barge",
+  "days": 8,
+  "after": [
+   "normalize_dock",
+   "resolve_crate"
+  ],
+  "done": true
+ },
+ {
+  "name": "lookup_pallet",
+  "days": 5,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "resolve_pallet",
+  "days": 3,
+  "after": [
+   "resolve_crate"
+  ],
+  "done": true
+ },
+ {
+  "name": "reconcile_hull",
+  "days": 5,
+  "after": [
+   "lookup_quay",
+   "render_barge",
+   "normalize_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_mast",
+  "days": 6,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "lookup_cargo",
+  "days": 1,
+  "after": [
+   "parse_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_lantern",
+  "days": 8,
+  "after": [
+   "lookup_cargo",
+   "resolve_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_quay",
+  "days": 8,
+  "after": [
+   "validate_lantern"
+  ],
+  "done": false
+ }
+]

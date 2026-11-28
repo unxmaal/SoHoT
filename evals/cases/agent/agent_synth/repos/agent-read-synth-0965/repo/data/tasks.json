@@ -1,0 +1,217 @@
+[
+ {
+  "name": "flush_pallet",
+  "days": 6,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "parse_hull",
+  "days": 4,
+  "after": [
+   "flush_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_crate",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "parse_berth",
+  "days": 8,
+  "after": [
+   "flush_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_pallet",
+  "days": 7,
+  "after": [
+   "parse_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_hull",
+  "days": 7,
+  "after": [
+   "allocate_pallet",
+   "parse_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_hull",
+  "days": 6,
+  "after": [
+   "parse_hull",
+   "estimate_hull"
+  ],
+  "done": true
+ },
+ {
+  "name": "load_mooring",
+  "days": 9,
+  "after": [
+   "split_hull",
+   "flush_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_mooring",
+  "days": 7,
+  "after": [
+   "flush_crate",
+   "parse_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_mooring",
+  "days": 7,
+  "after": [
+   "allocate_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_harbor",
+  "days": 9,
+  "after": [
+   "flush_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_sail",
+  "days": 5,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "flush_berth",
+  "days": 3,
+  "after": [
+   "resolve_mooring"
+  ],
+  "done": true
+ },
+ {
+  "name": "rank_dock",
+  "days": 3,
+  "after": [
+   "flush_harbor",
+   "parse_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_ferry",
+  "days": 3,
+  "after": [
+   "split_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_deck",
+  "days": 9,
+  "after": [
+   "estimate_mooring",
+   "split_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_lantern",
+  "days": 4,
+  "after": [
+   "resolve_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_keel",
+  "days": 4,
+  "after": [
+   "flush_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_buoy",
+  "days": 3,
+  "after": [
+   "flush_pallet",
+   "allocate_pallet",
+   "flush_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_tide",
+  "days": 4,
+  "after": [
+   "allocate_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_harbor",
+  "days": 1,
+  "after": [
+   "rank_dock",
+   "flush_harbor"
+  ],
+  "done": true
+ },
+ {
+  "name": "validate_ferry",
+  "days": 1,
+  "after": [
+   "parse_hull"
+  ],
+  "done": true
+ },
+ {
+  "name": "parse_pallet",
+  "days": 3,
+  "after": [
+   "split_sail",
+   "estimate_mooring",
+   "resolve_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_berth",
+  "days": 9,
+  "after": [
+   "render_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_hull",
+  "days": 5,
+  "after": [
+   "rank_keel",
+   "estimate_hull",
+   "flush_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_buoy",
+  "days": 3,
+  "after": [
+   "load_hull"
+  ],
+  "done": false
+ }
+]

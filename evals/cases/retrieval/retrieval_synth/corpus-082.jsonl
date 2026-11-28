@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Unlike Swift-9, whose rate limit is handled elsewhere, the rate limit of Curlew-3 is 950 requests per minute. Nobody should assume the rate limit of Curlew-3 applies to Swift-9, the rate limit differs. An older draft of this note was archived."}
+{"id": "n01", "text": "Unlike Bittern-5, whose pager rotation is handled elsewhere, the pager rotation of Dunlin-5 is Priya Quintero. Nobody should assume the pager rotation of Dunlin-5 applies to Bittern-5, the pager rotation differs. A diagram is attached to the wiki entry."}
+{"id": "n02", "text": "Unlike Kestrel-8, whose owner is handled elsewhere, the owner of Curlew-3 is the Sprocket team. Nobody should assume the owner of Curlew-3 applies to Kestrel-8, the owner differs. Details change slowly, so check the history first."}
+{"id": "n03", "text": "Unlike Siskin-6, whose budget is handled elsewhere, the budget of Dunlin-5 is $4195k. Nobody should assume the budget of Dunlin-5 applies to Siskin-6, the budget differs."}
+{"id": "n04", "text": "Unlike Bittern-5, whose retirement date is handled elsewhere, the retirement date of Dunlin-5 is March 11, 2029. Nobody should assume the retirement date of Dunlin-5 applies to Bittern-5, the retirement date differs. A diagram is attached to the wiki entry."}
+{"id": "n05", "text": "Unlike Swift-9, whose budget is handled elsewhere, the budget of Bittern-5 is $70k. Nobody should assume the budget of Bittern-5 applies to Swift-9, the budget differs."}
+{"id": "n06", "text": "Unlike Bittern-5, whose owner is handled elsewhere, the owner of Kestrel-8 is the Tessera team. Nobody should assume the owner of Kestrel-8 applies to Bittern-5, the owner differs."}
+{"id": "n07", "text": "Swift-9 is implemented in Zig; the language was chosen for its tooling."}
+{"id": "n08", "text": "Unlike Curlew-3, whose pager rotation is handled elsewhere, the pager rotation of Siskin-6 is Umar Nakamura. Nobody should assume the pager rotation of Siskin-6 applies to Curlew-3, the pager rotation differs."}
+{"id": "n09", "text": "Swift-9 enforces a rate limit of 1000 requests per minute per caller."}
+{"id": "n10", "text": "Questions about Bittern-5 start with its owner, the Tessera team; they triage anything filed against it. Nothing about this has been disputed so far."}
+{"id": "n11", "text": "Questions about Siskin-6 start with its owner, the Harbor team; they triage anything filed against it. The entry was reformatted last quarter."}
+{"id": "n12", "text": "Unlike Bittern-5, whose budget is handled elsewhere, the budget of Swift-9 is $870k. Nobody should assume the budget of Swift-9 applies to Bittern-5, the budget differs."}
+{"id": "n13", "text": "Dunlin-5 listens on port 9487; anyone who cannot reach that port should check the firewall rules. A diagram is attached to the wiki entry."}
+{"id": "n14", "text": "Unlike Kestrel-8, whose rate limit is handled elsewhere, the rate limit of Siskin-6 is 2900 requests per minute. Nobody should assume the rate limit of Siskin-6 applies to Kestrel-8, the rate limit differs."}
+{"id": "n15", "text": "Bittern-5 reaches its retirement date on October 3, 2029, so every consumer has to migrate before then."}
+{"id": "n16", "text": "Unlike Curlew-3, whose retirement date is handled elsewhere, the retirement date of Kestrel-8 is November 20, 2027. Nobody should assume the retirement date of Kestrel-8 applies to Curlew-3, the retirement date differs."}
+{"id": "n17", "text": "Unlike Dunlin-5, whose pager rotation is handled elsewhere, the pager rotation of Swift-9 is Bruno Castellan. Nobody should assume the pager rotation of Swift-9 applies to Dunlin-5, the pager rotation differs."}
+{"id": "n18", "text": "Curlew-3 runs in the Nairobi datacenter, next to its database. Details change slowly, so check the history first."}
+{"id": "n19", "text": "Pages from Curlew-3 land on the pager rotation of Vera Jaramillo before anyone else."}
+{"id": "n20", "text": "Unlike Swift-9, whose language is handled elsewhere, the language of Dunlin-5 is Haskell. Nobody should assume the language of Dunlin-5 applies to Swift-9, the language differs. The entry was reformatted last quarter."}
+{"id": "n21", "text": "Unlike Swift-9, whose datacenter is handled elsewhere, the datacenter of Kestrel-8 is the Oslo datacenter. Nobody should assume the datacenter of Kestrel-8 applies to Swift-9, the datacenter differs. Nothing about this has been disputed so far."}
+{"id": "n22", "text": "Celia Abernathy is on the pager rotation of Kestrel-8 this month, with a deputy as backup. The entry was reformatted last quarter."}
+{"id": "n23", "text": "The language of Bittern-5 is Zig, which new contributors must know."}
+{"id": "n24", "text": "Siskin-6 is implemented in OCaml; the language was chosen for its tooling."}
+{"id": "n25", "text": "The pager rotation for Bittern-5 is run by Bruno Fairbanks; alerts page them first."}
+{"id": "n26", "text": "Unlike Kestrel-8, whose datacenter is handled elsewhere, the datacenter of Swift-9 is the Nairobi datacenter. Nobody should assume the datacenter of Swift-9 applies to Kestrel-8, the datacenter differs."}
+{"id": "n27", "text": "The rate limit of Kestrel-8 is 1800 requests per minute; callers over it get a 429. An older draft of this note was archived."}
+{"id": "n28", "text": "Unlike Swift-9, whose budget is handled elsewhere, the budget of Siskin-6 is $3225k. Nobody should assume the budget of Siskin-6 applies to Swift-9, the budget differs."}
+{"id": "n29", "text": "Unlike Dunlin-5, whose retirement date is handled elsewhere, the retirement date of Curlew-3 is January 13, 2029. Nobody should assume the retirement date of Curlew-3 applies to Dunlin-5, the retirement date differs."}

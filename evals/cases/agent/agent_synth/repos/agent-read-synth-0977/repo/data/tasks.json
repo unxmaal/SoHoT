@@ -1,0 +1,105 @@
+[
+ {
+  "name": "normalize_harbor",
+  "days": 5,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "split_cargo",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "stage_mooring",
+  "days": 7,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "validate_crate",
+  "days": 3,
+  "after": [
+   "split_cargo",
+   "normalize_harbor",
+   "stage_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_barge",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "merge_buoy",
+  "days": 8,
+  "after": [
+   "split_cargo",
+   "normalize_harbor",
+   "stage_mooring"
+  ],
+  "done": true
+ },
+ {
+  "name": "normalize_deck",
+  "days": 7,
+  "after": [
+   "merge_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_keel",
+  "days": 1,
+  "after": [
+   "normalize_harbor"
+  ],
+  "done": true
+ },
+ {
+  "name": "split_dock",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "allocate_mast",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "normalize_quay",
+  "days": 3,
+  "after": [
+   "normalize_harbor",
+   "allocate_mast",
+   "merge_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_pallet",
+  "days": 2,
+  "after": [
+   "split_cargo",
+   "normalize_deck",
+   "normalize_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_buoy",
+  "days": 7,
+  "after": [
+   "normalize_quay",
+   "merge_buoy",
+   "allocate_barge",
+   "allocate_pallet"
+  ],
+  "done": false
+ }
+]

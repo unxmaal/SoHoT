@@ -1,0 +1,90 @@
+[
+ {
+  "name": "parse_dock",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "flush_berth",
+  "days": 5,
+  "after": [
+   "parse_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_sail",
+  "days": 9,
+  "after": [
+   "parse_dock",
+   "flush_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_dock",
+  "days": 4,
+  "after": [
+   "flush_berth",
+   "parse_dock",
+   "parse_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_hull",
+  "days": 2,
+  "after": [
+   "flush_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_lantern",
+  "days": 1,
+  "after": [
+   "parse_dock",
+   "load_dock"
+  ],
+  "done": true
+ },
+ {
+  "name": "render_mooring",
+  "days": 3,
+  "after": [
+   "flush_berth",
+   "parse_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_rope",
+  "days": 7,
+  "after": [
+   "parse_dock",
+   "render_mooring",
+   "load_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_lantern",
+  "days": 9,
+  "after": [
+   "parse_dock",
+   "flush_berth",
+   "estimate_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_mast",
+  "days": 7,
+  "after": [
+   "parse_sail",
+   "render_lantern"
+  ],
+  "done": false
+ }
+]

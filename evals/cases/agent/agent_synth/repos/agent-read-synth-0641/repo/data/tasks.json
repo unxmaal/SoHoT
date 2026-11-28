@@ -1,0 +1,91 @@
+[
+ {
+  "name": "render_ferry",
+  "days": 2,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "normalize_buoy",
+  "days": 6,
+  "after": [
+   "render_ferry"
+  ],
+  "done": true
+ },
+ {
+  "name": "estimate_quay",
+  "days": 5,
+  "after": [
+   "render_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_quay",
+  "days": 4,
+  "after": [
+   "render_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_berth",
+  "days": 1,
+  "after": [
+   "normalize_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_mast",
+  "days": 7,
+  "after": [
+   "rank_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_barge",
+  "days": 5,
+  "after": [
+   "flush_mast",
+   "normalize_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_keel",
+  "days": 7,
+  "after": [
+   "estimate_quay",
+   "render_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_quay",
+  "days": 6,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "merge_lantern",
+  "days": 6,
+  "after": [
+   "render_ferry",
+   "estimate_quay",
+   "estimate_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_anchor",
+  "days": 8,
+  "after": [
+   "validate_berth",
+   "merge_lantern"
+  ],
+  "done": false
+ }
+]

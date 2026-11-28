@@ -1,0 +1,153 @@
+[
+ {
+  "name": "lookup_barge",
+  "days": 2,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "merge_anchor",
+  "days": 7,
+  "after": [
+   "lookup_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_hull",
+  "days": 3,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "flush_barge",
+  "days": 7,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "estimate_mooring",
+  "days": 7,
+  "after": [
+   "estimate_hull",
+   "merge_anchor",
+   "lookup_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_pallet",
+  "days": 2,
+  "after": [
+   "merge_anchor",
+   "flush_barge"
+  ],
+  "done": true
+ },
+ {
+  "name": "resolve_hull",
+  "days": 6,
+  "after": [
+   "merge_anchor"
+  ],
+  "done": true
+ },
+ {
+  "name": "flush_deck",
+  "days": 5,
+  "after": [
+   "lookup_barge",
+   "resolve_hull",
+   "estimate_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_rope",
+  "days": 4,
+  "after": [
+   "lookup_barge"
+  ],
+  "done": true
+ },
+ {
+  "name": "validate_keel",
+  "days": 5,
+  "after": [
+   "resolve_hull"
+  ],
+  "done": true
+ },
+ {
+  "name": "stage_keel",
+  "days": 7,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "allocate_barge",
+  "days": 9,
+  "after": [
+   "estimate_hull",
+   "stage_keel",
+   "merge_anchor"
+  ],
+  "done": true
+ },
+ {
+  "name": "flush_buoy",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "validate_hull",
+  "days": 8,
+  "after": [
+   "flush_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_lantern",
+  "days": 6,
+  "after": [
+   "flush_barge",
+   "resolve_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_barge",
+  "days": 8,
+  "after": [
+   "merge_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_deck",
+  "days": 5,
+  "after": [
+   "rank_lantern",
+   "flush_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_harbor",
+  "days": 9,
+  "after": [
+   "merge_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_keel",
+  "days": 4,
+  "after": [
+   "lookup_harbor"
+  ],
+  "done": false
+ }
+]

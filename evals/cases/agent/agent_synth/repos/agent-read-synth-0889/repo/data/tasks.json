@@ -1,0 +1,110 @@
+[
+ {
+  "name": "resolve_harbor",
+  "days": 2,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "validate_dock",
+  "days": 9,
+  "after": [
+   "resolve_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_ferry",
+  "days": 9,
+  "after": [
+   "validate_dock",
+   "resolve_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_crate",
+  "days": 6,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "resolve_keel",
+  "days": 8,
+  "after": [
+   "reconcile_ferry",
+   "resolve_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_tide",
+  "days": 1,
+  "after": [
+   "resolve_harbor",
+   "validate_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_barge",
+  "days": 2,
+  "after": [
+   "flush_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_rope",
+  "days": 2,
+  "after": [
+   "resolve_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_keel",
+  "days": 1,
+  "after": [
+   "flush_crate"
+  ],
+  "done": true
+ },
+ {
+  "name": "lookup_hull",
+  "days": 1,
+  "after": [
+   "lookup_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_rope",
+  "days": 2,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "render_mast",
+  "days": 8,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "rank_tide",
+  "days": 4,
+  "after": [
+   "reconcile_barge",
+   "validate_dock"
+  ],
+  "done": true
+ },
+ {
+  "name": "render_berth",
+  "days": 2,
+  "after": [
+   "rank_tide"
+  ],
+  "done": false
+ }
+]

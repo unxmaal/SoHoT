@@ -2987,6 +2987,23 @@ carry the repo's other values as decoys. Negative control: the reference
 passes, the untouched repo fails. The code is new, so no served model has seen
 these repos, though the helper functions are textbook ones.
 
+The agent lane's harder kinds (#2182), drawn after the first `agent_synth.BASE`
+items, are read cases whose answer no line of the repo states, because only
+running it gives the integer: an order total over a 24 to 90 row export with
+tiered discounts and regional surcharges, a call to a stateful pipeline of up
+to eight stages (a mutable default, a global counter or a cache), a capacity
+read after import-time patches whose order decides what each reader copied,
+and a task finish time over a dependency graph of up to 26 tasks. The answer
+is the repo run in a scratch copy; the decoys are what a dropped rule gives.
+
+The retrieval lane's generated source is `retrieval_synth` (#2182), since
+SQuAD is used up: seeded corpora of notes about invented systems, each note
+one (system, facet) fact, questions in three kinds (the facet word as the
+note spells it, a synonym sharing no content word with the note, and a
+neighbour's note that repeats the facet word and names the system). The gold
+note is the one written for the question; a ranking with it last fails every
+case, and BM25 passes about four in ten.
+
 `repair` costs nothing extra, so it is the one to understand. Everything already
 checks its own output. It runs the code it wrote, draws the SVG to see whether
 anything is visible, opens the web page in a browser. All of that was

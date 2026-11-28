@@ -1,0 +1,212 @@
+[
+ {
+  "name": "rank_mooring",
+  "days": 1,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "allocate_tide",
+  "days": 7,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "reconcile_crate",
+  "days": 6,
+  "after": [
+   "rank_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_berth",
+  "days": 9,
+  "after": [
+   "allocate_tide",
+   "rank_mooring",
+   "reconcile_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_rope",
+  "days": 7,
+  "after": [
+   "rank_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_lantern",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "rank_hull",
+  "days": 8,
+  "after": [
+   "allocate_rope",
+   "merge_lantern",
+   "reconcile_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_mooring",
+  "days": 5,
+  "after": [
+   "rank_mooring",
+   "reconcile_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_ferry",
+  "days": 9,
+  "after": [
+   "allocate_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_lantern",
+  "days": 2,
+  "after": [
+   "split_mooring",
+   "merge_lantern",
+   "reconcile_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_pallet",
+  "days": 3,
+  "after": [
+   "resolve_lantern",
+   "merge_lantern",
+   "allocate_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_keel",
+  "days": 3,
+  "after": [
+   "split_mooring",
+   "reconcile_berth"
+  ],
+  "done": true
+ },
+ {
+  "name": "resolve_tide",
+  "days": 5,
+  "after": [
+   "rank_pallet",
+   "merge_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_quay",
+  "days": 3,
+  "after": [
+   "rank_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_buoy",
+  "days": 5,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "apply_rope",
+  "days": 2,
+  "after": [
+   "allocate_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_dock",
+  "days": 5,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "render_quay",
+  "days": 7,
+  "after": [
+   "merge_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_ferry",
+  "days": 8,
+  "after": [
+   "apply_dock",
+   "merge_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_cargo",
+  "days": 4,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "apply_harbor",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "allocate_quay",
+  "days": 4,
+  "after": [
+   "render_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_crate",
+  "days": 5,
+  "after": [
+   "load_ferry",
+   "reconcile_buoy"
+  ],
+  "done": true
+ },
+ {
+  "name": "allocate_hull",
+  "days": 1,
+  "after": [
+   "resolve_crate"
+  ],
+  "done": true
+ },
+ {
+  "name": "render_mast",
+  "days": 6,
+  "after": [
+   "allocate_quay",
+   "estimate_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_sail",
+  "days": 7,
+  "after": [
+   "rank_mooring",
+   "load_ferry",
+   "render_mast"
+  ],
+  "done": false
+ }
+]

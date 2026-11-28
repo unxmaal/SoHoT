@@ -1,0 +1,75 @@
+[
+ {
+  "name": "stage_pallet",
+  "days": 7,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "flush_hull",
+  "days": 8,
+  "after": [
+   "stage_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_harbor",
+  "days": 1,
+  "after": [
+   "flush_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_hull",
+  "days": 9,
+  "after": [
+   "stage_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_tide",
+  "days": 4,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "normalize_sail",
+  "days": 8,
+  "after": [
+   "flush_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_pallet",
+  "days": 1,
+  "after": [
+   "estimate_hull",
+   "normalize_sail",
+   "merge_tide"
+  ],
+  "done": true
+ },
+ {
+  "name": "render_cargo",
+  "days": 1,
+  "after": [
+   "parse_harbor",
+   "load_pallet",
+   "estimate_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_lantern",
+  "days": 6,
+  "after": [
+   "merge_tide",
+   "render_cargo"
+  ],
+  "done": false
+ }
+]

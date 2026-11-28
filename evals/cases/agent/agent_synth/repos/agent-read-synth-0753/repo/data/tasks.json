@@ -1,0 +1,202 @@
+[
+ {
+  "name": "split_mast",
+  "days": 3,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "render_hull",
+  "days": 6,
+  "after": [
+   "split_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_berth",
+  "days": 4,
+  "after": [
+   "render_hull",
+   "split_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_keel",
+  "days": 7,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "validate_sail",
+  "days": 9,
+  "after": [
+   "render_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_keel",
+  "days": 4,
+  "after": [
+   "render_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_harbor",
+  "days": 3,
+  "after": [
+   "render_hull",
+   "merge_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_anchor",
+  "days": 5,
+  "after": [
+   "validate_sail",
+   "resolve_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_pallet",
+  "days": 2,
+  "after": [
+   "split_anchor",
+   "split_mast",
+   "render_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_sail",
+  "days": 1,
+  "after": [
+   "parse_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_tide",
+  "days": 6,
+  "after": [
+   "load_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_anchor",
+  "days": 4,
+  "after": [
+   "resolve_keel",
+   "validate_sail"
+  ],
+  "done": true
+ },
+ {
+  "name": "resolve_crate",
+  "days": 2,
+  "after": [
+   "merge_berth",
+   "render_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_cargo",
+  "days": 5,
+  "after": [
+   "reconcile_anchor",
+   "stage_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_ferry",
+  "days": 7,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "stage_hull",
+  "days": 4,
+  "after": [
+   "split_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_anchor",
+  "days": 1,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "stage_harbor",
+  "days": 9,
+  "after": [
+   "validate_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_pallet",
+  "days": 6,
+  "after": [
+   "normalize_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_sail",
+  "days": 6,
+  "after": [
+   "normalize_ferry",
+   "stage_tide",
+   "resolve_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_hull",
+  "days": 4,
+  "after": [
+   "reconcile_anchor",
+   "parse_pallet",
+   "stage_hull"
+  ],
+  "done": true
+ },
+ {
+  "name": "merge_lantern",
+  "days": 8,
+  "after": [
+   "apply_cargo",
+   "merge_keel"
+  ],
+  "done": true
+ },
+ {
+  "name": "load_lantern",
+  "days": 7,
+  "after": [
+   "resolve_crate"
+  ],
+  "done": true
+ },
+ {
+  "name": "flush_buoy",
+  "days": 9,
+  "after": [
+   "merge_berth",
+   "render_harbor",
+   "merge_keel",
+   "load_lantern"
+  ],
+  "done": false
+ }
+]

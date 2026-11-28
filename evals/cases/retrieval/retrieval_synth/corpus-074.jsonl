@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Unlike Osprey-9, whose language is handled elsewhere, the language of Shrike-4 is Swift. Nobody should assume the language of Shrike-4 applies to Osprey-9, the language differs."}
+{"id": "n01", "text": "Unlike Shrike-4, whose language is handled elsewhere, the language of Osprey-9 is Rust. Nobody should assume the language of Osprey-9 applies to Shrike-4, the language differs. A diagram is attached to the wiki entry."}
+{"id": "n02", "text": "Unlike Kestrel-6, whose rate limit is handled elsewhere, the rate limit of Shrike-4 is 4000 requests per minute. Nobody should assume the rate limit of Shrike-4 applies to Kestrel-6, the rate limit differs."}
+{"id": "n03", "text": "The primary datacenter of Godwit-7 is Tallinn; failover is handled by operations. Details change slowly, so check the history first."}
+{"id": "n04", "text": "Unlike Osprey-9, whose port is handled elsewhere, the port of Siskin-2 is 5923. Nobody should assume the port of Siskin-2 applies to Osprey-9, the port differs."}
+{"id": "n05", "text": "Unlike Siskin-2, whose retirement date is handled elsewhere, the retirement date of Kestrel-6 is March 23, 2029. Nobody should assume the retirement date of Kestrel-6 applies to Siskin-2, the retirement date differs."}
+{"id": "n06", "text": "Swift-3 was granted a budget of $3230k this year; an unspent budget does not roll over. The page was last reviewed in the spring."}
+{"id": "n07", "text": "Pages from Shrike-4 land on the pager rotation of Nadia Marchetti before anyone else."}
+{"id": "n08", "text": "Jolene Zielinski is on the pager rotation of Osprey-9 this month, with a deputy as backup."}
+{"id": "n09", "text": "Unlike Kestrel-6, whose budget is handled elsewhere, the budget of Godwit-7 is $3120k. Nobody should assume the budget of Godwit-7 applies to Kestrel-6, the budget differs. The entry was reformatted last quarter."}
+{"id": "n10", "text": "Unlike Swift-3, whose datacenter is handled elsewhere, the datacenter of Osprey-9 is the Perth datacenter. Nobody should assume the datacenter of Osprey-9 applies to Swift-3, the datacenter differs. An older draft of this note was archived."}
+{"id": "n11", "text": "Finance fixed the budget of Kestrel-6 at $2255k, reviewed every quarter. The entry was reformatted last quarter."}
+{"id": "n12", "text": "The primary datacenter of Swift-3 is Dublin; failover is handled by operations. The entry was reformatted last quarter."}
+{"id": "n13", "text": "Unlike Swift-3, whose owner is handled elsewhere, the owner of Shrike-4 is the Harbor team. Nobody should assume the owner of Shrike-4 applies to Swift-3, the owner differs."}
+{"id": "n14", "text": "The owner of Godwit-7 is the Tessera team, and every change to Godwit-7 goes through their review."}
+{"id": "n15", "text": "Unlike Godwit-7, whose datacenter is handled elsewhere, the datacenter of Siskin-2 is the Osaka datacenter. Nobody should assume the datacenter of Siskin-2 applies to Godwit-7, the datacenter differs."}
+{"id": "n16", "text": "The service Kestrel-6 takes traffic on port 2110, and the port is fixed across every environment."}
+{"id": "n17", "text": "Unlike Osprey-9, whose owner is handled elsewhere, the owner of Swift-3 is the Trellis team. Nobody should assume the owner of Swift-3 applies to Osprey-9, the owner differs. Nothing about this has been disputed so far."}
+{"id": "n18", "text": "Swift-3 listens on port 4231; anyone who cannot reach that port should check the firewall rules. The entry was reformatted last quarter."}
+{"id": "n19", "text": "The rate limit of Godwit-7 is 1100 requests per minute; callers over it get a 429."}
+{"id": "n20", "text": "Plan around the retirement date of Godwit-7: December 2, 2027 is when it goes dark."}
+{"id": "n21", "text": "Pages from Swift-3 land on the pager rotation of Bruno Jaramillo before anyone else. Nothing about this has been disputed so far."}
+{"id": "n22", "text": "For Osprey-9 the port is 9010. Changing the port needs a change ticket. An older draft of this note was archived."}
+{"id": "n23", "text": "Unlike Siskin-2, whose pager rotation is handled elsewhere, the pager rotation of Kestrel-6 is Avery Sandoval. Nobody should assume the pager rotation of Kestrel-6 applies to Siskin-2, the pager rotation differs."}
+{"id": "n24", "text": "Unlike Swift-3, whose owner is handled elsewhere, the owner of Osprey-9 is the Ledger team. Nobody should assume the owner of Osprey-9 applies to Swift-3, the owner differs."}
+{"id": "n25", "text": "Pages from Siskin-2 land on the pager rotation of Gideon Halvorsen before anyone else."}
+{"id": "n26", "text": "The rate limit of Siskin-2 is 2050 requests per minute; callers over it get a 429. The page was last reviewed in the spring."}
+{"id": "n27", "text": "Unlike Godwit-7, whose retirement date is handled elsewhere, the retirement date of Siskin-2 is October 2, 2027. Nobody should assume the retirement date of Siskin-2 applies to Godwit-7, the retirement date differs."}
+{"id": "n28", "text": "Kestrel-6 enforces a rate limit of 700 requests per minute per caller."}
+{"id": "n29", "text": "Unlike Siskin-2, whose retirement date is handled elsewhere, the retirement date of Shrike-4 is July 16, 2028. Nobody should assume the retirement date of Shrike-4 applies to Siskin-2, the retirement date differs."}

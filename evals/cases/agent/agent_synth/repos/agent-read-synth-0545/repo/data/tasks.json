@@ -1,0 +1,143 @@
+[
+ {
+  "name": "allocate_rope",
+  "days": 5,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "split_pallet",
+  "days": 2,
+  "after": [
+   "allocate_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_anchor",
+  "days": 9,
+  "after": [
+   "split_pallet",
+   "allocate_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_lantern",
+  "days": 1,
+  "after": [
+   "allocate_rope"
+  ],
+  "done": true
+ },
+ {
+  "name": "reconcile_harbor",
+  "days": 3,
+  "after": [
+   "split_pallet",
+   "merge_lantern"
+  ],
+  "done": true
+ },
+ {
+  "name": "rank_cargo",
+  "days": 3,
+  "after": [
+   "allocate_rope",
+   "reconcile_harbor",
+   "parse_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_tide",
+  "days": 5,
+  "after": [
+   "parse_anchor",
+   "reconcile_harbor",
+   "split_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_mast",
+  "days": 7,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "split_mast",
+  "days": 9,
+  "after": [
+   "rank_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_ferry",
+  "days": 7,
+  "after": [
+   "reconcile_harbor",
+   "split_pallet"
+  ],
+  "done": true
+ },
+ {
+  "name": "merge_sail",
+  "days": 4,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "apply_harbor",
+  "days": 4,
+  "after": [
+   "split_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_lantern",
+  "days": 1,
+  "after": [
+   "allocate_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_sail",
+  "days": 6,
+  "after": [
+   "load_tide",
+   "merge_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_mooring",
+  "days": 6,
+  "after": [
+   "rank_cargo",
+   "parse_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_dock",
+  "days": 6,
+  "after": [
+   "reconcile_harbor",
+   "render_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_pallet",
+  "days": 1,
+  "after": [
+   "merge_sail",
+   "flush_dock"
+  ],
+  "done": false
+ }
+]

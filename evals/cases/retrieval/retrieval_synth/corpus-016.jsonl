@@ -1,0 +1,30 @@
+{"id": "n00", "text": "The service Plover-7 takes traffic on port 6255, and the port is fixed across every environment."}
+{"id": "n01", "text": "Expect throttling at the rate limit for Plover-7, which is 4200 requests per minute. An older draft of this note was archived."}
+{"id": "n02", "text": "The retirement date for Swift-5 is February 18, 2028; after that day it stops serving."}
+{"id": "n03", "text": "Questions about Swift-5 start with its owner, the Ledger team; they triage anything filed against it."}
+{"id": "n04", "text": "Plover-7 is implemented in Kotlin; the language was chosen for its tooling."}
+{"id": "n05", "text": "Unlike Ibis-2, whose pager rotation is handled elsewhere, the pager rotation of Osprey-6 is Hana Valdivia. Nobody should assume the pager rotation of Osprey-6 applies to Ibis-2, the pager rotation differs."}
+{"id": "n06", "text": "Questions about Plover-7 start with its owner, the Trellis team; they triage anything filed against it. The entry was reformatted last quarter."}
+{"id": "n07", "text": "The yearly budget for Merlin-7 is $2225k, covering licences and hosting."}
+{"id": "n08", "text": "Unlike Swift-5, whose port is handled elsewhere, the port of Osprey-6 is 5267. Nobody should assume the port of Osprey-6 applies to Swift-5, the port differs."}
+{"id": "n09", "text": "For Ibis-2 the port is 9882. Changing the port needs a change ticket. Details change slowly, so check the history first."}
+{"id": "n10", "text": "The primary datacenter of Swift-5 is Hanoi; failover is handled by operations."}
+{"id": "n11", "text": "Unlike Merlin-7, whose retirement date is handled elsewhere, the retirement date of Osprey-6 is May 12, 2029. Nobody should assume the retirement date of Osprey-6 applies to Merlin-7, the retirement date differs."}
+{"id": "n12", "text": "Source for Ibis-2 is written in Scala; no other language is allowed in its repository. Details change slowly, so check the history first."}
+{"id": "n13", "text": "Unlike Merlin-7, whose budget is handled elsewhere, the budget of Siskin-6 is $3850k. Nobody should assume the budget of Siskin-6 applies to Merlin-7, the budget differs."}
+{"id": "n14", "text": "Merlin-7 runs in the Cairo datacenter, next to its database."}
+{"id": "n15", "text": "Unlike Merlin-7, whose language is handled elsewhere, the language of Siskin-6 is Elixir. Nobody should assume the language of Siskin-6 applies to Merlin-7, the language differs. An older draft of this note was archived."}
+{"id": "n16", "text": "Merlin-7 reaches its retirement date on December 20, 2029, so every consumer has to migrate before then. Details change slowly, so check the history first."}
+{"id": "n17", "text": "Swift-5 listens on port 6851; anyone who cannot reach that port should check the firewall rules."}
+{"id": "n18", "text": "Unlike Swift-5, whose retirement date is handled elsewhere, the retirement date of Plover-7 is May 13, 2029. Nobody should assume the retirement date of Plover-7 applies to Swift-5, the retirement date differs."}
+{"id": "n19", "text": "Unlike Plover-7, whose owner is handled elsewhere, the owner of Osprey-6 is the Harbor team. Nobody should assume the owner of Osprey-6 applies to Plover-7, the owner differs."}
+{"id": "n20", "text": "Unlike Ibis-2, whose datacenter is handled elsewhere, the datacenter of Siskin-6 is the Osaka datacenter. Nobody should assume the datacenter of Siskin-6 applies to Ibis-2, the datacenter differs."}
+{"id": "n21", "text": "Unlike Ibis-2, whose language is handled elsewhere, the language of Merlin-7 is Erlang. Nobody should assume the language of Merlin-7 applies to Ibis-2, the language differs."}
+{"id": "n22", "text": "The primary datacenter of Ibis-2 is Hanoi; failover is handled by operations."}
+{"id": "n23", "text": "Expect throttling at the rate limit for Swift-5, which is 3950 requests per minute. Details change slowly, so check the history first."}
+{"id": "n24", "text": "Unlike Swift-5, whose rate limit is handled elsewhere, the rate limit of Osprey-6 is 1250 requests per minute. Nobody should assume the rate limit of Osprey-6 applies to Swift-5, the rate limit differs."}
+{"id": "n25", "text": "Vera Nakamura is on the pager rotation of Merlin-7 this month, with a deputy as backup."}
+{"id": "n26", "text": "Unlike Merlin-7, whose pager rotation is handled elsewhere, the pager rotation of Ibis-2 is Dmitri Castellan. Nobody should assume the pager rotation of Ibis-2 applies to Merlin-7, the pager rotation differs. Nothing about this has been disputed so far."}
+{"id": "n27", "text": "Unlike Swift-5, whose port is handled elsewhere, the port of Siskin-6 is 7547. Nobody should assume the port of Siskin-6 applies to Swift-5, the port differs. The entry was reformatted last quarter."}
+{"id": "n28", "text": "The yearly budget for Ibis-2 is $805k, covering licences and hosting. The page was last reviewed in the spring."}
+{"id": "n29", "text": "Unlike Osprey-6, whose owner is handled elsewhere, the owner of Siskin-6 is the Ember team. Nobody should assume the owner of Siskin-6 applies to Osprey-6, the owner differs."}

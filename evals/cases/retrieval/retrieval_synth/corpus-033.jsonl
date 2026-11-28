@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Source for Pipit-7 is written in Go; no other language is allowed in its repository."}
+{"id": "n01", "text": "Unlike Tern-3, whose retirement date is handled elsewhere, the retirement date of Teal-3 is February 16, 2028. Nobody should assume the retirement date of Teal-3 applies to Tern-3, the retirement date differs. Details change slowly, so check the history first."}
+{"id": "n02", "text": "The language of Teal-3 is Erlang, which new contributors must know."}
+{"id": "n03", "text": "Pipit-7 listens on port 2625; anyone who cannot reach that port should check the firewall rules."}
+{"id": "n04", "text": "Pages from Shrike-5 land on the pager rotation of Lucia Castellan before anyone else."}
+{"id": "n05", "text": "Shrike-5 has one owner, the Prism team, which approves each release and keeps the runbook current. Details change slowly, so check the history first."}
+{"id": "n06", "text": "Unlike Kestrel-6, whose budget is handled elsewhere, the budget of Pipit-7 is $1915k. Nobody should assume the budget of Pipit-7 applies to Kestrel-6, the budget differs."}
+{"id": "n07", "text": "Unlike Kestrel-6, whose owner is handled elsewhere, the owner of Bittern-4 is the Prism team. Nobody should assume the owner of Bittern-4 applies to Kestrel-6, the owner differs. The entry was reformatted last quarter."}
+{"id": "n08", "text": "Unlike Kestrel-6, whose port is handled elsewhere, the port of Tern-3 is 5543. Nobody should assume the port of Tern-3 applies to Kestrel-6, the port differs."}
+{"id": "n09", "text": "Unlike Pipit-7, whose budget is handled elsewhere, the budget of Kestrel-6 is $3705k. Nobody should assume the budget of Kestrel-6 applies to Pipit-7, the budget differs."}
+{"id": "n10", "text": "Teal-3 enforces a rate limit of 2250 requests per minute per caller."}
+{"id": "n11", "text": "Pipit-7 has one owner, the Harbor team, which approves each release and keeps the runbook current. The entry was reformatted last quarter."}
+{"id": "n12", "text": "Unlike Teal-3, whose pager rotation is handled elsewhere, the pager rotation of Tern-3 is Celia Whitlock. Nobody should assume the pager rotation of Tern-3 applies to Teal-3, the pager rotation differs."}
+{"id": "n13", "text": "The owner of Kestrel-6 is the Anvil team, and every change to Kestrel-6 goes through their review. Nothing about this has been disputed so far."}
+{"id": "n14", "text": "Unlike Shrike-5, whose pager rotation is handled elsewhere, the pager rotation of Pipit-7 is Hana Okonkwo. Nobody should assume the pager rotation of Pipit-7 applies to Shrike-5, the pager rotation differs."}
+{"id": "n15", "text": "Bittern-4 enforces a rate limit of 1000 requests per minute per caller. The page was last reviewed in the spring."}
+{"id": "n16", "text": "Unlike Kestrel-6, whose datacenter is handled elsewhere, the datacenter of Tern-3 is the Oslo datacenter. Nobody should assume the datacenter of Tern-3 applies to Kestrel-6, the datacenter differs."}
+{"id": "n17", "text": "Unlike Shrike-5, whose pager rotation is handled elsewhere, the pager rotation of Kestrel-6 is Priya Marchetti. Nobody should assume the pager rotation of Kestrel-6 applies to Shrike-5, the pager rotation differs. Nothing about this has been disputed so far."}
+{"id": "n18", "text": "Shrike-5 is implemented in Elixir; the language was chosen for its tooling. A diagram is attached to the wiki entry."}
+{"id": "n19", "text": "Unlike Pipit-7, whose port is handled elsewhere, the port of Bittern-4 is 9120. Nobody should assume the port of Bittern-4 applies to Pipit-7, the port differs."}
+{"id": "n20", "text": "The pager rotation for Teal-3 is run by Avery Abernathy; alerts page them first. Details change slowly, so check the history first."}
+{"id": "n21", "text": "Unlike Bittern-4, whose port is handled elsewhere, the port of Kestrel-6 is 8400. Nobody should assume the port of Kestrel-6 applies to Bittern-4, the port differs."}
+{"id": "n22", "text": "For Shrike-5 the port is 3675. Changing the port needs a change ticket. The page was last reviewed in the spring."}
+{"id": "n23", "text": "Finance fixed the budget of Bittern-4 at $835k, reviewed every quarter."}
+{"id": "n24", "text": "Unlike Bittern-4, whose rate limit is handled elsewhere, the rate limit of Tern-3 is 3300 requests per minute. Nobody should assume the rate limit of Tern-3 applies to Bittern-4, the rate limit differs."}
+{"id": "n25", "text": "Unlike Tern-3, whose rate limit is handled elsewhere, the rate limit of Shrike-5 is 350 requests per minute. Nobody should assume the rate limit of Shrike-5 applies to Tern-3, the rate limit differs. An older draft of this note was archived."}
+{"id": "n26", "text": "Unlike Teal-3, whose retirement date is handled elsewhere, the retirement date of Tern-3 is October 21, 2027. Nobody should assume the retirement date of Tern-3 applies to Teal-3, the retirement date differs."}
+{"id": "n27", "text": "Vera Pemberton is on the pager rotation of Bittern-4 this month, with a deputy as backup."}
+{"id": "n28", "text": "Teal-3 has one owner, the Tessera team, which approves each release and keeps the runbook current."}
+{"id": "n29", "text": "Unlike Tern-3, whose datacenter is handled elsewhere, the datacenter of Kestrel-6 is the Lima datacenter. Nobody should assume the datacenter of Kestrel-6 applies to Tern-3, the datacenter differs."}

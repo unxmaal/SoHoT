@@ -1,0 +1,76 @@
+[
+ {
+  "name": "flush_deck",
+  "days": 3,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "resolve_anchor",
+  "days": 9,
+  "after": [
+   "flush_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_berth",
+  "days": 2,
+  "after": [
+   "resolve_anchor",
+   "flush_deck"
+  ],
+  "done": true
+ },
+ {
+  "name": "parse_dock",
+  "days": 4,
+  "after": [
+   "resolve_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_berth",
+  "days": 6,
+  "after": [
+   "resolve_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_rope",
+  "days": 9,
+  "after": [
+   "parse_dock",
+   "flush_deck",
+   "resolve_berth"
+  ],
+  "done": true
+ },
+ {
+  "name": "render_rope",
+  "days": 7,
+  "after": [
+   "resolve_berth",
+   "resolve_anchor",
+   "reconcile_berth"
+  ],
+  "done": true
+ },
+ {
+  "name": "resolve_harbor",
+  "days": 8,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "estimate_tide",
+  "days": 2,
+  "after": [
+   "flush_deck",
+   "resolve_harbor"
+  ],
+  "done": false
+ }
+]

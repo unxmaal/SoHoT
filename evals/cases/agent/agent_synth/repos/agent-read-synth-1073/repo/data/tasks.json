@@ -1,0 +1,189 @@
+[
+ {
+  "name": "resolve_keel",
+  "days": 2,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "validate_sail",
+  "days": 1,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "load_ferry",
+  "days": 1,
+  "after": [
+   "resolve_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_pallet",
+  "days": 8,
+  "after": [
+   "validate_sail",
+   "resolve_keel",
+   "load_ferry"
+  ],
+  "done": true
+ },
+ {
+  "name": "rank_mast",
+  "days": 5,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "split_rope",
+  "days": 9,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "flush_keel",
+  "days": 8,
+  "after": [
+   "resolve_keel",
+   "split_rope",
+   "load_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_berth",
+  "days": 6,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "load_quay",
+  "days": 8,
+  "after": [
+   "reconcile_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_buoy",
+  "days": 6,
+  "after": [
+   "reconcile_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_hull",
+  "days": 8,
+  "after": [
+   "load_quay",
+   "rank_mast",
+   "validate_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_sail",
+  "days": 4,
+  "after": [
+   "resolve_keel",
+   "apply_hull",
+   "validate_sail"
+  ],
+  "done": true
+ },
+ {
+  "name": "apply_crate",
+  "days": 6,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "reconcile_cargo",
+  "days": 4,
+  "after": [
+   "split_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_mooring",
+  "days": 1,
+  "after": [
+   "resolve_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_ferry",
+  "days": 3,
+  "after": [
+   "reconcile_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_mast",
+  "days": 8,
+  "after": [
+   "reconcile_berth",
+   "split_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_buoy",
+  "days": 2,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "normalize_ferry",
+  "days": 6,
+  "after": [
+   "validate_sail",
+   "reconcile_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_harbor",
+  "days": 9,
+  "after": [
+   "split_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_deck",
+  "days": 6,
+  "after": [
+   "lookup_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_cargo",
+  "days": 6,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "rank_berth",
+  "days": 2,
+  "after": [
+   "normalize_deck",
+   "flush_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_anchor",
+  "days": 3,
+  "after": [
+   "rank_berth"
+  ],
+  "done": false
+ }
+]

@@ -1,0 +1,165 @@
+[
+ {
+  "name": "render_cargo",
+  "days": 2,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "normalize_keel",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "resolve_lantern",
+  "days": 8,
+  "after": [
+   "render_cargo",
+   "normalize_keel"
+  ],
+  "done": true
+ },
+ {
+  "name": "split_mooring",
+  "days": 6,
+  "after": [
+   "render_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_quay",
+  "days": 1,
+  "after": [
+   "render_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_quay",
+  "days": 7,
+  "after": [
+   "resolve_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_quay",
+  "days": 9,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "validate_lantern",
+  "days": 7,
+  "after": [
+   "render_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_sail",
+  "days": 6,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "apply_sail",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "reconcile_dock",
+  "days": 1,
+  "after": [
+   "render_quay",
+   "parse_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_harbor",
+  "days": 1,
+  "after": [
+   "split_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_crate",
+  "days": 1,
+  "after": [
+   "rank_harbor",
+   "apply_sail",
+   "render_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_tide",
+  "days": 4,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "render_anchor",
+  "days": 8,
+  "after": [
+   "estimate_sail",
+   "reconcile_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_sail",
+  "days": 2,
+  "after": [
+   "split_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_buoy",
+  "days": 5,
+  "after": [
+   "split_mooring",
+   "render_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_cargo",
+  "days": 7,
+  "after": [
+   "resolve_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_ferry",
+  "days": 1,
+  "after": [
+   "validate_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_anchor",
+  "days": 9,
+  "after": [
+   "rank_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_keel",
+  "days": 6,
+  "after": [
+   "apply_sail",
+   "validate_anchor"
+  ],
+  "done": false
+ }
+]

@@ -1,0 +1,203 @@
+[
+ {
+  "name": "resolve_sail",
+  "days": 7,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "rank_tide",
+  "days": 6,
+  "after": [
+   "resolve_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_buoy",
+  "days": 1,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "load_rope",
+  "days": 6,
+  "after": [
+   "apply_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_rope",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "allocate_ferry",
+  "days": 9,
+  "after": [
+   "apply_buoy",
+   "resolve_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_berth",
+  "days": 6,
+  "after": [
+   "rank_tide",
+   "apply_buoy"
+  ],
+  "done": true
+ },
+ {
+  "name": "estimate_berth",
+  "days": 5,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "normalize_anchor",
+  "days": 4,
+  "after": [
+   "load_rope",
+   "flush_rope",
+   "rank_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_buoy",
+  "days": 4,
+  "after": [
+   "resolve_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_tide",
+  "days": 1,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "flush_sail",
+  "days": 9,
+  "after": [
+   "flush_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_buoy",
+  "days": 1,
+  "after": [
+   "rank_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_harbor",
+  "days": 5,
+  "after": [
+   "resolve_sail"
+  ],
+  "done": true
+ },
+ {
+  "name": "render_lantern",
+  "days": 6,
+  "after": [
+   "render_buoy",
+   "resolve_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_deck",
+  "days": 2,
+  "after": [
+   "split_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_mooring",
+  "days": 2,
+  "after": [
+   "estimate_berth",
+   "split_berth",
+   "parse_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_hull",
+  "days": 2,
+  "after": [
+   "apply_buoy",
+   "load_mooring"
+  ],
+  "done": true
+ },
+ {
+  "name": "lookup_buoy",
+  "days": 6,
+  "after": [
+   "apply_hull"
+  ],
+  "done": true
+ },
+ {
+  "name": "resolve_barge",
+  "days": 5,
+  "after": [
+   "allocate_ferry",
+   "split_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_deck",
+  "days": 2,
+  "after": [
+   "lookup_buoy",
+   "resolve_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_barge",
+  "days": 2,
+  "after": [
+   "flush_tide",
+   "apply_buoy",
+   "render_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_mast",
+  "days": 2,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "split_ferry",
+  "days": 7,
+  "after": [
+   "split_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_ferry",
+  "days": 3,
+  "after": [
+   "rank_tide",
+   "split_ferry"
+  ],
+  "done": false
+ }
+]

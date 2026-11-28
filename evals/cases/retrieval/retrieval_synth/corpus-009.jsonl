@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Tern-6 reaches its retirement date on September 2, 2029, so every consumer has to migrate before then."}
+{"id": "n01", "text": "The service Swift-3 takes traffic on port 4492, and the port is fixed across every environment."}
+{"id": "n02", "text": "Unlike Pipit-4, whose language is handled elsewhere, the language of Tern-6 is Elixir. Nobody should assume the language of Tern-6 applies to Pipit-4, the language differs."}
+{"id": "n03", "text": "Questions about Tern-6 start with its owner, the Compass team; they triage anything filed against it."}
+{"id": "n04", "text": "Unlike Heron-9, whose owner is handled elsewhere, the owner of Siskin-4 is the Prism team. Nobody should assume the owner of Siskin-4 applies to Heron-9, the owner differs."}
+{"id": "n05", "text": "Pages from Tern-6 land on the pager rotation of Farah Dunmore before anyone else. Details change slowly, so check the history first."}
+{"id": "n06", "text": "Expect throttling at the rate limit for Shrike-8, which is 3950 requests per minute. The page was last reviewed in the spring."}
+{"id": "n07", "text": "The rate limit of Heron-9 is 2650 requests per minute; callers over it get a 429."}
+{"id": "n08", "text": "Unlike Swift-3, whose port is handled elsewhere, the port of Siskin-4 is 9672. Nobody should assume the port of Siskin-4 applies to Swift-3, the port differs. The page was last reviewed in the spring."}
+{"id": "n09", "text": "Expect throttling at the rate limit for Pipit-4, which is 3500 requests per minute. The entry was reformatted last quarter."}
+{"id": "n10", "text": "Siskin-4 is implemented in Erlang; the language was chosen for its tooling. A diagram is attached to the wiki entry."}
+{"id": "n11", "text": "Finance fixed the budget of Swift-3 at $3385k, reviewed every quarter."}
+{"id": "n12", "text": "The language of Shrike-8 is Erlang, which new contributors must know."}
+{"id": "n13", "text": "Finance fixed the budget of Tern-6 at $2355k, reviewed every quarter."}
+{"id": "n14", "text": "Unlike Siskin-4, whose retirement date is handled elsewhere, the retirement date of Swift-3 is November 5, 2028. Nobody should assume the retirement date of Swift-3 applies to Siskin-4, the retirement date differs."}
+{"id": "n15", "text": "Plan around the retirement date of Siskin-4: December 26, 2028 is when it goes dark."}
+{"id": "n16", "text": "Unlike Tern-6, whose budget is handled elsewhere, the budget of Shrike-8 is $1570k. Nobody should assume the budget of Shrike-8 applies to Tern-6, the budget differs."}
+{"id": "n17", "text": "The owner of Heron-9 is the Compass team, and every change to Heron-9 goes through their review."}
+{"id": "n18", "text": "Unlike Shrike-8, whose language is handled elsewhere, the language of Pipit-4 is Kotlin. Nobody should assume the language of Pipit-4 applies to Shrike-8, the language differs. The entry was reformatted last quarter."}
+{"id": "n19", "text": "Unlike Pipit-4, whose datacenter is handled elsewhere, the datacenter of Swift-3 is the Hanoi datacenter. Nobody should assume the datacenter of Swift-3 applies to Pipit-4, the datacenter differs."}
+{"id": "n20", "text": "The primary datacenter of Pipit-4 is Quito; failover is handled by operations."}
+{"id": "n21", "text": "Unlike Swift-3, whose datacenter is handled elsewhere, the datacenter of Siskin-4 is the Oslo datacenter. Nobody should assume the datacenter of Siskin-4 applies to Swift-3, the datacenter differs. A diagram is attached to the wiki entry."}
+{"id": "n22", "text": "The retirement date for Heron-9 is April 15, 2029; after that day it stops serving. A diagram is attached to the wiki entry."}
+{"id": "n23", "text": "Dmitri Ekwueme is on the pager rotation of Pipit-4 this month, with a deputy as backup. Details change slowly, so check the history first."}
+{"id": "n24", "text": "The service Pipit-4 takes traffic on port 2430, and the port is fixed across every environment."}
+{"id": "n25", "text": "Unlike Tern-6, whose language is handled elsewhere, the language of Heron-9 is Go. Nobody should assume the language of Heron-9 applies to Tern-6, the language differs."}
+{"id": "n26", "text": "Unlike Tern-6, whose pager rotation is handled elsewhere, the pager rotation of Heron-9 is Vera Okonkwo. Nobody should assume the pager rotation of Heron-9 applies to Tern-6, the pager rotation differs."}
+{"id": "n27", "text": "Pages from Shrike-8 land on the pager rotation of Gideon Lindqvist before anyone else."}
+{"id": "n28", "text": "Expect throttling at the rate limit for Swift-3, which is 3450 requests per minute."}
+{"id": "n29", "text": "Unlike Swift-3, whose port is handled elsewhere, the port of Shrike-8 is 8953. Nobody should assume the port of Shrike-8 applies to Swift-3, the port differs. Nothing about this has been disputed so far."}

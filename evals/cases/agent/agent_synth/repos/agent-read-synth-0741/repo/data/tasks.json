@@ -1,0 +1,144 @@
+[
+ {
+  "name": "merge_barge",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "apply_keel",
+  "days": 4,
+  "after": [
+   "merge_barge"
+  ],
+  "done": true
+ },
+ {
+  "name": "resolve_pallet",
+  "days": 8,
+  "after": [
+   "merge_barge",
+   "apply_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_pallet",
+  "days": 2,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "normalize_hull",
+  "days": 4,
+  "after": [
+   "apply_keel",
+   "merge_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_dock",
+  "days": 6,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "allocate_berth",
+  "days": 5,
+  "after": [
+   "merge_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_buoy",
+  "days": 9,
+  "after": [
+   "stage_dock",
+   "allocate_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_rope",
+  "days": 7,
+  "after": [
+   "estimate_buoy",
+   "merge_barge",
+   "apply_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_anchor",
+  "days": 2,
+  "after": [
+   "estimate_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_ferry",
+  "days": 6,
+  "after": [
+   "allocate_anchor"
+  ],
+  "done": true
+ },
+ {
+  "name": "estimate_pallet",
+  "days": 1,
+  "after": [
+   "render_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_hull",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "merge_mooring",
+  "days": 7,
+  "after": [
+   "allocate_anchor",
+   "lookup_pallet"
+  ],
+  "done": true
+ },
+ {
+  "name": "render_tide",
+  "days": 1,
+  "after": [
+   "merge_barge",
+   "allocate_berth",
+   "estimate_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_sail",
+  "days": 7,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "rank_anchor",
+  "days": 8,
+  "after": [
+   "normalize_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_rope",
+  "days": 3,
+  "after": [
+   "rank_anchor"
+  ],
+  "done": false
+ }
+]

@@ -1,0 +1,143 @@
+[
+ {
+  "name": "allocate_keel",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "normalize_ferry",
+  "days": 1,
+  "after": [
+   "allocate_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_barge",
+  "days": 7,
+  "after": [
+   "allocate_keel",
+   "normalize_ferry"
+  ],
+  "done": true
+ },
+ {
+  "name": "load_keel",
+  "days": 8,
+  "after": [
+   "allocate_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_lantern",
+  "days": 1,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "allocate_berth",
+  "days": 5,
+  "after": [
+   "normalize_ferry",
+   "allocate_keel",
+   "parse_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_mooring",
+  "days": 5,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "rank_tide",
+  "days": 7,
+  "after": [
+   "load_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_buoy",
+  "days": 1,
+  "after": [
+   "parse_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_tide",
+  "days": 6,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "reconcile_rope",
+  "days": 1,
+  "after": [
+   "load_keel",
+   "parse_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_keel",
+  "days": 5,
+  "after": [
+   "reconcile_lantern",
+   "load_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_tide",
+  "days": 4,
+  "after": [
+   "merge_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_hull",
+  "days": 4,
+  "after": [
+   "lookup_tide",
+   "normalize_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_sail",
+  "days": 1,
+  "after": [
+   "resolve_buoy",
+   "load_keel",
+   "merge_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_buoy",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "render_deck",
+  "days": 7,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "split_mast",
+  "days": 7,
+  "after": [
+   "render_deck",
+   "render_keel"
+  ],
+  "done": false
+ }
+]

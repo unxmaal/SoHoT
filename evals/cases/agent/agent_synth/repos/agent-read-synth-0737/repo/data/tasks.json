@@ -1,0 +1,182 @@
+[
+ {
+  "name": "normalize_keel",
+  "days": 5,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "parse_tide",
+  "days": 6,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "reconcile_sail",
+  "days": 4,
+  "after": [
+   "parse_tide"
+  ],
+  "done": true
+ },
+ {
+  "name": "resolve_lantern",
+  "days": 3,
+  "after": [
+   "parse_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_berth",
+  "days": 3,
+  "after": [
+   "reconcile_sail",
+   "normalize_keel",
+   "parse_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_hull",
+  "days": 9,
+  "after": [
+   "resolve_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_rope",
+  "days": 7,
+  "after": [
+   "stage_berth",
+   "normalize_keel",
+   "parse_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_hull",
+  "days": 4,
+  "after": [
+   "normalize_keel",
+   "resolve_lantern",
+   "lookup_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_mooring",
+  "days": 4,
+  "after": [
+   "stage_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_buoy",
+  "days": 9,
+  "after": [
+   "normalize_keel",
+   "resolve_lantern",
+   "reconcile_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_rope",
+  "days": 8,
+  "after": [
+   "reconcile_sail"
+  ],
+  "done": true
+ },
+ {
+  "name": "allocate_tide",
+  "days": 7,
+  "after": [
+   "lookup_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_mooring",
+  "days": 2,
+  "after": [
+   "resolve_lantern",
+   "normalize_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_dock",
+  "days": 3,
+  "after": [
+   "stage_berth",
+   "rank_buoy"
+  ],
+  "done": true
+ },
+ {
+  "name": "estimate_harbor",
+  "days": 4,
+  "after": [
+   "reconcile_mooring",
+   "render_mooring",
+   "normalize_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_dock",
+  "days": 1,
+  "after": [
+   "stage_berth",
+   "allocate_tide",
+   "reconcile_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_cargo",
+  "days": 6,
+  "after": [
+   "render_mooring",
+   "estimate_harbor",
+   "split_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_mooring",
+  "days": 4,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "split_mast",
+  "days": 4,
+  "after": [
+   "reconcile_sail",
+   "estimate_harbor",
+   "lookup_hull"
+  ],
+  "done": true
+ },
+ {
+  "name": "apply_sail",
+  "days": 8,
+  "after": [
+   "lookup_hull"
+  ],
+  "done": true
+ },
+ {
+  "name": "normalize_harbor",
+  "days": 4,
+  "after": [
+   "apply_sail"
+  ],
+  "done": false
+ }
+]

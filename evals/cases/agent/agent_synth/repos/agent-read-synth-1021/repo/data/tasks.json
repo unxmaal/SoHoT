@@ -1,0 +1,211 @@
+[
+ {
+  "name": "flush_quay",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "apply_ferry",
+  "days": 9,
+  "after": [
+   "flush_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_mooring",
+  "days": 4,
+  "after": [
+   "flush_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_deck",
+  "days": 6,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "stage_harbor",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "resolve_barge",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "load_anchor",
+  "days": 6,
+  "after": [
+   "flush_quay",
+   "resolve_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_lantern",
+  "days": 7,
+  "after": [
+   "apply_ferry",
+   "stage_harbor",
+   "resolve_barge"
+  ],
+  "done": true
+ },
+ {
+  "name": "stage_mooring",
+  "days": 9,
+  "after": [
+   "stage_harbor",
+   "apply_lantern"
+  ],
+  "done": true
+ },
+ {
+  "name": "parse_hull",
+  "days": 2,
+  "after": [
+   "resolve_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_anchor",
+  "days": 6,
+  "after": [
+   "stage_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_ferry",
+  "days": 2,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "stage_ferry",
+  "days": 3,
+  "after": [
+   "apply_lantern",
+   "validate_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_pallet",
+  "days": 6,
+  "after": [
+   "validate_anchor",
+   "apply_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_mast",
+  "days": 2,
+  "after": [
+   "stage_mooring"
+  ],
+  "done": true
+ },
+ {
+  "name": "normalize_dock",
+  "days": 1,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "parse_quay",
+  "days": 6,
+  "after": [
+   "stage_harbor"
+  ],
+  "done": true
+ },
+ {
+  "name": "apply_barge",
+  "days": 8,
+  "after": [
+   "normalize_dock",
+   "resolve_barge",
+   "stage_harbor"
+  ],
+  "done": true
+ },
+ {
+  "name": "reconcile_anchor",
+  "days": 6,
+  "after": [
+   "load_anchor",
+   "flush_mooring",
+   "normalize_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_rope",
+  "days": 5,
+  "after": [
+   "validate_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_dock",
+  "days": 7,
+  "after": [
+   "apply_barge"
+  ],
+  "done": true
+ },
+ {
+  "name": "reconcile_tide",
+  "days": 6,
+  "after": [
+   "split_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_pallet",
+  "days": 6,
+  "after": [
+   "split_ferry",
+   "reconcile_anchor"
+  ],
+  "done": true
+ },
+ {
+  "name": "apply_sail",
+  "days": 5,
+  "after": [
+   "validate_anchor",
+   "split_deck",
+   "load_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_tide",
+  "days": 6,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "resolve_pallet",
+  "days": 5,
+  "after": [
+   "parse_hull",
+   "validate_rope",
+   "validate_tide"
+  ],
+  "done": false
+ }
+]

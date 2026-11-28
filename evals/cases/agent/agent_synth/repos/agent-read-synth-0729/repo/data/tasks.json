@@ -1,0 +1,92 @@
+[
+ {
+  "name": "normalize_lantern",
+  "days": 4,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "reconcile_lantern",
+  "days": 8,
+  "after": [
+   "normalize_lantern"
+  ],
+  "done": true
+ },
+ {
+  "name": "reconcile_barge",
+  "days": 4,
+  "after": [
+   "normalize_lantern",
+   "reconcile_lantern"
+  ],
+  "done": true
+ },
+ {
+  "name": "load_dock",
+  "days": 8,
+  "after": [
+   "normalize_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_barge",
+  "days": 1,
+  "after": [
+   "normalize_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_keel",
+  "days": 4,
+  "after": [
+   "reconcile_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_lantern",
+  "days": 3,
+  "after": [
+   "allocate_keel",
+   "stage_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_barge",
+  "days": 3,
+  "after": [
+   "reconcile_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_mooring",
+  "days": 4,
+  "after": [
+   "load_dock",
+   "stage_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_deck",
+  "days": 6,
+  "after": [
+   "load_dock",
+   "allocate_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_barge",
+  "days": 8,
+  "after": [
+   "split_deck"
+  ],
+  "done": false
+ }
+]

@@ -1,0 +1,169 @@
+[
+ {
+  "name": "normalize_rope",
+  "days": 2,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "flush_harbor",
+  "days": 8,
+  "after": [
+   "normalize_rope"
+  ],
+  "done": true
+ },
+ {
+  "name": "reconcile_cargo",
+  "days": 9,
+  "after": [
+   "flush_harbor"
+  ],
+  "done": true
+ },
+ {
+  "name": "reconcile_mooring",
+  "days": 4,
+  "after": [
+   "reconcile_cargo",
+   "normalize_rope",
+   "flush_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_tide",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "normalize_mooring",
+  "days": 1,
+  "after": [
+   "reconcile_cargo"
+  ],
+  "done": true
+ },
+ {
+  "name": "validate_lantern",
+  "days": 5,
+  "after": [
+   "normalize_mooring",
+   "resolve_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_anchor",
+  "days": 2,
+  "after": [
+   "normalize_rope"
+  ],
+  "done": true
+ },
+ {
+  "name": "split_mast",
+  "days": 5,
+  "after": [
+   "normalize_mooring"
+  ],
+  "done": true
+ },
+ {
+  "name": "allocate_dock",
+  "days": 7,
+  "after": [
+   "reconcile_mooring"
+  ],
+  "done": true
+ },
+ {
+  "name": "resolve_barge",
+  "days": 1,
+  "after": [
+   "normalize_mooring",
+   "flush_harbor",
+   "flush_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_deck",
+  "days": 1,
+  "after": [
+   "allocate_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_ferry",
+  "days": 2,
+  "after": [
+   "normalize_mooring",
+   "reconcile_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_hull",
+  "days": 6,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "apply_pallet",
+  "days": 8,
+  "after": [
+   "allocate_dock",
+   "flush_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_harbor",
+  "days": 9,
+  "after": [
+   "reconcile_hull",
+   "reconcile_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_mast",
+  "days": 8,
+  "after": [
+   "lookup_harbor",
+   "normalize_rope",
+   "apply_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_anchor",
+  "days": 6,
+  "after": [
+   "reconcile_hull",
+   "normalize_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_tide",
+  "days": 3,
+  "after": [
+   "load_ferry",
+   "reconcile_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_lantern",
+  "days": 9,
+  "after": [
+   "validate_lantern",
+   "merge_tide"
+  ],
+  "done": false
+ }
+]

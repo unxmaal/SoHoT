@@ -1,0 +1,157 @@
+[
+ {
+  "name": "flush_tide",
+  "days": 7,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "allocate_hull",
+  "days": 9,
+  "after": [
+   "flush_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_tide",
+  "days": 5,
+  "after": [
+   "allocate_hull",
+   "flush_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_mooring",
+  "days": 2,
+  "after": [
+   "flush_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_cargo",
+  "days": 8,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "resolve_dock",
+  "days": 5,
+  "after": [
+   "estimate_cargo",
+   "parse_tide"
+  ],
+  "done": true
+ },
+ {
+  "name": "resolve_pallet",
+  "days": 9,
+  "after": [
+   "resolve_dock",
+   "estimate_cargo",
+   "flush_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_dock",
+  "days": 3,
+  "after": [
+   "resolve_pallet",
+   "parse_tide",
+   "flush_mooring"
+  ],
+  "done": true
+ },
+ {
+  "name": "resolve_tide",
+  "days": 4,
+  "after": [
+   "flush_tide",
+   "flush_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_crate",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "stage_harbor",
+  "days": 9,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "allocate_pallet",
+  "days": 5,
+  "after": [
+   "allocate_hull",
+   "resolve_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_tide",
+  "days": 3,
+  "after": [
+   "allocate_pallet"
+  ],
+  "done": true
+ },
+ {
+  "name": "merge_harbor",
+  "days": 1,
+  "after": [
+   "parse_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_keel",
+  "days": 6,
+  "after": [
+   "resolve_crate",
+   "flush_tide",
+   "resolve_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_dock",
+  "days": 8,
+  "after": [
+   "resolve_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_barge",
+  "days": 5,
+  "after": [
+   "parse_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_crate",
+  "days": 6,
+  "after": [
+   "allocate_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_quay",
+  "days": 4,
+  "after": [
+   "allocate_pallet",
+   "load_crate"
+  ],
+  "done": false
+ }
+]

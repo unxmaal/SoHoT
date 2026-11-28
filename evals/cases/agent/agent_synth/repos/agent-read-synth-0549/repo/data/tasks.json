@@ -1,0 +1,104 @@
+[
+ {
+  "name": "normalize_harbor",
+  "days": 4,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "normalize_pallet",
+  "days": 1,
+  "after": [
+   "normalize_harbor"
+  ],
+  "done": true
+ },
+ {
+  "name": "estimate_lantern",
+  "days": 2,
+  "after": [
+   "normalize_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_harbor",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "stage_buoy",
+  "days": 4,
+  "after": [
+   "normalize_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_barge",
+  "days": 1,
+  "after": [
+   "normalize_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_deck",
+  "days": 2,
+  "after": [
+   "normalize_pallet"
+  ],
+  "done": true
+ },
+ {
+  "name": "normalize_hull",
+  "days": 7,
+  "after": [
+   "normalize_pallet",
+   "resolve_deck",
+   "normalize_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_anchor",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "stage_anchor",
+  "days": 8,
+  "after": [
+   "estimate_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_mast",
+  "days": 4,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "reconcile_berth",
+  "days": 9,
+  "after": [
+   "rank_anchor",
+   "resolve_deck"
+  ],
+  "done": true
+ },
+ {
+  "name": "merge_mooring",
+  "days": 8,
+  "after": [
+   "resolve_deck",
+   "stage_anchor",
+   "normalize_harbor",
+   "reconcile_berth"
+  ],
+  "done": false
+ }
+]

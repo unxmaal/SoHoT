@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Unlike Avocet-4, whose owner is handled elsewhere, the owner of Dunlin-7 is the Trellis team. Nobody should assume the owner of Dunlin-7 applies to Avocet-4, the owner differs. An older draft of this note was archived."}
+{"id": "n01", "text": "Kestrel-2 has one owner, the Trellis team, which approves each release and keeps the runbook current."}
+{"id": "n02", "text": "Tern-5 enforces a rate limit of 3450 requests per minute per caller."}
+{"id": "n03", "text": "Teal-3 was granted a budget of $1715k this year; an unspent budget does not roll over. The page was last reviewed in the spring."}
+{"id": "n04", "text": "Finance fixed the budget of Avocet-4 at $260k, reviewed every quarter."}
+{"id": "n05", "text": "Swift-8 reaches its retirement date on December 19, 2029, so every consumer has to migrate before then. Nothing about this has been disputed so far."}
+{"id": "n06", "text": "The yearly budget for Dunlin-7 is $325k, covering licences and hosting. Details change slowly, so check the history first."}
+{"id": "n07", "text": "Unlike Avocet-4, whose pager rotation is handled elsewhere, the pager rotation of Kestrel-2 is Soren Ekwueme. Nobody should assume the pager rotation of Kestrel-2 applies to Avocet-4, the pager rotation differs."}
+{"id": "n08", "text": "Unlike Swift-8, whose rate limit is handled elsewhere, the rate limit of Dunlin-7 is 1500 requests per minute. Nobody should assume the rate limit of Dunlin-7 applies to Swift-8, the rate limit differs."}
+{"id": "n09", "text": "Unlike Teal-3, whose budget is handled elsewhere, the budget of Swift-8 is $4630k. Nobody should assume the budget of Swift-8 applies to Teal-3, the budget differs."}
+{"id": "n10", "text": "Unlike Kestrel-2, whose owner is handled elsewhere, the owner of Teal-3 is the Anvil team. Nobody should assume the owner of Teal-3 applies to Kestrel-2, the owner differs. The entry was reformatted last quarter."}
+{"id": "n11", "text": "Unlike Kestrel-2, whose port is handled elsewhere, the port of Teal-3 is 5768. Nobody should assume the port of Teal-3 applies to Kestrel-2, the port differs."}
+{"id": "n12", "text": "Source for Kestrel-2 is written in Zig; no other language is allowed in its repository."}
+{"id": "n13", "text": "Dmitri Whitlock is on the pager rotation of Avocet-4 this month, with a deputy as backup."}
+{"id": "n14", "text": "The service Kestrel-2 takes traffic on port 5436, and the port is fixed across every environment."}
+{"id": "n15", "text": "Expect throttling at the rate limit for Swift-8, which is 1700 requests per minute."}
+{"id": "n16", "text": "The owner of Avocet-4 is the Tessera team, and every change to Avocet-4 goes through their review. An older draft of this note was archived."}
+{"id": "n17", "text": "Unlike Avocet-4, whose owner is handled elsewhere, the owner of Tern-5 is the Harbor team. Nobody should assume the owner of Tern-5 applies to Avocet-4, the owner differs. An older draft of this note was archived."}
+{"id": "n18", "text": "The retirement date for Dunlin-7 is November 18, 2027; after that day it stops serving."}
+{"id": "n19", "text": "Unlike Avocet-4, whose budget is handled elsewhere, the budget of Tern-5 is $3005k. Nobody should assume the budget of Tern-5 applies to Avocet-4, the budget differs."}
+{"id": "n20", "text": "Unlike Teal-3, whose port is handled elsewhere, the port of Swift-8 is 4260. Nobody should assume the port of Swift-8 applies to Teal-3, the port differs."}
+{"id": "n21", "text": "Tern-5 is implemented in Scala; the language was chosen for its tooling. The entry was reformatted last quarter."}
+{"id": "n22", "text": "Unlike Kestrel-2, whose port is handled elsewhere, the port of Tern-5 is 8566. Nobody should assume the port of Tern-5 applies to Kestrel-2, the port differs. Details change slowly, so check the history first."}
+{"id": "n23", "text": "Unlike Swift-8, whose datacenter is handled elsewhere, the datacenter of Teal-3 is the Nairobi datacenter. Nobody should assume the datacenter of Teal-3 applies to Swift-8, the datacenter differs. Details change slowly, so check the history first."}
+{"id": "n24", "text": "Avocet-4 enforces a rate limit of 4150 requests per minute per caller."}
+{"id": "n25", "text": "Source for Dunlin-7 is written in OCaml; no other language is allowed in its repository. Details change slowly, so check the history first."}
+{"id": "n26", "text": "Unlike Swift-8, whose budget is handled elsewhere, the budget of Kestrel-2 is $2445k. Nobody should assume the budget of Kestrel-2 applies to Swift-8, the budget differs."}
+{"id": "n27", "text": "Expect throttling at the rate limit for Teal-3, which is 2750 requests per minute."}
+{"id": "n28", "text": "All instances of Swift-8 live in the datacenter at Cairo. Details change slowly, so check the history first."}
+{"id": "n29", "text": "Unlike Dunlin-7, whose retirement date is handled elsewhere, the retirement date of Avocet-4 is March 15, 2027. Nobody should assume the retirement date of Avocet-4 applies to Dunlin-7, the retirement date differs. The page was last reviewed in the spring."}

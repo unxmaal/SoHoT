@@ -1,0 +1,75 @@
+[
+ {
+  "name": "allocate_tide",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "reconcile_buoy",
+  "days": 5,
+  "after": [
+   "allocate_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_quay",
+  "days": 9,
+  "after": [
+   "reconcile_buoy",
+   "allocate_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_buoy",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "lookup_rope",
+  "days": 3,
+  "after": [
+   "validate_buoy"
+  ],
+  "done": true
+ },
+ {
+  "name": "reconcile_deck",
+  "days": 4,
+  "after": [
+   "allocate_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_cargo",
+  "days": 6,
+  "after": [
+   "allocate_tide",
+   "rank_quay"
+  ],
+  "done": true
+ },
+ {
+  "name": "split_mooring",
+  "days": 8,
+  "after": [
+   "allocate_tide",
+   "rank_quay",
+   "reconcile_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_lantern",
+  "days": 5,
+  "after": [
+   "rank_quay",
+   "split_mooring"
+  ],
+  "done": false
+ }
+]

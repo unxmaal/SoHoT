@@ -1,0 +1,171 @@
+[
+ {
+  "name": "load_anchor",
+  "days": 5,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "normalize_hull",
+  "days": 9,
+  "after": [
+   "load_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_dock",
+  "days": 5,
+  "after": [
+   "normalize_hull",
+   "load_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_ferry",
+  "days": 1,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "render_berth",
+  "days": 6,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "normalize_cargo",
+  "days": 4,
+  "after": [
+   "split_ferry",
+   "rank_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_cargo",
+  "days": 4,
+  "after": [
+   "render_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_ferry",
+  "days": 1,
+  "after": [
+   "render_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_deck",
+  "days": 7,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "split_anchor",
+  "days": 2,
+  "after": [
+   "split_ferry",
+   "rank_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_hull",
+  "days": 6,
+  "after": [
+   "rank_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_crate",
+  "days": 5,
+  "after": [
+   "normalize_hull",
+   "render_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_lantern",
+  "days": 9,
+  "after": [
+   "parse_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_deck",
+  "days": 4,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "reconcile_rope",
+  "days": 7,
+  "after": [
+   "rank_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_rope",
+  "days": 9,
+  "after": [
+   "normalize_hull",
+   "parse_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_harbor",
+  "days": 2,
+  "after": [
+   "parse_hull",
+   "rank_dock",
+   "render_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_pallet",
+  "days": 3,
+  "after": [
+   "rank_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_keel",
+  "days": 6,
+  "after": [
+   "load_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_buoy",
+  "days": 6,
+  "after": [
+   "render_berth",
+   "normalize_hull"
+  ],
+  "done": true
+ },
+ {
+  "name": "validate_ferry",
+  "days": 1,
+  "after": [
+   "load_ferry",
+   "render_deck",
+   "flush_lantern",
+   "split_buoy"
+  ],
+  "done": false
+ }
+]

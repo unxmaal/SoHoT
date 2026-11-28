@@ -1,0 +1,112 @@
+[
+ {
+  "name": "rank_hull",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "validate_crate",
+  "days": 6,
+  "after": [
+   "rank_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_deck",
+  "days": 2,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "lookup_quay",
+  "days": 7,
+  "after": [
+   "validate_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_sail",
+  "days": 5,
+  "after": [
+   "parse_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_lantern",
+  "days": 5,
+  "after": [
+   "rank_hull"
+  ],
+  "done": true
+ },
+ {
+  "name": "render_keel",
+  "days": 2,
+  "after": [
+   "split_lantern",
+   "lookup_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_lantern",
+  "days": 7,
+  "after": [
+   "render_keel",
+   "lookup_quay"
+  ],
+  "done": true
+ },
+ {
+  "name": "split_ferry",
+  "days": 9,
+  "after": [
+   "estimate_lantern",
+   "lookup_sail",
+   "parse_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_rope",
+  "days": 4,
+  "after": [
+   "estimate_lantern",
+   "render_keel",
+   "split_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_pallet",
+  "days": 8,
+  "after": [
+   "parse_deck"
+  ],
+  "done": true
+ },
+ {
+  "name": "allocate_harbor",
+  "days": 5,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "resolve_keel",
+  "days": 2,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "apply_berth",
+  "days": 6,
+  "after": [
+   "resolve_keel"
+  ],
+  "done": false
+ }
+]

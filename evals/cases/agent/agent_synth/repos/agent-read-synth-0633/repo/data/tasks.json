@@ -1,0 +1,86 @@
+[
+ {
+  "name": "validate_barge",
+  "days": 6,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "resolve_quay",
+  "days": 7,
+  "after": [
+   "validate_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_harbor",
+  "days": 9,
+  "after": [
+   "resolve_quay",
+   "validate_barge"
+  ],
+  "done": true
+ },
+ {
+  "name": "load_crate",
+  "days": 4,
+  "after": [
+   "render_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_cargo",
+  "days": 6,
+  "after": [
+   "load_crate",
+   "render_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_mooring",
+  "days": 2,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "merge_hull",
+  "days": 3,
+  "after": [
+   "lookup_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_hull",
+  "days": 5,
+  "after": [
+   "merge_hull",
+   "estimate_mooring"
+  ],
+  "done": true
+ },
+ {
+  "name": "load_mast",
+  "days": 9,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "validate_sail",
+  "days": 5,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "reconcile_mast",
+  "days": 8,
+  "after": [
+   "render_harbor",
+   "validate_sail"
+  ],
+  "done": false
+ }
+]

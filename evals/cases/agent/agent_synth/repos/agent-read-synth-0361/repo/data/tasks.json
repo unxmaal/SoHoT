@@ -1,0 +1,134 @@
+[
+ {
+  "name": "apply_keel",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "render_quay",
+  "days": 9,
+  "after": [
+   "apply_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_crate",
+  "days": 2,
+  "after": [
+   "apply_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_quay",
+  "days": 1,
+  "after": [
+   "flush_crate",
+   "render_quay",
+   "apply_keel"
+  ],
+  "done": true
+ },
+ {
+  "name": "resolve_cargo",
+  "days": 2,
+  "after": [
+   "apply_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_harbor",
+  "days": 6,
+  "after": [
+   "split_quay",
+   "resolve_cargo",
+   "flush_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_deck",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "rank_keel",
+  "days": 7,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "split_mast",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "load_lantern",
+  "days": 3,
+  "after": [
+   "split_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_pallet",
+  "days": 3,
+  "after": [
+   "resolve_cargo",
+   "load_harbor",
+   "reconcile_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_dock",
+  "days": 1,
+  "after": [
+   "render_quay",
+   "flush_crate",
+   "split_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_tide",
+  "days": 9,
+  "after": [
+   "flush_crate",
+   "render_quay",
+   "reconcile_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_barge",
+  "days": 2,
+  "after": [
+   "validate_dock",
+   "resolve_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_barge",
+  "days": 6,
+  "after": [
+   "flush_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_quay",
+  "days": 9,
+  "after": [
+   "load_lantern",
+   "lookup_barge"
+  ],
+  "done": false
+ }
+]
