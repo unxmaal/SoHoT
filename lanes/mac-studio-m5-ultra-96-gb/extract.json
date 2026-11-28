@@ -1,6 +1,82 @@
 {
  "candidates": [
   {
+   "candidate": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
+   "decided_at": "2026-11-28T16:05:27Z",
+   "detail": "extract: won the holdout (verdict 27444); confirmed on 1501 dev case(s): 252 gained against 53 lost, p=0.000",
+   "exam": {
+    "about": "family Qwen/Qwen3.8-27B, 27B params, by OBLITERATUS",
+    "candidate": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
+    "cases": 1501,
+    "first_s": 1.39,
+    "median_s": 1.689,
+    "metrics": {
+     "completion_tokens": 58.1972,
+     "tokens_per_s": 32.1056
+    },
+    "model": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
+    "not_run": "",
+    "pass_rate": 0.91,
+    "passed": 1366,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-28T16:05:13Z",
+    "served_as": "",
+    "source": "https://huggingface.co/OBLITERATUS/Qwen3.8-27B-OBLITERATED",
+    "total": 1501,
+    "ttft_median_s": 1.532,
+    "ttft_p95_s": 2.603
+   },
+   "outcome": "measured",
+   "proposal": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
+   "reason": "candidate",
+   "receipt_key": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
+   "run_id": 1521,
+   "serves": true,
+   "status": "adopted",
+   "tier": "adopt",
+   "until": ""
+  },
+  {
+   "candidate": "OBLITERATUS/Qwen3.8-27B-OBLITERATED,temperature=0",
+   "decided_at": "2026-11-28T16:05:27Z",
+   "detail": "extract: won the holdout (verdict 27444); confirmed on 1501 dev case(s): 252 gained against 53 lost, p=0.000",
+   "exam": {
+    "about": "family Qwen/Qwen3.8-27B, 27B params, by OBLITERATUS",
+    "candidate": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
+    "cases": 1501,
+    "first_s": 1.39,
+    "median_s": 1.689,
+    "metrics": {
+     "completion_tokens": 58.1972,
+     "tokens_per_s": 32.1056
+    },
+    "model": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
+    "not_run": "",
+    "pass_rate": 0.91,
+    "passed": 1366,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-28T16:05:13Z",
+    "served_as": "",
+    "source": "https://huggingface.co/OBLITERATUS/Qwen3.8-27B-OBLITERATED",
+    "total": 1501,
+    "ttft_median_s": 1.532,
+    "ttft_p95_s": 2.603
+   },
+   "outcome": "measured",
+   "proposal": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
+   "reason": "candidate",
+   "receipt_key": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
+   "run_id": 1521,
+   "serves": false,
+   "status": "adopted",
+   "tier": "adopt",
+   "until": ""
+  },
+  {
    "candidate": "Cloudflare/clef-flash",
    "decided_at": "2026-11-24T05:37:07Z",
    "detail": "extract: does not beat the incumbent on the lane's metric; significantly worse: 38 lost against 12 gained, p=0.00; comparison 13 on this holdout, so alpha 0.05/13 = 0.0038; dev: not run, dev and holdo",
@@ -835,82 +911,6 @@
    "status": "rejected",
    "tier": "adopt",
    "until": "cases:extract>2106"
-  },
-  {
-   "candidate": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
-   "decided_at": "2026-11-28T03:18:48Z",
-   "detail": "extract: held for confirmation: no case outside the holdout ran, so the incumbent serves until a night run of the dev cases confirms it (beats mlx-community/Qwen2.5-7B-Instruct-4bit on the lane's metr",
-   "exam": {
-    "about": "family Qwen/Qwen3.8-27B, 27B params, by OBLITERATUS",
-    "candidate": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
-    "cases": 1501,
-    "first_s": 1.39,
-    "median_s": 1.677,
-    "metrics": {
-     "completion_tokens": 58.5104,
-     "tokens_per_s": 32.2689
-    },
-    "model": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
-    "not_run": "",
-    "pass_rate": 0.906,
-    "passed": 1224,
-    "peak_gb": 0.0,
-    "reference": false,
-    "repeat": 1,
-    "run_at": "2026-11-28T15:51:28Z",
-    "served_as": "",
-    "source": "https://huggingface.co/OBLITERATUS/Qwen3.8-27B-OBLITERATED",
-    "total": 1351,
-    "ttft_median_s": 1.527,
-    "ttft_p95_s": 2.603
-   },
-   "outcome": "declined",
-   "proposal": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
-   "reason": "limit",
-   "receipt_key": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
-   "run_id": 1477,
-   "serves": false,
-   "status": "rejected",
-   "tier": "adopt",
-   "until": ""
-  },
-  {
-   "candidate": "OBLITERATUS/Qwen3.8-27B-OBLITERATED,temperature=0",
-   "decided_at": "2026-11-28T03:18:48Z",
-   "detail": "extract: held for confirmation: no case outside the holdout ran, so the incumbent serves until a night run of the dev cases confirms it (beats mlx-community/Qwen2.5-7B-Instruct-4bit on the lane's metr",
-   "exam": {
-    "about": "family Qwen/Qwen3.8-27B, 27B params, by OBLITERATUS",
-    "candidate": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
-    "cases": 1501,
-    "first_s": 1.39,
-    "median_s": 1.677,
-    "metrics": {
-     "completion_tokens": 58.5104,
-     "tokens_per_s": 32.2689
-    },
-    "model": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
-    "not_run": "",
-    "pass_rate": 0.906,
-    "passed": 1224,
-    "peak_gb": 0.0,
-    "reference": false,
-    "repeat": 1,
-    "run_at": "2026-11-28T15:51:28Z",
-    "served_as": "",
-    "source": "https://huggingface.co/OBLITERATUS/Qwen3.8-27B-OBLITERATED",
-    "total": 1351,
-    "ttft_median_s": 1.527,
-    "ttft_p95_s": 2.603
-   },
-   "outcome": "declined",
-   "proposal": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
-   "reason": "limit",
-   "receipt_key": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
-   "run_id": 1477,
-   "serves": false,
-   "status": "rejected",
-   "tier": "adopt",
-   "until": ""
   },
   {
    "candidate": "Qwen/Qwen3-0.6B",
@@ -4730,24 +4730,24 @@
     "candidate": "mlx-community/Qwen2.5-7B-Instruct-4bit",
     "cases": 1501,
     "first_s": 0.707,
-    "median_s": 0.324,
+    "median_s": 0.331,
     "metrics": {
-     "completion_tokens": 6.0517,
-     "tokens_per_s": 18.0918
+     "completion_tokens": 6.1008,
+     "tokens_per_s": 17.818
     },
     "model": "mlx-community/Qwen2.5-7B-Instruct-4bit",
     "not_run": "",
-    "pass_rate": 0.82,
-    "passed": 932,
+    "pass_rate": 0.825,
+    "passed": 1060,
     "peak_gb": 0.0,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-11-28T15:51:28Z",
+    "run_at": "2026-11-28T16:05:13Z",
     "served_as": "",
     "source": "https://huggingface.co/mlx-community/Qwen2.5-7B-Instruct-4bit",
-    "total": 1136,
-    "ttft_median_s": 0.178,
-    "ttft_p95_s": 0.282
+    "total": 1285,
+    "ttft_median_s": 0.183,
+    "ttft_p95_s": 0.289
    },
    "outcome": "",
    "proposal": "",
@@ -4760,7 +4760,7 @@
    "until": ""
   }
  ],
- "cursor": 1795858066990260,
+ "cursor": 1795881927709810,
  "events": [
   {
    "at": "2026-09-18T20:46:27Z",
@@ -10896,6 +10896,21 @@
    "reason": "limit",
    "run_id": 1522,
    "tier": "adopt"
+  },
+  {
+   "at": "2026-11-28T16:05:27Z",
+   "candidate": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
+   "chosen": null,
+   "detail": "extract: won the holdout (verdict 27444); confirmed on 1501 dev case(s): 252 gained against 53 lost, p=0.000",
+   "how": "measured",
+   "id": 1795881927709810,
+   "incumbent": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+   "kind": "adoption",
+   "knob": "",
+   "outcome": "measured",
+   "reason": "candidate",
+   "run_id": 1521,
+   "tier": "adopt"
   }
  ],
  "exams": [
@@ -10909,22 +10924,22 @@
      "about": "family Qwen/Qwen3.8-27B, 27B params, by OBLITERATUS",
      "candidate": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
      "first_s": 1.39,
-     "median_s": 1.677,
+     "median_s": 1.689,
      "metrics": {
-      "completion_tokens": 58.5104,
-      "tokens_per_s": 32.2689
+      "completion_tokens": 58.1972,
+      "tokens_per_s": 32.1056
      },
      "model": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
      "not_run": "",
-     "pass_rate": 0.906,
-     "passed": 1224,
+     "pass_rate": 0.91,
+     "passed": 1366,
      "peak_gb": 0.0,
      "reference": false,
-     "run_at": "2026-11-28T15:51:28Z",
+     "run_at": "2026-11-28T16:05:13Z",
      "served_as": "",
      "source": "https://huggingface.co/OBLITERATUS/Qwen3.8-27B-OBLITERATED",
-     "total": 1351,
-     "ttft_median_s": 1.527,
+     "total": 1501,
+     "ttft_median_s": 1.532,
      "ttft_p95_s": 2.603
     },
     {
@@ -10953,23 +10968,23 @@
      "about": "7B params, 4bit, by mlx-community",
      "candidate": "mlx-community/Qwen2.5-7B-Instruct-4bit",
      "first_s": 0.707,
-     "median_s": 0.324,
+     "median_s": 0.331,
      "metrics": {
-      "completion_tokens": 6.0517,
-      "tokens_per_s": 18.0918
+      "completion_tokens": 6.1008,
+      "tokens_per_s": 17.818
      },
      "model": "mlx-community/Qwen2.5-7B-Instruct-4bit",
      "not_run": "",
-     "pass_rate": 0.82,
-     "passed": 932,
+     "pass_rate": 0.825,
+     "passed": 1060,
      "peak_gb": 0.0,
      "reference": false,
-     "run_at": "2026-11-28T15:51:28Z",
+     "run_at": "2026-11-28T16:05:13Z",
      "served_as": "",
      "source": "https://huggingface.co/mlx-community/Qwen2.5-7B-Instruct-4bit",
-     "total": 1136,
-     "ttft_median_s": 0.178,
-     "ttft_p95_s": 0.282
+     "total": 1285,
+     "ttft_median_s": 0.183,
+     "ttft_p95_s": 0.289
     },
     {
      "about": "family Qwen/Qwen3.8-27B, 27B params, 4bit, by ddalcu",
@@ -10994,7 +11009,7 @@
      "ttft_p95_s": 11.346
     }
    ],
-   "run_at": "2026-11-28T15:51:28Z",
+   "run_at": "2026-11-28T16:05:13Z",
    "runs": 4
   },
   {
@@ -12937,7 +12952,7 @@
    "runs": 3
   }
  ],
- "generated_at": "2026-11-28T15:59:01Z",
+ "generated_at": "2026-11-28T16:14:52Z",
  "knobs": [],
  "lane": {
   "cases": 2200,
@@ -12952,22 +12967,22 @@
  },
  "schema_version": 2,
  "served": {
-  "adopted": false,
-  "adopted_at": "",
-  "adopted_how": "",
-  "incumbent": "",
-  "measured_at": "2026-11-28T15:51:28Z",
-  "median_s": 0.324,
+  "adopted": true,
+  "adopted_at": "2026-11-28T16:05:27Z",
+  "adopted_how": "measured",
+  "incumbent": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+  "measured_at": "2026-11-28T16:05:13Z",
+  "median_s": 1.689,
   "metrics": {
-   "completion_tokens": 6.0517,
-   "tokens_per_s": 18.0918
+   "completion_tokens": 58.1972,
+   "tokens_per_s": 32.1056
   },
   "not_run": "",
   "parked": "",
   "parked_until": "",
-  "pass_rate": 0.82,
-  "serves": "mlx-community/Qwen2.5-7B-Instruct-4bit",
-  "serves_model": "mlx-community/Qwen2.5-7B-Instruct-4bit; 7B params, 4bit, by mlx-community",
+  "pass_rate": 0.91,
+  "serves": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
+  "serves_model": "OBLITERATUS/Qwen3.8-27B-OBLITERATED; family Qwen/Qwen3.8-27B, 27B params, by OBLITERATUS",
   "stale": false
  },
  "since": 0
