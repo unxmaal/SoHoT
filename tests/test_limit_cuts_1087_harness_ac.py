@@ -68,7 +68,7 @@ def test_a_metric_win_the_paired_alpha_refuses_is_a_cut_when_recorded(tmp_path):
     lost = adopt.decide("tts", ch, inc, head_to_head_rows([True] * 8, [False] * 8))
     short = adopt.decide("tts", inc, ch, head_to_head_rows([False] * 8, [True] * 5 + [False] * 3))
     assert won.adopt and won.alpha_cut == () and lost.alpha_cut == ()
-    assert not short.adopt and short.alpha_cut[1] == adopt.ALPHA
+    assert not short.adopt and short.alpha_cut[1] == adopt.alpha_for()
     adopt.record(conn, dataclasses.replace(lost, challenger="org/new"))
     assert _stored(conn) == []
     adopt.record(conn, dataclasses.replace(short, challenger="org/new"))

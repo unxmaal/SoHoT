@@ -75,13 +75,18 @@ Test: tests/test_adopt_assumptions.py::test_the_adopt_gate_still_rounds_against_
 - **THEN** the reason says 10 gained against 0 lost once correlated repeats are counted as cases, rho 1.00 assumed
 Test: tests/test_adopt_effect_confirm_725.py::test_a_confirmation_over_correlated_repeats_says_how_it_counted_them
 
-### Requirement: Alpha over the comparison count
-The adopt tier SHALL test a challenger on a holdout at `alpha_for(tested)` = ALPHA (0.05) / (tested + 1), where tested counts the lane's earlier adopt verdicts on that holdout version other than inconclusive and lane_too_small ones, less any alpha spent on interim looks, and SHALL record the comparison count, the alpha used and any differing planned alpha in the verdict.
+### Requirement: A fixed level per comparison
+The adopt tier SHALL test a challenger on a holdout at `alpha_for()` = ALPHA (0.05) / FAMILY (4), whatever the number of earlier verdicts the lane holds, less any alpha spent on interim looks, and SHALL record the comparison count, the alpha used and any differing planned alpha in the verdict.
 
 #### Scenario: the twentieth challenger
-- **WHEN** 19 verdicts already exist on the holdout and the challenger gains 7 of 20 cases
-- **THEN** it is not adopted, evidence has comparisons 20 and alpha 0.05/20, and the reason says "comparison 20"
-Test: tests/test_adopt_assumptions.py::test_the_twentieth_challenger_on_one_holdout_faces_an_adjusted_alpha_and_says_so
+- **WHEN** 19 verdicts already exist on the holdout and the challenger gains 8 of 20 cases
+- **THEN** it is adopted at the same level as the first, evidence has comparisons 20 and alpha 0.05/4, and the reason says "comparison 20"
+Test: tests/test_adopt_assumptions.py::test_the_twentieth_challenger_on_one_holdout_faces_the_same_alpha_as_the_first
+
+#### Scenario: a lane gaining verdicts keeps its level
+- **WHEN** a lane records 30 more verdicts on its holdout version
+- **THEN** the level of its next comparison is unchanged
+Test: tests/test_adopt_assumptions.py::test_adopt_power_plans_at_the_holdouts_adjusted_alpha
 
 #### Scenario: comparisons are per lane and holdout version
 - **WHEN** three code verdicts and one svg verdict are recorded on one version
@@ -93,10 +98,10 @@ Test: tests/test_adopt_assumptions.py::test_comparisons_count_the_lanes_verdicts
 - **THEN** `comparisons()` for that lane stays 0
 Test: tests/test_lane_too_small_1049.py::test_measure_does_not_run_a_plan_that_cannot_decide
 
-#### Scenario: a verdict lands mid-run
-- **WHEN** the plan was made at one alpha and another verdict on the holdout landed before this one
+#### Scenario: the level changes mid-run
+- **WHEN** the plan was made at one alpha and the level differs when the verdict is written
 - **THEN** evidence carries planned_alpha and the tested alpha, and the reason says so
-Test: tests/test_adopt_assumptions.py::test_a_verdict_landing_mid_run_is_recorded_beside_the_alpha_the_plan_used
+Test: tests/test_adopt_assumptions.py::test_a_level_changing_mid_run_is_recorded_beside_the_alpha_the_plan_used
 
 #### Scenario: interim looks spend alpha only when they test an adopt
 - **WHEN** a paused paired run whose only look came before every case had a cell finishes and is decided

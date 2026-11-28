@@ -23,6 +23,7 @@ POWER = 0.8
 
 
 def _table_row(capsys, monkeypatch, lane):
+    monkeypatch.setattr(adopt, "FAMILY", 1)  # these holdouts were sized to the first comparison's level
     monkeypatch.setattr(adopt, "default_for", lambda lane, fallback, *a, **k: "inc")
     assert cli.main(["adopt", "--json", "--power", "--lane", lane]) == 0
     return {r["lane"]: r for r in json.loads(capsys.readouterr().out)["lanes"]}[lane]

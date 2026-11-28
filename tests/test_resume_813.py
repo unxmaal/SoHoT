@@ -218,7 +218,7 @@ def test_a_finished_resume_spends_no_alpha_an_uncovered_look_did_not_test_and_st
         conn.close()
     assert v["planned_s_per_case"] == pytest.approx(3.0)
     assert v["observed_s_per_case"] == pytest.approx(4.0)
-    assert json.loads(v["power"])["alpha"] == pytest.approx(adopt.ALPHA)
+    assert json.loads(v["power"])["alpha"] == pytest.approx(adopt.alpha_for())
     assert p["state"] == "done"
 
 

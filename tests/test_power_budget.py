@@ -250,7 +250,7 @@ def test_the_underpowered_verdict_carries_the_plan_reason():
     split = holdout.Split("code", dev=("d1", "d2", "d3"), holdout=("h1", "h2", "h3"),
                           too_small=False)
     rows = _rows({h: [(True, True)] * 3 for h in split.holdout})
-    weak = power.plan([1.0, 1.0, 0.0], 0.2, rho=1.0)
+    weak = power.plan([1.0, 1.0, 0.0], 0.2, rho=1.0, alpha=adopt.alpha_for())
     got = adopt.decide("code", _summary("inc", rows), _summary("ch", rows), rows,
                        split=split, plan=weak)
     assert got.why.startswith("underpowered") and "more holdout case" in got.why
@@ -495,7 +495,7 @@ def test_an_underpowered_null_is_a_loss_and_adds_no_empty_reason():
     split = holdout.Split("code", dev=("d1", "d2", "d3"), holdout=("h1", "h2", "h3"),
                           too_small=False)
     rows = _rows({h: [(True, True)] * 3 for h in split.holdout})
-    weak = dataclasses.replace(power.plan([1.0, 1.0, 0.0], 0.2, rho=1.0), why="")
+    weak = dataclasses.replace(power.plan([1.0, 1.0, 0.0], 0.2, rho=1.0, alpha=adopt.alpha_for()), why="")
     got = adopt.decide("code", _summary("inc", rows), _summary("ch", rows), rows,
                        split=split, plan=weak)
     assert got.adopt is False and got.why.startswith("underpowered")

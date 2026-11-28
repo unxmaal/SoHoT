@@ -115,7 +115,7 @@ def test_a_win_on_holdout_is_adopted_and_dev_is_reported_beside_it():
     rows = _rows({**{d: [(True, True)] * 4 for d in _split().dev},
                   **{h: [(False, True), (True, True)] * 2 for h in _split().holdout}})
     got = adopt.decide("code", _summary("inc", rows), _summary("ch", rows),
-                       rows, split=_split())
+                       rows, split=_split(), alpha=adopt.ALPHA)
     assert got.adopt
     assert "6 gained against 0 lost" in got.why
     assert "dev: 0 gained, 0 lost" in got.why
@@ -128,7 +128,7 @@ def test_a_lane_too_small_adopts_on_all_cases_with_the_caveat_recorded():
     rows = _rows({c: [(False, True), (True, True), (False, True)]
                   for c in ("a", "b", "c")})
     got = adopt.decide("svg", _summary("inc", rows), _summary("ch", rows),
-                       rows, split=small)
+                       rows, split=small, alpha=adopt.ALPHA)
     assert got.adopt
     assert "too small" in got.why
     assert got.evidence["split"]["too_small"] is True

@@ -582,7 +582,7 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
         store.close()
     spent = taken[-1]["spent"] if taken else 0.0
     verdict = adopt.decide(lane, inc_row, ch_row, rows, split=split, plan=plan, spec=spec,
-                           tested=tested, alpha=adopt.alpha_for(tested) - spent if taken else None)
+                           tested=tested, alpha=adopt.alpha_for() - spent if taken else None)
     verdict = _confirmed(verdict, rows, split, screened, _served(lane), inc_spec, spec, plan)
     if taken:
         verdict = replace(verdict, evidence={**verdict.evidence, "looks": taken})
@@ -607,7 +607,7 @@ def _plan(a, lane: str, inc_spec: str, spec: str = "", sweep=None):
     with runs.store() as store:
         draws, median_s, calls, est = priced(store, lane, inc_spec, spec)
         scored = power.served_profile(store, lane, inc_spec, settings, runs.here(store), scored=True)[0] if metric else {}
-        alpha = adopt.alpha_for(adopt.comparisons(store, lane, split.version))
+        alpha = adopt.alpha_for()
         secs = weedout.seconds_of(store, lane, inc_spec)
     estimated = ""
     if est["incumbent_source"] == "estimated":
@@ -1020,7 +1020,7 @@ def _paused(name: str, lane: str, inc_spec: str, spec: str, split, plan, out, he
     finally:
         store.close()
     look, verdict = looks.look(rows, lane=lane, inc_key=inc_key, ch_key=ch_key, split=split,
-                               plan=plan.as_dict(), alpha=adopt.alpha_for(tested),
+                               plan=plan.as_dict(), alpha=adopt.alpha_for(),
                                spent_before=taken[-1]["spent"] if taken else 0.0, n=len(taken) + 1,
                                spec=spec, tested=tested)
     if verdict is not None:

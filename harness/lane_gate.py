@@ -9,6 +9,10 @@ from dataclasses import dataclass, replace
 
 #: A lane whose plan power at its adopt effect is under this is closed to challengers. #2164.
 GATE_POWER = 0.8
+#: An open lane stays open until its power falls under this lower bar, so one night's draws cannot flip it. #2199.
+STAY_POWER = 0.75
+#: The file under the home that remembers each lane's last gate state.
+STATE_FILE = "lane-gate-state.json"
 #: How long the owner's "open anyway" lasts before the lane closes again. #2164.
 OPEN_S = 3 * 86400.0
 #: The holds row kind of an override, then the lane.
@@ -52,6 +56,8 @@ class Gate:
     #: What the effect is a gain in: the metric of a continuous lane (its effect a drop in it), else "per cell". #2181.
     unit: str = "per cell"
     sign_cases_needed: int | None = None
+    #: The power bar this lane was held to: STAY_POWER when it was open, else GATE_POWER. #2199.
+    bar: float | None = None
 
     @property
     def why(self) -> str:
@@ -62,7 +68,8 @@ class Gate:
         if self.unit != "per cell" and self.sign_cases_needed is not None:
             need += f"; the pass/fail sign test needed {self.sign_cases_needed}"
         return (f"{self.lane} lane closed to challengers: power {self.power:.2f} at {self.gain} is under "
-                f"lane_gate_power {GATE_POWER:.2f}, {need}; soh lane-gate open {self.lane} overrides for a while")
+                f"{'lane_gate_power' if self.bar in (None, GATE_POWER) else 'lane_gate_stay_power'} "
+                f"{GATE_POWER if self.bar is None else self.bar:.2f}, {need}; soh lane-gate open {self.lane} overrides for a while")
 
     @property
     def gain(self) -> str:
@@ -115,7 +122,7 @@ def calc(conn, lane: str, split, receipts: dict | None = None, effect: float | N
     metric = continuous.metric_of(lane)
     effect = effect or (continuous.effect_for(lane) if metric else power.effect_for(lane))
     tested = adopt.comparisons(conn, lane, split.version)
-    alpha = adopt.alpha_for(tested)
+    alpha = adopt.alpha_for()
     model = continuous.model_for(draws, split.holdout, metric) if metric else None
     plan = power.plan([rates[c] for c in split.holdout], effect, stochastic=lane in STOCHASTIC_MODALITIES,
                       observed=seen, rho=rho, alpha=alpha, unmeasured=not any(draws.values()), model=model)
@@ -133,6 +140,36 @@ def calc(conn, lane: str, split, receipts: dict | None = None, effect: float | N
 def closes(plan, threshold: float | None = None) -> bool:
     """Whether a plan closes its lane: measured rates, and power under the gate. An unmeasured plan is a guess and never closes."""
     return not plan.unmeasured and plan.power < (GATE_POWER if threshold is None else threshold)
+
+
+def _state_path():
+    from harness import paths
+    return paths.home() / STATE_FILE
+
+
+def _states() -> dict:
+    try:
+        got = json.loads(_state_path().read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return got if isinstance(got, dict) else {}
+
+
+def was_open(lane: str) -> bool:
+    """Whether the gate last left `lane` open; a lane it has not judged yet is held to the opening bar. #2199."""
+    return _states().get(lane) == "open"
+
+
+def _remember(lane: str, closed: bool) -> None:
+    got = _states()
+    now = "closed" if closed else "open"
+    if got.get(lane) == now:
+        return
+    got[lane] = now
+    with contextlib.suppress(OSError):
+        to = _state_path()
+        to.parent.mkdir(parents=True, exist_ok=True)
+        to.write_text(json.dumps(got, sort_keys=True), encoding="utf-8")
 
 
 _memo = _Local()
@@ -173,14 +210,18 @@ def _gate_for(conn, lane: str, split=None) -> Gate | None:
     if not (split.dev or split.holdout):
         return None
     c = calc(conn, lane, split)
-    if not closes(c.plan):
+    bar = STAY_POWER if was_open(lane) else GATE_POWER
+    low = closes(c.plan, bar)
+    if not c.plan.unmeasured:
+        _remember(lane, low)
+    if not low:
         return None
     need = c.plan.cases_needed
     more = max(0, need - len(split.holdout)) if need else None
     from harness import power
     return Gate(lane, c.plan.power, c.effect, len(split.holdout), need, more,
                 None if more is None else math.ceil(more / holdout.FRACTION),
-                unit=power.unit_of(c.plan), sign_cases_needed=getattr(c.plan, "sign_cases_needed", None))
+                unit=power.unit_of(c.plan), sign_cases_needed=getattr(c.plan, "sign_cases_needed", None), bar=bar)
 
 
 def override(conn, lane: str, now: float | None = None) -> dict | None:

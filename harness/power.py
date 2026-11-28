@@ -987,6 +987,10 @@ def control_of(receipts, prefer=()) -> str:
     return max(sorted(seen), key=lambda n: tuple(seen[n]), default="")
 
 
+#: Measured cases of one family before its unmeasured cases are projected from them, not from the lane's mix. #2198.
+FAMILY_MIN = 5
+
+
 def stratified(values: list[float], n: int) -> list[float]:
     """n deterministic draws following the empirical distribution of `values`."""
     if n == 0:
@@ -1001,14 +1005,29 @@ def unmeasured(draws: dict, case_ids) -> list:
 
 
 def rates_from(draws: dict, case_ids) -> tuple[dict, int]:
-    """case -> pass rate; unseen cases drawn from the measured per-case rates (#608), else UNSEEN.
+    """case -> pass rate; unseen cases drawn from their own family's measured rates, else the lane's (#608, #2198), else UNSEEN.
 
     A pooled rate would give every unseen case room to gain, but measured rates
-    are bimodal: a case at 1.0 has none.
+    are bimodal: a case at 1.0 has none. A family with FAMILY_MIN measured cases
+    speaks for its unmeasured ones; a saturated block is not credited the mix of
+    the lane.
     """
+    from harness import holdout
     measured = [sum(v) / len(v) for v in draws.values() if v]
     out = {cid: sum(draws[cid]) / len(draws[cid]) for cid in case_ids if draws.get(cid)}
-    missing = sorted(unmeasured(draws, case_ids))
-    fill = stratified(measured, len(missing)) if measured else [UNSEEN] * len(missing)
-    out.update(zip(missing, fill))
+    own: dict[str, list[float]] = {}
+    for cid, v in draws.items():
+        if v:
+            own.setdefault(holdout.family(cid), []).append(sum(v) / len(v))
+    groups: dict[str, list] = {}
+    for cid in sorted(unmeasured(draws, case_ids)):
+        groups.setdefault(holdout.family(cid), []).append(cid)
+    rest = []
+    for fam, ids in groups.items():
+        if len(own.get(fam, ())) >= FAMILY_MIN:
+            out.update(zip(ids, stratified(own[fam], len(ids))))
+        else:
+            rest += ids
+    rest.sort()
+    out.update(zip(rest, stratified(measured, len(rest)) if measured else [UNSEEN] * len(rest)))
     return {cid: out[cid] for cid in case_ids}, sum(len(draws.get(c) or ()) for c in case_ids)
