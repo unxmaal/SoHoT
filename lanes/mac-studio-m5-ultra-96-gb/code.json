@@ -1,6 +1,36 @@
 {
  "candidates": [
   {
+   "candidate": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
+   "decided_at": "2026-11-28T16:05:27Z",
+   "detail": "extract: won the holdout (verdict 27444); confirmed on 1501 dev case(s): 252 gained against 53 lost, p=0.000",
+   "exam": null,
+   "outcome": "measured",
+   "proposal": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
+   "reason": "candidate",
+   "receipt_key": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
+   "run_id": 1521,
+   "serves": false,
+   "status": "adopted",
+   "tier": "adopt",
+   "until": ""
+  },
+  {
+   "candidate": "OBLITERATUS/Qwen3.8-27B-OBLITERATED,temperature=0",
+   "decided_at": "2026-11-28T16:05:27Z",
+   "detail": "extract: won the holdout (verdict 27444); confirmed on 1501 dev case(s): 252 gained against 53 lost, p=0.000",
+   "exam": null,
+   "outcome": "measured",
+   "proposal": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
+   "reason": "candidate",
+   "receipt_key": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
+   "run_id": 1521,
+   "serves": false,
+   "status": "adopted",
+   "tier": "adopt",
+   "until": ""
+  },
+  {
    "candidate": "PaddlePaddle/PaddleOCR-VL-1.6",
    "decided_at": "2026-11-07T06:29:12Z",
    "detail": "ocr: beats osocr/auto on the lane's metric, 21 gained against 5 lost, p=0.00; comparison 2 on this holdout, so alpha 0.05/2 = 0.0250; dev: 41 gained, 9 lost, p=0.00; confirmed on 213 dev case(s): 41 g",
@@ -1377,36 +1407,6 @@
    "status": "rejected",
    "tier": "screen",
    "until": "version:llama.cpp>11960"
-  },
-  {
-   "candidate": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
-   "decided_at": "2026-11-28T03:18:48Z",
-   "detail": "extract: held for confirmation: no case outside the holdout ran, so the incumbent serves until a night run of the dev cases confirms it (beats mlx-community/Qwen2.5-7B-Instruct-4bit on the lane's metr",
-   "exam": null,
-   "outcome": "declined",
-   "proposal": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
-   "reason": "limit",
-   "receipt_key": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
-   "run_id": 1477,
-   "serves": false,
-   "status": "rejected",
-   "tier": "adopt",
-   "until": ""
-  },
-  {
-   "candidate": "OBLITERATUS/Qwen3.8-27B-OBLITERATED,temperature=0",
-   "decided_at": "2026-11-28T03:18:48Z",
-   "detail": "extract: held for confirmation: no case outside the holdout ran, so the incumbent serves until a night run of the dev cases confirms it (beats mlx-community/Qwen2.5-7B-Instruct-4bit on the lane's metr",
-   "exam": null,
-   "outcome": "declined",
-   "proposal": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
-   "reason": "limit",
-   "receipt_key": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
-   "run_id": 1477,
-   "serves": false,
-   "status": "rejected",
-   "tier": "adopt",
-   "until": ""
   },
   {
    "candidate": "QLNI/SHADOW-250M",
@@ -8268,8 +8268,8 @@
   },
   {
    "candidate": "Jackrong/Qwopus3.6-27B-Coder-MTP-GGUF",
-   "decided_at": "2026-11-28T08:27:49Z",
-   "detail": "code lane closed to challengers: power 0.74 at +0.10 is under lane_gate_power 0.80, needs 17 more holdout cases (480 in all, 463 here); soh lane-gate open code overrides for a while",
+   "decided_at": "2026-11-28T16:14:14Z",
+   "detail": "code lane closed to challengers: power 0.75 at +0.10 is under lane_gate_power 0.80, needs 24 more holdout cases (750 in all, 726 here); soh lane-gate open code overrides for a while",
    "exam": null,
    "outcome": "queued",
    "proposal": "Jackrong/Qwopus3.6-27B-Coder-MTP-GGUF",
@@ -8283,8 +8283,8 @@
   },
   {
    "candidate": "Jackrong/Qwopus3.6-27B-Coder-MTP-GGUF,temperature=0",
-   "decided_at": "2026-11-28T08:27:49Z",
-   "detail": "code lane closed to challengers: power 0.74 at +0.10 is under lane_gate_power 0.80, needs 17 more holdout cases (480 in all, 463 here); soh lane-gate open code overrides for a while",
+   "decided_at": "2026-11-28T16:14:14Z",
+   "detail": "code lane closed to challengers: power 0.75 at +0.10 is under lane_gate_power 0.80, needs 24 more holdout cases (750 in all, 726 here); soh lane-gate open code overrides for a while",
    "exam": null,
    "outcome": "queued",
    "proposal": "Jackrong/Qwopus3.6-27B-Coder-MTP-GGUF",
@@ -8298,8 +8298,8 @@
   },
   {
    "candidate": "Jiunsong/supergemma4-26b-uncensored-gguf-v2",
-   "decided_at": "2026-11-28T08:27:49Z",
-   "detail": "code lane closed to challengers: power 0.74 at +0.10 is under lane_gate_power 0.80, needs 17 more holdout cases (480 in all, 463 here); soh lane-gate open code overrides for a while",
+   "decided_at": "2026-11-28T16:14:14Z",
+   "detail": "code lane closed to challengers: power 0.75 at +0.10 is under lane_gate_power 0.80, needs 24 more holdout cases (750 in all, 726 here); soh lane-gate open code overrides for a while",
    "exam": null,
    "outcome": "queued",
    "proposal": "Jiunsong/supergemma4-26b-uncensored-gguf-v2",
@@ -8373,8 +8373,8 @@
   },
   {
    "candidate": "NemoStation/Marlin-2B",
-   "decided_at": "2026-11-28T15:14:02Z",
-   "detail": "prefilter: refetch: NemoStation/Marlin-2B was downloaded 19.8 h ago (0.0 GiB) and no verdict was written since, so it is not downloaded again within 24 h (asked for by the prefilter)",
+   "decided_at": "2026-11-28T16:13:31Z",
+   "detail": "prefilter: refetch: NemoStation/Marlin-2B was downloaded 20.8 h ago (0.0 GiB) and no verdict was written since, so it is not downloaded again within 24 h (asked for by the prefilter)",
    "exam": null,
    "outcome": "queued",
    "proposal": "NemoStation/Marlin-2B",
@@ -8388,8 +8388,8 @@
   },
   {
    "candidate": "NemoStation/Marlin-2B,temperature=0",
-   "decided_at": "2026-11-28T15:14:02Z",
-   "detail": "prefilter: refetch: NemoStation/Marlin-2B was downloaded 19.8 h ago (0.0 GiB) and no verdict was written since, so it is not downloaded again within 24 h (asked for by the prefilter)",
+   "decided_at": "2026-11-28T16:13:31Z",
+   "detail": "prefilter: refetch: NemoStation/Marlin-2B was downloaded 20.8 h ago (0.0 GiB) and no verdict was written since, so it is not downloaded again within 24 h (asked for by the prefilter)",
    "exam": null,
    "outcome": "queued",
    "proposal": "NemoStation/Marlin-2B",
@@ -8433,33 +8433,33 @@
   },
   {
    "candidate": "Qwen/Qwen-Image-Bench",
-   "decided_at": "2026-11-28T12:40:34Z",
-   "detail": "not screened: needs 53.0 GiB but at most 23.5 GiB is free for a load here while the interactive server's pinned models stay held (beside the system reserve and the Docker VM); a screen window can release them",
+   "decided_at": "2026-11-28T16:14:14Z",
+   "detail": "code lane closed to challengers: power 0.75 at +0.10 is under lane_gate_power 0.80, needs 24 more holdout cases (750 in all, 726 here); soh lane-gate open code overrides for a while",
    "exam": null,
    "outcome": "queued",
    "proposal": "Qwen/Qwen-Image-Bench",
-   "reason": "memory",
+   "reason": "limit",
    "receipt_key": "Qwen/Qwen-Image-Bench",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "screen",
-   "until": "room_gb:>53.0"
+   "tier": "fetch",
+   "until": ""
   },
   {
    "candidate": "Qwen/Qwen-Image-Bench,temperature=0",
-   "decided_at": "2026-11-28T12:40:34Z",
-   "detail": "not screened: needs 53.0 GiB but at most 23.5 GiB is free for a load here while the interactive server's pinned models stay held (beside the system reserve and the Docker VM); a screen window can release them",
+   "decided_at": "2026-11-28T16:14:14Z",
+   "detail": "code lane closed to challengers: power 0.75 at +0.10 is under lane_gate_power 0.80, needs 24 more holdout cases (750 in all, 726 here); soh lane-gate open code overrides for a while",
    "exam": null,
    "outcome": "queued",
    "proposal": "Qwen/Qwen-Image-Bench",
-   "reason": "memory",
+   "reason": "limit",
    "receipt_key": "Qwen/Qwen-Image-Bench",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "screen",
-   "until": "room_gb:>53.0"
+   "tier": "fetch",
+   "until": ""
   },
   {
    "candidate": "Qwen2.5-7B-Instruct-Q4_K_M",
@@ -8523,8 +8523,8 @@
   },
   {
    "candidate": "llamacpp:Qwopus3.6-27B-Coder-MTP-Q4_K_M",
-   "decided_at": "2026-11-28T08:27:49Z",
-   "detail": "code lane closed to challengers: power 0.74 at +0.10 is under lane_gate_power 0.80, needs 17 more holdout cases (480 in all, 463 here); soh lane-gate open code overrides for a while",
+   "decided_at": "2026-11-28T16:14:14Z",
+   "detail": "code lane closed to challengers: power 0.75 at +0.10 is under lane_gate_power 0.80, needs 24 more holdout cases (750 in all, 726 here); soh lane-gate open code overrides for a while",
    "exam": {
     "about": "family Jackrong/Qwopus3.6-27B-v2, 27B params, Q4_K_M, by Jackrong",
     "candidate": "llamacpp:Qwopus3.6-27B-Coder-MTP-Q4_K_M",
@@ -8558,8 +8558,8 @@
   },
   {
    "candidate": "llamacpp:Qwopus3.6-27B-Coder-MTP-Q4_K_M,temperature=0",
-   "decided_at": "2026-11-28T08:27:49Z",
-   "detail": "code lane closed to challengers: power 0.74 at +0.10 is under lane_gate_power 0.80, needs 17 more holdout cases (480 in all, 463 here); soh lane-gate open code overrides for a while",
+   "decided_at": "2026-11-28T16:14:14Z",
+   "detail": "code lane closed to challengers: power 0.75 at +0.10 is under lane_gate_power 0.80, needs 24 more holdout cases (750 in all, 726 here); soh lane-gate open code overrides for a while",
    "exam": {
     "about": "family Jackrong/Qwopus3.6-27B-v2, 27B params, Q4_K_M, by Jackrong",
     "candidate": "llamacpp:Qwopus3.6-27B-Coder-MTP-Q4_K_M",
@@ -8593,8 +8593,8 @@
   },
   {
    "candidate": "llamacpp:command-a-plus-05-2026-IQ1_S",
-   "decided_at": "2026-11-28T15:14:01Z",
-   "detail": "prefilter: refetch: bartowski/command-a-plus-05-2026-GGUF was downloaded 17.8 h ago (45.9 GiB) and no verdict was written since, so it is not downloaded again within 24 h (asked for by the prefilter)",
+   "decided_at": "2026-11-28T16:13:31Z",
+   "detail": "prefilter: refetch: bartowski/command-a-plus-05-2026-GGUF was downloaded 18.8 h ago (45.9 GiB) and no verdict was written since, so it is not downloaded again within 24 h (asked for by the prefilter)",
    "exam": {
     "about": "family CohereLabs/command-a-plus-05-2026-bf16, IQ1_S, by bartowski",
     "candidate": "llamacpp:command-a-plus-05-2026-IQ1_S",
@@ -8632,8 +8632,8 @@
   },
   {
    "candidate": "llamacpp:command-a-plus-05-2026-IQ1_S,temperature=0",
-   "decided_at": "2026-11-28T15:14:01Z",
-   "detail": "prefilter: refetch: bartowski/command-a-plus-05-2026-GGUF was downloaded 17.8 h ago (45.9 GiB) and no verdict was written since, so it is not downloaded again within 24 h (asked for by the prefilter)",
+   "decided_at": "2026-11-28T16:13:31Z",
+   "detail": "prefilter: refetch: bartowski/command-a-plus-05-2026-GGUF was downloaded 18.8 h ago (45.9 GiB) and no verdict was written since, so it is not downloaded again within 24 h (asked for by the prefilter)",
    "exam": {
     "about": "family CohereLabs/command-a-plus-05-2026-bf16, IQ1_S, by bartowski",
     "candidate": "llamacpp:command-a-plus-05-2026-IQ1_S",
@@ -8671,8 +8671,8 @@
   },
   {
    "candidate": "llamacpp:supergemma4-26b-uncensored-fast-v2-Q4_K_M",
-   "decided_at": "2026-11-28T08:27:49Z",
-   "detail": "code lane closed to challengers: power 0.74 at +0.10 is under lane_gate_power 0.80, needs 17 more holdout cases (480 in all, 463 here); soh lane-gate open code overrides for a while",
+   "decided_at": "2026-11-28T16:14:14Z",
+   "detail": "code lane closed to challengers: power 0.75 at +0.10 is under lane_gate_power 0.80, needs 24 more holdout cases (750 in all, 726 here); soh lane-gate open code overrides for a while",
    "exam": {
     "about": "family google/gemma-4-26B-A4B-it, 26B (4B active) params, Q4_K_M, by Jiunsong",
     "candidate": "llamacpp:supergemma4-26b-uncensored-fast-v2-Q4_K_M",
@@ -8710,8 +8710,8 @@
   },
   {
    "candidate": "llamacpp:supergemma4-26b-uncensored-fast-v2-Q4_K_M,temperature=0",
-   "decided_at": "2026-11-28T08:27:49Z",
-   "detail": "code lane closed to challengers: power 0.74 at +0.10 is under lane_gate_power 0.80, needs 17 more holdout cases (480 in all, 463 here); soh lane-gate open code overrides for a while",
+   "decided_at": "2026-11-28T16:14:14Z",
+   "detail": "code lane closed to challengers: power 0.75 at +0.10 is under lane_gate_power 0.80, needs 24 more holdout cases (750 in all, 726 here); soh lane-gate open code overrides for a while",
    "exam": {
     "about": "family google/gemma-4-26B-A4B-it, 26B (4B active) params, Q4_K_M, by Jiunsong",
     "candidate": "llamacpp:supergemma4-26b-uncensored-fast-v2-Q4_K_M",
@@ -8937,7 +8937,7 @@
    "until": ""
   }
  ],
- "cursor": 1795869634476024,
+ "cursor": 1795881927611785,
  "events": [
   {
    "at": "2026-09-18T20:46:27Z",
@@ -23698,6 +23698,21 @@
    "reason": "memory",
    "run_id": null,
    "tier": "screen"
+  },
+  {
+   "at": "2026-11-28T16:05:27Z",
+   "candidate": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
+   "chosen": null,
+   "detail": "extract: won the holdout (verdict 27444); confirmed on 1501 dev case(s): 252 gained against 53 lost, p=0.000",
+   "how": "",
+   "id": 1795881927611785,
+   "incumbent": "",
+   "kind": "verdict",
+   "knob": "",
+   "outcome": "measured",
+   "reason": "candidate",
+   "run_id": 1521,
+   "tier": "adopt"
   }
  ],
  "exams": [
@@ -26125,7 +26140,7 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-11-28T15:58:53Z",
+ "generated_at": "2026-11-28T16:14:44Z",
  "knobs": [],
  "lane": {
   "cases": 2381,
