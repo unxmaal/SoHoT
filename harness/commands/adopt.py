@@ -19,12 +19,35 @@ def _run_name(run: Path) -> str:
         return str(run)
 
 
+def cleanup_confirms(conn, apply: bool = False, say=print) -> dict:
+    """Cancel the paused `adopt --confirm` jobs of every verdict, and queue one for a verdict still held with none live; says each. #2201."""
+    from harness import adopt, workqueue
+    rows = conn.execute("SELECT argv FROM jobs WHERE state = ? AND argv LIKE ?", (workqueue.PAUSED, '%"--confirm", "%')).fetchall()
+    vids = sorted({int(json.loads(r["argv"])[-1]) for r in rows if str(json.loads(r["argv"])[-1]).isdigit()})
+    out = {"cancelled": 0, "queued": 0, "verdicts": len(vids)}
+    for vid in vids:
+        paused = workqueue.confirm_jobs(conn, vid, (workqueue.PAUSED,))
+        held = conn.execute("SELECT v.lane, p.name FROM verdicts v JOIN proposals p ON p.id = v.proposal_id "
+                            "WHERE v.id = ? AND v.failure_class = 'confirming' AND p.state_verdict_id = v.id", (vid,)).fetchone()
+        say(f"verdict {vid}: {len(paused)} paused confirm job(s) {'cancelled' if apply else 'to cancel'}"
+            f"{', still held' if held else ', no longer held'}")
+        if apply:
+            for j in paused:
+                workqueue.cancel(str(j["id"]), conn=conn)
+        out["cancelled"] += len(paused)
+        if held and not workqueue.live_confirms(conn, vid):
+            say(f"verdict {vid}: no live confirmation, {'queued one' if apply else 'one to queue'}")
+            if apply and adopt.queue_confirmation(conn, vid, adopt.Verdict(held["lane"], "", held["name"], False, "")):
+                out["queued"] += 1
+    return out
+
+
 def _confirm_cleanup(apply: bool) -> int:
     from harness import adopt
     from harness import memory_store as ms
     conn = ms.connect()
     try:
-        got = adopt.cleanup_confirms(conn, apply)
+        got = cleanup_confirms(conn, apply)
     finally:
         conn.close()
     print(f"confirm cleanup: {got['cancelled']} paused job(s) {'cancelled' if apply else 'would be cancelled (--apply)'} "

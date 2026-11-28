@@ -54,7 +54,7 @@ MODULES = {
         "tests/test_stt_screen_power_1007.py", "tests/test_staging_torch_1358.py",
         "tests/test_presence_960.py", "tests/test_limit_cuts_1087_harness_ps.py"],
     "harness/adopt.py": [
-        "tests/test_adopt_retest_1001.py", "tests/test_harness_adopt.py", "tests/test_harness_adopt_receipt.py", "tests/test_adopt_by_spec.py",
+        "tests/test_confirm_held_2201.py", "tests/test_adopt_retest_1001.py", "tests/test_harness_adopt.py", "tests/test_harness_adopt_receipt.py", "tests/test_adopt_by_spec.py",
         "tests/test_adoptions.py", "tests/test_adopt_cmd.py", "tests/test_human_verdicts.py",
         "tests/test_schema_lanes.py", "tests/test_holdout_power.py", "tests/test_power_budget.py",
         "tests/test_methods.py", "tests/test_adopt_scope.py", "tests/test_method_serving.py",

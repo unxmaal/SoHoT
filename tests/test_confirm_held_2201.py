@@ -65,7 +65,7 @@ def test_a_repeated_refusal_leaves_one_job_not_a_chain(held, monkeypatch, capsys
     got = workqueue.run_one(workqueue.pending(conn)[0], popen=_in_process(monkeypatch))
     assert got["state"] == workqueue.FAILED and got["rc"] == 1
     assert workqueue.pending(conn) == []
-    assert len(adopt.confirm_jobs(conn, vid, (workqueue.PENDING, workqueue.RUNNING, workqueue.PAUSED, workqueue.FAILED))) == 1
+    assert len(workqueue.confirm_jobs(conn, vid, (workqueue.PENDING, workqueue.RUNNING, workqueue.PAUSED, workqueue.FAILED))) == 1
     assert fetched == []
     assert "its weights cannot be fetched again" in capsys.readouterr().err
 
@@ -92,15 +92,15 @@ def test_the_cleanup_cancels_the_paused_duplicates_logged_and_leaves_one_live_jo
         job = workqueue.add([f"/rel{i}/python", "-m", "harness.cli", "adopt", "--confirm", str(vid)], conn=conn)
         conn.execute("UPDATE jobs SET state = 'paused', rc = 75 WHERE id = ?", (job["id"],))
     conn.commit()
-    assert adopt.cleanup_confirms(conn, apply=False)["cancelled"] == 5
+    assert adopt_cmd.cleanup_confirms(conn, apply=False)["cancelled"] == 5
     assert conn.execute("SELECT COUNT(*) FROM jobs WHERE state = 'paused'").fetchone()[0] == 5
-    got = adopt.cleanup_confirms(conn, apply=True)
+    got = adopt_cmd.cleanup_confirms(conn, apply=True)
     assert got["cancelled"] == 5 and got["queued"] == 1
     assert conn.execute("SELECT COUNT(*) FROM jobs WHERE state = 'paused'").fetchone()[0] == 0
     assert len(workqueue.pending(conn)) == 1
     assert conn.execute("SELECT COUNT(*) FROM jobs WHERE note LIKE 'cancelled by soh jobs cancel%'").fetchone()[0] == 5
     assert "verdict" in capsys.readouterr().out
-    assert adopt.cleanup_confirms(conn, apply=True) == {"cancelled": 0, "queued": 0, "verdicts": 0}
+    assert adopt_cmd.cleanup_confirms(conn, apply=True) == {"cancelled": 0, "queued": 0, "verdicts": 0}
 
 
 def test_the_weights_of_a_held_win_stay_while_its_confirmation_is_queued(held):
