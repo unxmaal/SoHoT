@@ -793,16 +793,17 @@
    "runs": 1
   }
  ],
- "generated_at": "2026-11-22T08:04:37Z",
+ "generated_at": "2026-11-28T08:08:41Z",
  "knobs": [],
  "lane": {
-  "cases": 374,
-  "cases_digest": "af27cf87dacc533b",
+  "cases": 1174,
+  "cases_digest": "e4db54247d8ae0c0",
   "name": "agent",
   "params": {
    "max_steps": [
     8,
     12,
+    14,
     16
    ],
    "pad_tokens": [
