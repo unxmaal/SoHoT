@@ -157,7 +157,7 @@ def _hm(seconds) -> str:
 
 def cmd_power(a) -> int:
     """Per lane: the repeat and holdout size power 0.8 needs, and what that run would cost. #591."""
-    from harness import holdout, lane_gate, power
+    from harness import continuous, holdout, lane_gate, power
 
     receipts = _receipts(getattr(a, "receipt", None) or [])
     challenger = getattr(a, "challenger", "") or ""
@@ -173,7 +173,7 @@ def cmd_power(a) -> int:
                        f"{', '.join(sorted(every))}")
         for lane in [want] if want else sorted(every):
             split = every[lane]
-            effect = getattr(a, "effect", None) or power.effect_for(lane)
+            effect = getattr(a, "effect", None) or power.effect_in(lane)
             got = lane_gate.calc(conn, lane, split, receipts, effect)
             key, inc_spec, draws, inc_s, settings, machines = (got.key, got.inc_spec, got.draws, got.inc_s,
                                                                got.settings, got.machines)
@@ -183,7 +183,8 @@ def cmd_power(a) -> int:
                                                  settings=settings, machines=machines)
             missing = set(power.unmeasured(draws, split.holdout))
             measured = [rates[c] for c in split.holdout if c not in missing]
-            alone = (power.power(measured, effect, plan.repeat, alpha, rho=plan.rho)
+            alone = (power.power(measured, effect, plan.repeat, alpha, rho=plan.rho,
+                                 model=continuous.Model.of(plan.continuous))
                      if measured else None)
             cases_run = len(set(split.dev) | set(split.holdout))
             more = max(0, plan.cases_needed - len(split.holdout)) if plan.cases_needed else None
@@ -202,12 +203,13 @@ def cmd_power(a) -> int:
                 "mde": plan.mde, "unmeasured_plan": plan.unmeasured,
                 "unseen": power.unseen_note(draws),
                 "comparisons": tested, "alpha": alpha,
-                "cases_needed": plan.cases_needed,
+                "cases_needed": plan.cases_needed, "sign_cases_needed": plan.sign_cases_needed,
+                "unit": power.unit_of(plan),
                 "more_holdout": more,
                 "more_cases": None if more is None else math.ceil(more / holdout.FRACTION),
-                "noise_effect": power.noise_for(lane),
+                "noise_effect": power.noise_in(lane),
                 "effect_from": ("given" if getattr(a, "effect", None) else
-                                "floor" if effect > power.noise_for(lane) else
+                                "floor" if effect > power.noise_in(lane) else
                                 "measured" if lane in power.EFFECT else "default"),
                 "status": _status(plan, more, [rates[c] for c in split.holdout], effect),
                 "median_s": median, "calls": calls, "projected_s": projected, "estimate": est,
@@ -229,13 +231,15 @@ def cmd_power(a) -> int:
             note(f"  {r['lane']:8} {r['status']}")
             continue
         rho = (f"rho {r['rho']:.2f}" + ("" if r["rho_measured"] else " assumed"))
+        unit = "" if r["unit"] == "per cell" else f" {r['unit']}"
         if r["enough"]:
-            head = f"+{r['effect']:.2f}: repeat {r['repeat']} -> power {r['power']:.2f}"
+            head = f"+{r['effect']:.2f}{unit}: repeat {r['repeat']} -> power {r['power']:.2f}"
         else:
-            head = f"+{r['effect']:.2f}: no repeat reaches {power.TARGET} (best {r['power']:.2f} at repeat {r['repeat']})"
+            head = f"+{r['effect']:.2f}{unit}: no repeat reaches {power.TARGET} (best {r['power']:.2f} at repeat {r['repeat']})"
         need = ("saturated" if r["cases_needed"] is None and not r["enough"]
                 else f"{r['cases_needed']} holdout needed, "
-                     f"{r['more_holdout']} more holdout")
+                     f"{r['more_holdout']} more holdout"
+                     + (f" (the pass/fail sign test: {r['sign_cases_needed']})" if unit else ""))
         cost = (f"{r['median_s']:.1f}s/call x {r['calls']} calls, {_hm(r['projected_s'])} at repeat "
                 f"{r['repeat']}" + (" fits" if r["fits_budget"] else " over budget")
                 if r["median_s"] is not None else "no measured seconds")
@@ -264,7 +268,7 @@ def _status(plan, more, rates, effect) -> str:
         return "enough"
     if more is not None:
         return f"short {more}"
-    if not rates or power._cell_odds(rates, effect)[0] <= 0:
+    if not rates or (plan.continuous["sd"] <= 0 if plan.continuous else power._cell_odds(rates, effect)[0] <= 0):
         return "saturated"
     return f"over {power.MAX_CASES}"
 
@@ -280,7 +284,7 @@ def _table(rows) -> int:
     """One fixed-column row per lane; `soh adopt --json --power` carries the same fields."""
     from harness import power
     head = ("lane", "cases", "holdout", "noise", "effect", "from", "rho", "rows", "power", "needed",
-            "more_holdout", "more_cases", "status")
+            "sign_needed", "more_holdout", "more_cases", "status")
     def cell(v, fmt="{}"):
         return "-" if v is None or v == "" else fmt.format(v)
     lines = [head]
@@ -289,10 +293,12 @@ def _table(rows) -> int:
         lines.append((r["lane"], str(r["cases"]), str(r["holdout"]), cell(r["noise_effect"], "{:.2f}"),
                       cell(r["effect"], "{:.2f}"),
                       cell(r["effect_from"]), cell(rho), str(r["observed"]), cell(r["power"], "{:.2f}"),
-                      cell(r["cases_needed"]), cell(r["more_holdout"]), cell(r["more_cases"]), r["status"]))
+                      cell(r["cases_needed"]), cell(r.get("sign_cases_needed")), cell(r["more_holdout"]), cell(r["more_cases"]), r["status"]))
     widths = [max(len(line[i]) for line in lines) for i in range(len(head) - 1)]
     for line in lines:
         print("  ".join(c.ljust(w) for c, w in zip(line, widths)) + "  " + line[-1])
+    note("stt, tts and ocr effects are drops in wer/cer, tested by the signed-rank test; sign_needed is the "
+         "pass/fail sign test's holdout at its own +0.10 pass rate")
     note("noise is the gain the lane's reruns let the gate see; effect is what it powers for, never under "
          f"adopt_min_effect +{power.MIN_EFFECT:.2f} (from floor)")
     note("rho? is assumed until a repeated case measures it; rows 0 means the incumbent's rates are assumed")

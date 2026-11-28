@@ -599,12 +599,14 @@ def _plan(a, lane: str, inc_spec: str, spec: str = "", sweep=None):
     from dataclasses import replace
 
     from evals.run import STOCHASTIC_MODALITIES
-    from harness import adopt, holdout, looks, power, weedout
+    from harness import adopt, continuous, holdout, looks, power, weedout
 
     split = holdout.for_lane(lane)
     settings = _settings(lane, inc_spec, spec)
+    metric = continuous.metric_of(lane)
     with runs.store() as store:
         draws, median_s, calls, est = priced(store, lane, inc_spec, spec)
+        scored = power.served_profile(store, lane, inc_spec, settings, runs.here(store), scored=True)[0] if metric else {}
         alpha = adopt.alpha_for(adopt.comparisons(store, lane, split.version))
         secs = weedout.seconds_of(store, lane, inc_spec)
     estimated = ""
@@ -616,13 +618,14 @@ def _plan(a, lane: str, inc_spec: str, spec: str = "", sweep=None):
         estimated = (f"seconds per call {est['incumbent_basis']}: no incumbent receipt on this "
                      f"machine at the {settings[0]}-token reply budget")
     rates, seen = power.rates_from(draws, split.holdout)
-    effect = getattr(a, "effect", None) or power.effect_for(lane)
+    effect = getattr(a, "effect", None) or (continuous.effect_for(lane) if metric else power.effect_for(lane))
     explicit = getattr(a, "repeat", None)
     plan = power.plan([rates[c] for c in split.holdout], effect,
                       stochastic=lane in STOCHASTIC_MODALITIES,
                       repeat=explicit, observed=seen, alpha=alpha,
                       unmeasured=not any(draws.values()),
-                      rho=power.icc([list(draws.values())]))
+                      rho=power.icc([list((scored if metric else draws).values())]),
+                      model=continuous.model_for(scored, split.holdout, metric) if metric else None)
     per = float(getattr(a, "power_budget_min", None) or power.BUDGET_MIN) * 60
     left = sweep.remaining() if sweep is not None else None
     budget = per if left is None else min(per, left)
@@ -644,16 +647,17 @@ def _plan(a, lane: str, inc_spec: str, spec: str = "", sweep=None):
              if sweeps and sweeps > 1 else "")
     plan = replace(plan, side=side, dev_skipped=dev_skipped, estimate=est, budget_s=budget,
                    odds=power._cell_odds([rates[c] for c in split.holdout], plan.effect)
-                   if split.holdout else None, sweeps=sweeps,
+                   if split.holdout and not metric else None, sweeps=sweeps,
                    why="; ".join(x for x in (spans, plan.why, power.unseen_note(draws), estimated) if x))
     plan = replace(plan, deadline_s=power.deadline(plan))
     each = _case_s(plan)
     plan = replace(plan, look_cells=looks.every(sum(each) if all(each) else None) or None)
     run = list(split.holdout) if side == "holdout" else list(dict.fromkeys([*split.holdout, *split.dev]))
     if run:
-        plan = replace(plan, **weedout.planned(run, power.rates_from(draws, run)[0], secs, plan.effect))
+        plan = replace(plan, **weedout.planned(run, power.rates_from(draws, run)[0], secs,
+                                               power.effect_for(lane) if metric else plan.effect))
     print(f"    power: repeat {plan.repeat} over {len(split.holdout)} holdout "
-          f"case(s) gives {plan.power:.2f} to detect +{plan.effect:.2f} at "
+          f"case(s) gives {plan.power:.2f} to detect +{plan.effect:.2f}{power.unit_note(plan)} at "
           f"alpha {plan.alpha}{'; ' + plan.why if plan.why else ''}"
           f"{'; ' + split.caveat if split.caveat else ''}", flush=True)
     if plan.projected_s is not None:

@@ -241,7 +241,7 @@ def lane_limit(lane: str, plan: dict, name_c: str = "") -> tuple[int, str] | Non
     if need is not None and int(need) > cases:
         more = more_cases(cases, need)
         return more, (f"lane too small, needs {need} holdout cases: {cases} cannot show "
-                      f"+{float(plan.get('effect') or 0):.2f} per cell at power {target} at any repeat "
+                      f"+{float(plan.get('effect') or 0):.2f} {power.unit_of(plan)} at power {target} at any repeat "
                       f"up to {plan.get('cap')}, so about {more} more {lane} cases are needed before "
                       f"a null says anything about {name_c or 'a challenger'}")
     if odds is not None and float(odds[0]) <= 0:
@@ -328,16 +328,19 @@ def _spent_until(conn, name: str, verdict: Verdict, reason: str) -> str:
 
 
 def _sees(plan) -> str:
+    from harness import power
     mde, target = ((plan.get("mde"), plan.get("target")) if isinstance(plan, dict)
                    else (getattr(plan, "mde", None), plan.target))
-    return (f"; smallest gain this run could see: +{mde:.2f} per cell at power {target}"
+    unit = power.unit_of(plan)
+    return (f"; smallest gain this run could see: +{mde:.2f} {unit} at power {target}"
             if mde is not None else f"; no gain up to +1.00 is detectable at power {target}")
 
 
 def _null(lane, name_i, name_c, got: Verdict, plan) -> Verdict:
     """A null is a loss only when the plan could see the smallest gain this lane cares about. #479, #698."""
     from harness import power, reasons
-    wanted = power.effect_for(lane)
+    wanted = power.effect_in(lane)
+    unit = power.unit_of(plan)
     seen = getattr(plan, "mde", None)
     seen = plan.effect if seen is None and plan.enough else seen
     tail = f"{'; ' + plan.why if plan.why else ''}"
@@ -351,7 +354,7 @@ def _null(lane, name_i, name_c, got: Verdict, plan) -> Verdict:
     if not plan.enough:
         return Verdict(lane, name_i, name_c, False,
                        f"underpowered: power {plan.power:.2f} < {plan.target} to "
-                       f"detect +{plan.effect:.2f} per cell at alpha "
+                       f"detect +{plan.effect:.2f} {unit} at alpha "
                        f"{plan.alpha} over {plan.cells} effective cells, so this null is "
                        f"not evidence of no difference ({got.why}){sees}{tail}",
                        failure_class=reasons.UNDERPOWERED)
@@ -359,17 +362,17 @@ def _null(lane, name_i, name_c, got: Verdict, plan) -> Verdict:
         shown = "any gain" if seen is None else f"+{seen:.2f}"
         return Verdict(lane, name_i, name_c, False,
                        f"not shown at {shown}: power {plan.target} reaches only "
-                       f"{shown} per cell, above the +{wanted:.2f} this lane adopts for, "
+                       f"{shown} {unit}, above the +{wanted:.2f} this lane adopts for, "
                        f"so a smaller gain is still open ({got.why}){tail}",
                        failure_class=reasons.UNDERPOWERED)
-    noise = power.noise_for(lane)
+    noise = power.noise_in(lane)
     if seen <= noise + 1e-9:
-        over = seen > power.MIN_EFFECT + 1e-9
+        over = seen > (0.0 if unit != "per cell" else power.MIN_EFFECT) + 1e-9
         return Verdict(lane, name_i, name_c, False,
-                       f"{got.why}; no gain of +{seen:.2f} or more per cell at power {plan.target}",
+                       f"{got.why}; no gain of +{seen:.2f} or more {unit} at power {plan.target}",
                        evidence={"lane_effect": {"noise": noise, "seen": round(seen, 4)}} if over else {})
     return Verdict(lane, name_i, name_c, False,
-                   f"{got.why}; no gain of +{seen:.2f} or more per cell at power {plan.target}; reruns could see "
+                   f"{got.why}; no gain of +{seen:.2f} or more {unit} at power {plan.target}; reruns could see "
                    f"+{noise:.2f}, but a gain under adopt_min_effect +{wanted:.2f} is not worth a switch",
                    evidence={"min_effect": {"noise": noise, "effect": wanted, "seen": round(seen, 4)}})
 
@@ -393,7 +396,9 @@ def _summary(rows: list[dict], name: str) -> dict | None:
 
 def lane_cell(rows, name_i: str, name_c: str, lane: str, against: str):
     """The two candidates paired by case on what the lane ranks: its primary metric, or per stratum at the lane's weights. #701, #791."""
-    from harness import paired, winners
+    from harness import continuous, paired, winners
+    if continuous.metric_of(lane):
+        return continuous.cell(rows, name_i, name_c, lane)
     if lane in winners.STRATIFIED:
         from evals.core import claims_stratum
         from harness.checks import claims
@@ -405,12 +410,16 @@ def lane_cell(rows, name_i: str, name_c: str, lane: str, against: str):
 def paired_p(rows, name_i: str, name_c: str, lane: str = "", against: str = "challenger"):
     """The paired cell, its p over independent evidence, and a note when repeats were shrunk.
 
+    A continuous lane's p is the signed-rank test over cases (harness.continuous), which needs no shrinking. #2181.
+
     Repeats of a case correlate, so gained and lost cells are divided by the
     design effect 1+(r-1)*rho before the sign test: a near-deterministic case
     counts once at any repeat. #591. Rounding goes `against` the side the claim favours. #698.
     """
     from harness import paired, power
     cell = lane_cell(rows, name_i, name_c, lane, against)
+    if cell.p_value is not None:
+        return cell, cell.p, ""
     rho, repeat = power.rows_icc([{**r, "passed": power.draw(r, lane)} for r in rows], (name_i, name_c))
     used = power.DEFAULT_RHO if rho is None else rho
     deff = power.design_effect(repeat, used)
@@ -430,14 +439,15 @@ def paired_p(rows, name_i: str, name_c: str, lane: str = "", against: str = "cha
 def _worse(rows, name_i: str, name_c: str, lane: str = "", alpha: float = ALPHA) -> str:
     """Why the challenger is significantly worse, else "". Power to see a gain does not bear on it. #594."""
     cell, p, shrunk = paired_p(rows, name_i, name_c, lane, against="incumbent")
-    if cell.lost <= cell.gained or p > alpha:
+    if not cell.behind or p > alpha:
         return ""
     return (f"significantly worse: {cell.lost} lost against {cell.gained} "
             f"gained, p={p:.2f}{f' ({shrunk})' if shrunk else ''}")
 
 
 def _gates(lane, name_i, name_c, incumbent, challenger, rows, alpha: float = ALPHA) -> Verdict:
-    if not better(incumbent, challenger, lane):
+    from harness import continuous
+    if not continuous.metric_of(lane) and not better(incumbent, challenger, lane):
         return Verdict(lane, name_i, name_c, False,
                        "does not beat the incumbent on the lane's metric")
     if not rows:
@@ -449,19 +459,30 @@ def _gates(lane, name_i, name_c, incumbent, challenger, rows, alpha: float = ALP
         return Verdict(lane, name_i, name_c, False,
                        f"{name_i} and {name_c} share no case in this run, so "
                        f"there is nothing to compare")
-    if cell.gained <= cell.lost:
+    if not cell.ahead:
         # A two-sided test calls a difference either way significant; only a gain adopts. #1302.
+        if cell.shift is not None:
+            return Verdict(lane, name_i, name_c, False,
+                           f"does not beat the incumbent on {continuous.metric_of(lane)}: the paired error "
+                           f"{'rises' if cell.shift < 0 else 'does not fall'} by {abs(cell.shift):.4f} "
+                           f"({cell.lost} cases lost, {cell.gained} gained)")
         return Verdict(lane, name_i, name_c, False,
                        f"better on the metric, but the paired cells do not favour it: {cell.lost} lost "
                        f"against {cell.gained} gained{shrunk}")
+    got = _drop(cell, continuous.metric_of(lane))
     if p > alpha:
         return Verdict(lane, name_i, name_c, False,
                        f"better on the metric, but {cell.lost} lost against "
-                       f"{cell.gained} gained is p={p:.2f}{shrunk}, so the "
+                       f"{cell.gained} gained{got} is p={p:.2f}{shrunk}, so the "
                        f"difference is not established", alpha_cut=(p, alpha))
     return Verdict(lane, name_i, name_c, True,
                    f"beats {name_i} on the lane's metric, {cell.gained} gained "
-                   f"against {cell.lost} lost, p={p:.2f}{shrunk}")
+                   f"against {cell.lost} lost{got}, p={p:.2f}{shrunk}")
+
+
+def _drop(cell, metric: str) -> str:
+    """A continuous cell's mean paired drop in its metric, for a verdict's words; "" for a pass/fail cell. #2181."""
+    return f" (mean {metric} down {cell.shift:.4f})" if metric and cell.shift is not None else ""
 
 
 def confirmation_cells(rows, split, screened=frozenset(), fresh: bool = False) -> list[dict]:
@@ -524,7 +545,8 @@ def confirm(verdict: Verdict, rows, split, screened=frozenset(), *, fresh: bool 
     head = (f"{cases} dev case(s): {cell.gained} gained against {cell.lost} lost, p={p:.3f}"
             f"{f' ({shrunk})' if shrunk else ''}")
     inc, ch = _summary(cells, name_i), _summary(cells, name_c)
-    favours = bool(inc and ch and better(inc, ch, lane) and cell.gained > cell.lost)
+    from harness import continuous
+    favours = bool(inc and ch and (continuous.metric_of(lane) or better(inc, ch, lane)) and cell.ahead)
     if favours and p <= ALPHA:
         return replace(verdict, why=f"{verdict.why}; confirmed on {head}", evidence=evidence)
     worse = _worse(cells, name_i, name_c, lane)
@@ -672,7 +694,9 @@ def record(conn, verdict: Verdict, spec: str = "",
     lane_effect = verdict.evidence.get("lane_effect")
     if lane_effect:
         from harness import cuts
-        cuts.cut("adopt_effect", f"{verdict.lane}: {spec} declined on a null that sees only "
+        from harness import continuous
+        cuts.cut("continuous_effect" if continuous.metric_of(verdict.lane) else "adopt_effect",
+                 f"{verdict.lane}: {spec} declined on a null that sees only "
                  f"+{lane_effect['seen']:.2f}, inside the lane's +{lane_effect['noise']:.2f} noise",
                  value=lane_effect["noise"], kept=0, dropped=1, conn=conn)
     if verdict.alpha_cut and not verdict.adopt:
