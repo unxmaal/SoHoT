@@ -18,8 +18,6 @@ from evals.benchmark_import import ALLOWED_LICENSES
 
 CASES = Path(__file__).resolve().parent.parent / "cases"
 MARK = "Imported by evals/importers"
-#: Written beside a source's cases: the fingerprint of the module and manifest that produced them. #2194.
-STAMP = ".importer-fingerprint"
 
 
 @dataclass(frozen=True)
@@ -98,7 +96,6 @@ def write(mod, name: str, made: list[Imported], root: Path = CASES) -> list[Path
     if out.exists():
         shutil.rmtree(out)
     out.mkdir(parents=True)
-    (out / STAMP).write_text(fingerprint(name) + "\n", encoding="utf-8")
     written, held = [], {}
     for one in sorted(made, key=lambda m: m.case["id"]):
         path = out / f"{one.case['id']}.yaml"

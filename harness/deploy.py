@@ -537,9 +537,7 @@ def stale_imports(previous: Path, release: Path, carried: list[str]) -> list[str
         rel = d.relative_to(release).as_posix() + "/"
         if not (want_dir / f"{d.name}.py").is_file() or not any(rel.startswith(c) for c in carried):
             continue
-        stamp = d / importers.STAMP
-        had = stamp.read_text(encoding="utf-8").strip() if stamp.is_file() else importers.fingerprint(d.name, had_dir)
-        if importers.fingerprint(d.name, want_dir) != had:
+        if importers.fingerprint(d.name, want_dir) != importers.fingerprint(d.name, had_dir):
             out.append(d.name)
     return out
 

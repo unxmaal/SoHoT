@@ -32,14 +32,12 @@ def _deploy(world, files, tmp_path):
     return called, world["link"] / "evals" / "cases" / "stt" / "librispeech"
 
 
-def _carried(world, rows, stamp=None):
+def _carried(world, rows):
     _commit(world["work"], {MODULE: "LANE = 'stt'\n", MANIFEST: rows}, "importer")
     subprocess.run(["git", "-C", str(world["link"]), "pull", "-q", "origin", "main"], check=True)
     d = world["link"] / "evals" / "cases" / "stt" / "librispeech"
     d.mkdir(parents=True)
     (d / "a.yaml").write_text("imported\n", encoding="utf-8")
-    if stamp:
-        (d / importers.STAMP).write_text(stamp, encoding="utf-8")
 
 
 @pytest.mark.sqlite_store
@@ -62,16 +60,7 @@ def test_an_unchanged_manifest_is_not_re_imported(world, tmp_path):
     assert [p.name for p in out.glob("*.yaml")] == ["a.yaml"]
 
 
-@pytest.mark.sqlite_store
-@posix
-def test_a_stamp_that_no_longer_matches_is_re_imported_though_the_release_did_not_change(world, tmp_path):
-    _carried(world, "a\nb\n", stamp="from-an-older-manifest\n")
-    called, out = _deploy(world, {"unrelated": "x\n"}, tmp_path)
-    assert called.read_text(encoding="utf-8") == "librispeech\n"
-    assert sorted(p.name for p in out.glob("*.yaml")) == ["a.yaml", "b.yaml"]
-
-
-def test_a_written_source_carries_the_fingerprint_of_its_importer(tmp_path):
+def test_the_fingerprint_follows_the_importer_and_its_manifest(tmp_path):
     folder = tmp_path / "importers"
     folder.mkdir()
     (folder / "x.jsonl").write_text("a\n", encoding="utf-8")
@@ -79,7 +68,3 @@ def test_a_written_source_carries_the_fingerprint_of_its_importer(tmp_path):
     (folder / "x.jsonl").write_text("a\nb\n", encoding="utf-8")
     assert importers.fingerprint("x", folder) != one
     assert importers.fingerprint("y", folder) != importers.fingerprint("x", folder)
-    mod = importers.module("librispeech")
-    cases = tmp_path / "cases"
-    importers.write(mod, "librispeech", [importers.Imported({"id": "c1"})], cases)
-    assert (cases / mod.LANE / "librispeech" / importers.STAMP).read_text(encoding="utf-8").strip() == importers.fingerprint("librispeech")
