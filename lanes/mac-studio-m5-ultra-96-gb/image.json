@@ -532,18 +532,18 @@
   },
   {
    "candidate": "mflux:Boogu/Boogu-Image-0.1-Edit",
-   "decided_at": "2026-11-28T08:19:13Z",
-   "detail": "retest 1/3: broken at screen",
+   "decided_at": "2026-11-28T12:40:23Z",
+   "detail": "not screened: needs 35.8 GiB but at most 23.5 GiB is free for a load here while the interactive server's pinned models stay held (beside the system reserve and the Docker VM); a screen window can release them",
    "exam": null,
    "outcome": "queued",
    "proposal": "Boogu/Boogu-Image-0.1-Edit",
-   "reason": "reopened",
+   "reason": "memory",
    "receipt_key": "mflux/Boogu/Boogu-Image-0.1-Edit-q8",
    "run_id": null,
    "serves": false,
    "status": "pending",
-   "tier": "inspect",
-   "until": ""
+   "tier": "screen",
+   "until": "room_gb:>35.8"
   },
   {
    "candidate": "mflux:Qwen/Qwen-Image-Bench",
@@ -561,7 +561,7 @@
    "until": ""
   }
  ],
- "cursor": 1795775021351700,
+ "cursor": 1795869623907310,
  "events": [
   {
    "at": "2026-09-18T22:18:09Z",
@@ -3412,6 +3412,21 @@
    "reason": "candidate",
    "run_id": 1344,
    "tier": "adopt"
+  },
+  {
+   "at": "2026-11-28T12:40:23Z",
+   "candidate": "Boogu/Boogu-Image-0.1-Edit",
+   "chosen": null,
+   "detail": "not screened: needs 35.8 GiB but at most 23.5 GiB is free for a load here while the interactive server's pinned models stay held (beside the system reserve and the Docker VM); a screen window can release them",
+   "how": "",
+   "id": 1795869623907310,
+   "incumbent": "",
+   "kind": "screen",
+   "knob": "",
+   "outcome": "queued",
+   "reason": "memory",
+   "run_id": null,
+   "tier": "screen"
   }
  ],
  "exams": [
@@ -3747,7 +3762,7 @@
    "runs": 1
   }
  ],
- "generated_at": "2026-11-28T11:23:16Z",
+ "generated_at": "2026-11-28T12:41:17Z",
  "knobs": [],
  "lane": {
   "cases": 584,
