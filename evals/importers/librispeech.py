@@ -1,4 +1,4 @@
-"""stt: a committed LibriSpeech test-clean manifest pinned by sha256; audio fetched into a cache. #603.
+"""stt: a committed LibriSpeech test-clean and test-other manifest pinned by sha256; audio fetched into a cache. #603, #2190.
 
     uv run python -m evals.importers.librispeech [--cache DIR]   # rebuild the manifest
 """
@@ -15,12 +15,14 @@ from evals.importers import CASES, Imported, provenance
 
 LANE = "stt"
 SOURCE = "hf:openslr/librispeech_asr"
-DATASET = "LibriSpeech test-clean (Panayotov et al. 2015)"
+DATASET = "LibriSpeech test-clean and test-other (Panayotov et al. 2015)"
 URL = "https://huggingface.co/datasets/openslr/librispeech_asr"
 LICENSE = "CC BY 4.0"
 REVISION = "71cacbfb7e2354c4226d01e70d77d5fca3d04ba1"
 HF_ID = "openslr/librispeech_asr"
 CONFIG, SPLIT = "clean", "test"
+#: A manifest line without a config is from test-clean; test-other lines name it.
+OTHER = "other"
 ROWS_API = "https://datasets-server.huggingface.co/rows"
 #: The source has no per-item date; this bounds it (RULE #460).
 DATE_NOTE = "before 2015-04: LibriVox recordings, LibriSpeech release"
@@ -30,7 +32,9 @@ TRANSFORM = "human transcript as the reference; pass at the known-good ear's noi
 MANIFEST = Path(__file__).with_name("librispeech.jsonl")
 MIN_WORDS, MAX_WORDS = 3, 20
 MAX_WER = 0.2
-N = 480
+#: Clips drawn from each config, in sha256(id) order, so a larger N only appends to the manifest.
+N = 1040
+N_OTHER = 380
 PAGE = 100
 
 
@@ -40,6 +44,10 @@ def select(rows, n: int = N) -> list[dict]:
             if MIN_WORDS <= len(r["text"].split()) <= MAX_WORDS]
     keep.sort(key=lambda e: hashlib.sha256(e["uid"].encode("utf-8")).hexdigest())
     return keep[:n]
+
+
+def config_of(entry: dict) -> str:
+    return entry.get("config") or CONFIG
 
 
 def manifest() -> list[dict]:
@@ -94,13 +102,14 @@ def fetch() -> list[dict]:
     """The manifest's clips, downloaded into the cache and verified; rows carry their audio path."""
     cache = default_cache()
     entries = manifest()
-    download(entries, cache, audio_getter())
+    for config in dict.fromkeys(config_of(e) for e in entries):
+        download([e for e in entries if config_of(e) == config], cache, audio_getter(config))
     supersede(entries)
     return rows(entries, cache)
 
 
 def convert(row: dict) -> Imported:
-    att = provenance(sys.modules[__name__], f"{SPLIT}.{CONFIG} row {row['row']} ({row['uid']})",
+    att = provenance(sys.modules[__name__], f"{SPLIT}.{config_of(row)} row {row['row']} ({row['uid']})",
                      TRANSFORM)
     case = {"id": row["uid"], "modality": "stt", "prompt": readable(row["text"]),
             "audio_file": row["audio"], "assert": {"max_wer": MAX_WER},
@@ -142,8 +151,8 @@ def _get(params: dict) -> dict:
     return r.json()
 
 
-def _page(offset: int, length: int) -> list:
-    got = _get({"dataset": HF_ID, "config": CONFIG, "split": SPLIT,
+def _page(offset: int, length: int, config: str = CONFIG) -> list:
+    got = _get({"dataset": HF_ID, "config": config, "split": SPLIT,
                 "offset": offset, "length": length})
     return got.get("rows") or []
 
@@ -155,8 +164,8 @@ def _src(row: dict) -> str:
     return src
 
 
-def audio_getter():
-    """get(row) -> bytes, reading the rows API a page at a time: single-row reads hit rate limits."""
+def audio_getter(config: str = CONFIG):
+    """get(row) -> bytes of one config's clip, reading the rows API a page at a time: single-row reads hit rate limits."""
     import httpx
     from harness import cuts
     srcs: dict[int, str] = {}
@@ -164,7 +173,7 @@ def audio_getter():
     def get(row: int) -> bytes:
         if row not in srcs:
             start = row - row % PAGE
-            for r in _page(start, PAGE):
+            for r in _page(start, PAGE, config):
                 srcs[r["row_idx"]] = _src(r["row"])
         if row not in srcs:
             raise ValueError(f"{HF_ID} has no row {row}")
@@ -174,18 +183,30 @@ def audio_getter():
     return get
 
 
-def build_manifest(cache: Path, n: int = N) -> list[dict]:
-    import httpx
-    from harness import cuts
+def _all_rows(config: str) -> list:
     got, offset = [], 0
     while True:
-        page = _page(offset, PAGE)
+        page = _page(offset, PAGE, config)
         if not page:
-            break
+            return got
         got += [(r["row_idx"], r["row"]) for r in page]
         offset += len(page)
-    entries = select(got, n)
-    srcs = {idx: _src(r) for idx, r in got}
+
+
+def build_manifest(cache: Path, n: int = N, n_other: int = N_OTHER) -> list[dict]:
+    import httpx
+    from harness import cuts
+    entries, srcs = [], {}
+    for config, count in ((CONFIG, n), (OTHER, n_other)):
+        if count < 1:
+            continue
+        got = _all_rows(config)
+        picked = select(got, count)
+        srcs.update({(config, idx): _src(r) for idx, r in got})
+        for e in picked:
+            if config != CONFIG:
+                e["config"] = config
+        entries += picked
     for e in entries:
         held = Path(cache) / f"{e['uid']}.flac"
         if held.is_file():
@@ -193,7 +214,7 @@ def build_manifest(cache: Path, n: int = N) -> list[dict]:
         else:
             with cuts.timeout("evals/importers/librispeech.py:build_manifest->httpx.get(timeout)",
                               f"LibriSpeech clip {e['uid']}"):
-                blob = httpx.get(srcs[e["row"]], timeout=120).raise_for_status().content
+                blob = httpx.get(srcs[(config_of(e), e["row"])], timeout=120).raise_for_status().content
         e["sha256"], e["bytes"] = hashlib.sha256(blob).hexdigest(), len(blob)
         Path(cache).mkdir(parents=True, exist_ok=True)
         held.write_bytes(blob)

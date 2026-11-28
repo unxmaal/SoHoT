@@ -152,10 +152,10 @@ def test_a_download_past_its_timeout_is_a_cut_of_that_call_and_still_raises(site
     calls = {SITES[0]: lambda: leetcode._get("https://example.invalid/x"),
              SITES[1]: lambda: squad2.load(tmp_path),
              SITES[2]: lambda: librispeech._get({}),
-             SITES[3]: lambda: (monkeypatch.setattr(librispeech, "_page", lambda o, n: [
+             SITES[3]: lambda: (monkeypatch.setattr(librispeech, "_page", lambda o, n, c="clean": [
                  {"row_idx": 0, "row": {}}]), librispeech.audio_getter()(0)),
-             SITES[4]: lambda: (monkeypatch.setattr(librispeech, "_page", lambda o, n: next(pages)),
-                                librispeech.build_manifest(tmp_path / "cache", n=1))}
+             SITES[4]: lambda: (monkeypatch.setattr(librispeech, "_page", lambda o, n, c="clean": next(pages)),
+                                librispeech.build_manifest(tmp_path / "cache", n=1, n_other=0))}
     with pytest.raises(httpx.ReadTimeout):
         calls[site]()
     assert _knobs() == [site]

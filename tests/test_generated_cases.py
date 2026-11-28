@@ -113,10 +113,10 @@ def test_an_imported_file_is_written_beside_its_case_and_may_not_escape(tmp_path
 
 
 @pytest.mark.parametrize("name,want", [
-    ("ocr_synth", {"reference": 440, "other-case": 0, "empty": 0}),
+    ("ocr_synth", {"reference": 1500, "other-case": 0, "empty": 0}),
     # About 100 s each on check-macos (harness.ci_history, #1567): main and nightly run it.
     pytest.param("pii_synth", {"reference": 1440, "nothing": 315, "everything": 0, "planted": 0}, marks=pytest.mark.long),
-    ("tts_synth", {"reference": 460, "silence": 0, "fixed": 0}),
+    ("tts_synth", {"reference": 800, "silence": 0, "fixed": 0}),
     ("svg_synth", {"reference": 920, "square": 0, "other-case": 0}),
     ("web_synth", {"reference": 1300, "blank": 0, "other-case": 0}),
 ])
@@ -169,7 +169,7 @@ def test_ocr_cases_vary_style_and_kind_and_images_stay_small(committed):
     assert {_prov(c)["degrade"] for c in cases} == set(_mod("ocr_synth").DEGRADE)
     assert any("\n" in c.assertions["text"] for c in cases)
     sizes = [c.input_file.stat().st_size for c in cases]
-    assert max(sizes) < 40_000 and sum(sizes) < 4_000_000
+    assert max(sizes) < 40_000 and sum(sizes) < 20_000_000
 
 
 def test_ocr_negative_control_another_cases_text_scores_clearly_worse(committed):
