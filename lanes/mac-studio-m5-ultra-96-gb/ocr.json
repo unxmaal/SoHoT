@@ -577,11 +577,11 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-11-28T08:08:42Z",
+ "generated_at": "2026-11-28T11:23:20Z",
  "knobs": [],
  "lane": {
-  "cases": 448,
-  "cases_digest": "fb8d8e5f9403d403",
+  "cases": 1508,
+  "cases_digest": "64ab19ca6be30c25",
   "name": "ocr",
   "params": {},
   "wanted": true
