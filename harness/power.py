@@ -9,9 +9,11 @@ better".
 """
 from __future__ import annotations
 
+import contextlib
 import functools
 import math
 import statistics
+from threading import local as _Local
 from fractions import Fraction
 from dataclasses import asdict, dataclass, replace
 
@@ -616,20 +618,64 @@ def reply_settings(receipt, lane: str) -> tuple[int, tuple]:
     return budget, tuple(int(n) for n in got.get("budget_ladder") or ())
 
 
+_prefetch = _Local()
+
+
+@contextlib.contextmanager
+def prefetched(conn):
+    """Every measure-tier result row of every lane read in three queries, which `measured` then serves: the lane gate asks each lane for its rows several times. #2191."""
+    if getattr(_prefetch, "held", None) is not None:
+        yield
+        return
+    receipts = {r["id"]: r for r in conn.execute("SELECT id, lane, receipt, machine_id FROM runs WHERE tier = 'measure'")}
+    cands = [(r["id"], r["spec"], r["receipt_key"]) for r in conn.execute("SELECT id, spec, receipt_key FROM candidates")]
+    specs = {i: spec for i, spec, _ in cands}
+    by: dict[str, list] = {}
+    for r in conn.execute("SELECT x.run_id, x.candidate_id, x.candidate, x.case_id, x.repeat_index, x.passed, x.seconds, "
+                          "x.failure_class, x.hit_limit, x.metrics, x.attempts FROM results x JOIN runs u ON u.id = x.run_id "
+                          "WHERE u.tier = 'measure' ORDER BY x.run_id, x.seq"):
+        run = receipts[r["run_id"]]
+        spec = specs.get(r["candidate_id"])
+        by.setdefault(run["lane"], []).append(dict(r, spec=r["candidate"] if spec is None else spec,
+                                                   receipt=run["receipt"], machine_id=run["machine_id"]))
+    _prefetch.held = (id(conn), by, cands)
+    try:
+        yield
+    finally:
+        _prefetch.held = None
+
+
+def measured(conn, lane: str) -> list[dict] | None:
+    """The measure-tier result rows of `lane` in run, seq order when `prefetched` holds them for this store; else None."""
+    held = getattr(_prefetch, "held", None)
+    return held[1].get(lane, []) if held is not None and held[0] == id(conn) else None
+
+
 def _candidate_rows(conn, lane: str, key: str, tiers=("measure",)) -> list:
     lane = (lane or "").strip().lower()
+    held = measured(conn, lane) if tuple(tiers) == ("measure",) else None
+    if held is not None:
+        return [{k: r[k] for k in ("case_id", "passed", "seconds", "candidate", "metrics", "receipt", "run_id", "machine_id")}
+                for r in held if r["candidate"] == key]
     marks = ",".join("?" * len(tiers))
-    return conn.execute(
-        "SELECT x.case_id, x.passed, x.seconds, x.candidate, x.metrics, u.receipt, u.machine_id FROM results x "
+    got = conn.execute(
+        "SELECT x.case_id, x.passed, x.seconds, x.candidate, x.metrics, u.id AS run_id, u.machine_id FROM results x "
         f"JOIN runs u ON u.id = x.run_id WHERE u.lane = ? AND u.tier IN ({marks}) AND x.candidate = ?",
         (lane, *tiers, key)).fetchall()
+    receipts = {r["id"]: r["receipt"] for r in conn.execute(
+        f"SELECT id, receipt FROM runs WHERE id IN ({','.join('?' * len({r['run_id'] for r in got}))})",
+        tuple({r["run_id"] for r in got}))} if got else {}
+    return [dict(r, receipt=receipts.get(r["run_id"])) for r in got]
 
 
 def _median(rows, lane: str, key: str, settings: tuple | None, machines) -> float | None:
     if machines is not None:
         rows = [r for r in rows if r["machine_id"] in set(machines)]
     if settings is not None:
-        rows = [r for r in rows if reply_settings(r["receipt"], lane) == tuple(settings)]
+        seen: dict = {}
+        want = tuple(settings)
+        rows = [r for r in rows
+                if (seen[r["receipt"]] if r["receipt"] in seen else seen.setdefault(r["receipt"], reply_settings(r["receipt"], lane))) == want]
     return draws_from(rows, key)[1]
 
 
@@ -655,11 +701,19 @@ def served_keys(conn, lane: str, spec: str = "", cid: int | None = None) -> list
     names = {spec, models.resolve(spec), *models.old_names(spec), *models.old_names(models.resolve(spec))} if spec else set()
     names = sorted(n for n in names | {key(n) for n in names if n} if n)
     marks = ",".join("?" * len(names))
-    ids = {r["id"] for r in conn.execute(
-        f"SELECT id FROM candidates WHERE spec IN ({marks}) OR receipt_key IN ({marks})",
-        (*names, *names))} if names else set()
+    held = getattr(_prefetch, "held", None)
+    if held is not None and held[0] == id(conn):
+        ids = {i for i, spec_, rk in held[2] if spec_ in names or rk in names} if names else set()
+    else:
+        ids = {r["id"] for r in conn.execute(
+            f"SELECT id FROM candidates WHERE spec IN ({marks}) OR receipt_key IN ({marks})",
+            (*names, *names))} if names else set()
     if cid is not None:
         ids.add(cid)
+    held = measured(conn, lane)
+    if held is not None:
+        keys = sorted({r["candidate"] for r in held if r["candidate_id"] in ids or r["candidate"] in names}) if names or ids else []
+        return keys if keys or not spec else [key(spec)]
     ids_marks = ",".join("?" * len(ids))
     keys = [r["candidate"] for r in conn.execute(
         "SELECT DISTINCT x.candidate FROM results x JOIN runs u ON u.id = x.run_id "

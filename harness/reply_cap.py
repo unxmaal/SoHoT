@@ -21,6 +21,9 @@ MIN_SAVED = 0.1
 STEP = 4096
 
 
+ROW_KEYS = ("run_id", "spec", "case_id", "repeat_index", "passed", "seconds", "failure_class", "hit_limit", "metrics", "attempts", "receipt")
+
+
 def _receipt(raw) -> dict:
     try:
         return json.loads(raw or "{}") or {}
@@ -32,17 +35,25 @@ def stored(conn, lane: str) -> list[dict]:
     """Every unflagged measured run in `lane` by the single-reply harness, one entry per candidate, rows that ran only."""
     from harness import power, reverify, runs
     flagged = reverify._flagged_runs(conn)
-    sql = ("SELECT runs.id AS run_id, runs.receipt, COALESCE(c.spec, res.candidate) AS spec, res.case_id, "
-           "res.repeat_index, res.passed, res.seconds, res.failure_class, res.hit_limit, res.metrics, res.attempts "
-           "FROM results res JOIN runs ON res.run_id = runs.id LEFT JOIN candidates c ON c.id = res.candidate_id "
-           "WHERE runs.lane = ? AND runs.tier = ? ORDER BY runs.id, res.seq")
+    held = power.measured(conn, lane)
+    if held is None:
+        sql = ("SELECT runs.id AS run_id, COALESCE(c.spec, res.candidate) AS spec, res.case_id, "
+               "res.repeat_index, res.passed, res.seconds, res.failure_class, res.hit_limit, res.metrics, res.attempts "
+               "FROM results res JOIN runs ON res.run_id = runs.id LEFT JOIN candidates c ON c.id = res.candidate_id "
+               "WHERE runs.lane = ? AND runs.tier = ? ORDER BY runs.id, res.seq")
+        receipts = {r["id"]: r["receipt"] for r in conn.execute(
+            "SELECT id, receipt FROM runs WHERE lane = ? AND tier = ?", (lane, runs.MEASURE))}
+        held = [dict(r, receipt=receipts.get(r["run_id"])) for r in conn.execute(sql, (lane, runs.MEASURE))]
+    parsed: dict = {}
     by: dict = {}
-    for r in conn.execute(sql, (lane, runs.MEASURE)):
+    for r in held:
         if r["run_id"] in flagged:
             continue
+        if r["run_id"] not in parsed:
+            parsed[r["run_id"]] = _receipt(r["receipt"])
         got = by.setdefault((r["run_id"], r["spec"]), {"run_id": r["run_id"], "spec": r["spec"],
-                                                       "receipt": _receipt(r["receipt"]), "rows": []})
-        got["rows"].append(dict(r))
+                                                       "receipt": parsed[r["run_id"]], "rows": []})
+        got["rows"].append({k: r[k] for k in ROW_KEYS})
     out = []
     for got in by.values():
         receipt = got["receipt"]

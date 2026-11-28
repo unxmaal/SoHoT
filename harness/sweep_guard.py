@@ -86,7 +86,7 @@ def running(root: Path, alive=alive, command_of=command_of) -> list[dict]:
     if beat.get("state") == "running":
         candidates.append(("discover loop", _pid(beat.get("pid")), beat.get("started"), beat.get("commit", ""), LOOP))
     runs = root / RUNS
-    for path in sorted(runs.glob(f"*/{PROGRESS}")) if runs.is_dir() else []:
+    for path in sorted(d / PROGRESS for d in runs.iterdir() if (d / PROGRESS).exists()) if runs.is_dir() else []:
         state = run_state.of(path.parent, alive=lambda pid, pgid, started: alive(_pid(pid)))
         if state.name in run_state.LIVE:
             got = state.progress

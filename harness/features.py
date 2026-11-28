@@ -109,28 +109,40 @@ def switch_readers(root: Path) -> tuple[tuple[str, str, str], ...]:
 
 @functools.lru_cache(maxsize=4)
 def _scan(root: Path, stamps: tuple) -> tuple[tuple[str, str, str], ...]:
+    from harness import file_index
+    kept = file_index.read("switch-readers", 1)
+    got = {}
+    for p, mtime, size in stamps:
+        key = (str(p), mtime, size)
+        got[key] = kept[key] if key in kept else _readers_in(p)
+    if got.keys() != kept.keys():
+        file_index.write("switch-readers", 1, got)
+    return tuple((".".join(p.relative_to(root).with_suffix("").parts), fn, var)
+                 for p, mtime, size in stamps for fn, var in got[(str(p), mtime, size)])
+
+
+def _readers_in(p: Path) -> tuple[tuple[str, str], ...]:
+    """(function, variable) for each function of (environ=None) in one module that returns a test of one env variable."""
     out = []
-    for p, _, _ in stamps:
-        tree = ast.parse(p.read_text(encoding="utf-8"))
-        consts = {}
-        for node in tree.body:
-            if (isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name)
-                    and node.targets[0].id.endswith("_ENV") and isinstance(node.value, ast.Constant)
-                    and isinstance(node.value.value, str)):
-                consts[node.targets[0].id] = node.value.value
-        for fn in tree.body:
-            if not isinstance(fn, ast.FunctionDef) or not fn.body:
-                continue
-            a = fn.args
-            if [x.arg for x in a.args] not in ([n] for n in _ENV_ARGS) or a.kwonlyargs or a.vararg or a.kwarg:
-                continue
-            last = fn.body[-1]
-            if not (isinstance(last, ast.Return) and isinstance(last.value, ast.Compare)):
-                continue
-            named = [n.id for n in ast.walk(last.value) if isinstance(n, ast.Name) and n.id in consts]
-            if len(set(named)) == 1:
-                mod = ".".join(p.relative_to(root).with_suffix("").parts)
-                out.append((mod, fn.name, consts[named[0]]))
+    tree = ast.parse(p.read_text(encoding="utf-8"))
+    consts = {}
+    for node in tree.body:
+        if (isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name)
+                and node.targets[0].id.endswith("_ENV") and isinstance(node.value, ast.Constant)
+                and isinstance(node.value.value, str)):
+            consts[node.targets[0].id] = node.value.value
+    for fn in tree.body:
+        if not isinstance(fn, ast.FunctionDef) or not fn.body:
+            continue
+        a = fn.args
+        if [x.arg for x in a.args] not in ([n] for n in _ENV_ARGS) or a.kwonlyargs or a.vararg or a.kwarg:
+            continue
+        last = fn.body[-1]
+        if not (isinstance(last, ast.Return) and isinstance(last.value, ast.Compare)):
+            continue
+        named = [n.id for n in ast.walk(last.value) if isinstance(n, ast.Name) and n.id in consts]
+        if len(set(named)) == 1:
+            out.append((fn.name, consts[named[0]]))
     return tuple(out)
 
 

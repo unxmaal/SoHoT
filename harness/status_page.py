@@ -131,9 +131,14 @@ def queue(conn, now: float) -> dict:
     return out
 
 
-def deploy_section(conn, now: float, where: Path | None, git=None) -> dict:
-    from harness import deploy, morning, paths
-    tree = morning.deploy(paths.deploy_checkout() if where is None else where, git=git)
+def _tree_of(where: Path | None, git=None) -> dict:
+    from harness import morning, paths
+    return morning.deploy(paths.deploy_checkout() if where is None else where, git=git)
+
+
+def deploy_section(conn, now: float, where: Path | None, git=None, tree: dict | None = None) -> dict:
+    from harness import deploy, morning
+    tree = _tree_of(where, git) if tree is None else tree
     out = {"head": tree.get("head", ""), "main": tree.get("main", ""), "behind": tree.get("behind"),
            "tree_why": tree.get("why", ""), "last": None, "failing": 0, "wait": None, "blocked": ""}
     if conn is None:
@@ -322,9 +327,18 @@ def gather(now: float | None = None, *, connect=None, beat=None, where=None, git
            reach=None, flow=None, home: Path | None = None, environ=None, features=None, light: bool = False, memo: bool = False) -> dict:
     """Every section, each with its own as_of; with the store down the store-free sections still read. `light` skips the
     ratio and the 24 h strip, which the Needs-you alert pass does not need. `memo` reuses the slow sections SLOW_TTL_S."""
-    from harness import lane_gate, morning, needs_you
+    from harness import holdout, lane_gate, morning, needs_you
     now = time.time() if now is None else now
+    with holdout.pinned(), lane_gate.remembered():
+        return _gather(now, connect, beat, where, git, mon, health, reach, flow, home, environ, features, light, memo)
+
+
+def _gather(now, connect, beat, where, git, mon, health, reach, flow, home, environ, features, light, memo) -> dict:
+    from harness import lane_gate, morning, needs_you
     conn, why = None, ""
+    fetched: dict = {}
+    fetch = threading.Thread(target=lambda: fetched.update(tree=_section(_tree_of, where, git)), daemon=True)
+    fetch.start()
     try:
         conn = (connect or morning.snapshot)()
     except Exception as exc:  # noqa: BLE001 - a down store is the page's news, not its failure
@@ -333,7 +347,7 @@ def gather(now: float | None = None, *, connect=None, beat=None, where=None, git
         r = {"generated": now, "refresh_s": REFRESH_S,
              "store": _section(store, conn, why, home),
              "queue": _section(queue, conn, now),
-             "deploy": _section(deploy_section, conn, now, where, git),
+             "deploy": None,
              "discovery": {**_section(discovery, now, beat), "spend": _section(spend, conn, now),
                            "queued": _section(queued_sweep, conn)},
              "monitor": _section(monitor_section, now, mon, home),
@@ -344,6 +358,9 @@ def gather(now: float | None = None, *, connect=None, beat=None, where=None, git
         r["lane_gate"] = {} if light else _slow(memo, "lane_gate", lane_gate.status, conn, now)
         r["discovery_flow"] = {} if light else _slow(memo, "discovery_flow", _discovery_flow, conn, now)
         r["pipeline_yield"] = {} if light else _slow(memo, "pipeline_yield", _yield, conn, now)
+        fetch.join()
+        tree = fetched.get("tree") or {}
+        r["deploy"] = _section(deploy_section, conn, now, where, git, None if "error" in tree else {k: v for k, v in tree.items() if k != "as_of"})
         r["stops"] = {"holds": _section(needs_you.read_holds, conn, now), "jobs": _section(needs_you.read_jobs, conn, now),
                       "gateway": _section(needs_you.read_gateway), "incumbent": _section(needs_you.read_incumbent), "router": _section(needs_you.read_router), "deploying": _section(needs_you.read_deploying, now, r["queue"]), "gate": _section(needs_you.read_gate),
                       "monit": _section(needs_you.read_monit, now, home, r["monitor"])}

@@ -9,6 +9,7 @@ mechanical and shared, so two candidates are always judged by the same ruler.
 """
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import json
 import os
@@ -1170,6 +1171,9 @@ _LOADER = getattr(yaml, "CSafeLoader", yaml.SafeLoader)
 
 #: A case file's parsed YAML, pickled, by (path, mtime_ns, size): the suite loads ~3800 cases per call. #1146.
 _PARSED: dict[tuple, bytes] = {}
+_PARSES = [0]
+_SEEDED: set[tuple] = set()
+_INDEX_FORMAT = 1
 
 
 def _parse(path: Path) -> dict:
@@ -1180,8 +1184,36 @@ def _parse(path: Path) -> dict:
     if blob is None:
         raw = yaml.load(path.read_text(encoding="utf-8"), Loader=_LOADER) or {}
         _PARSED[key] = pickle.dumps(raw, protocol=pickle.HIGHEST_PROTOCOL)
+        _PARSES[0] += 1
         return raw
     return pickle.loads(blob)
+
+
+def _index_name(directory: str | Path) -> str:
+    return "cases-" + hashlib.sha256(str(Path(directory).resolve()).encode()).hexdigest()[:20]
+
+
+@contextlib.contextmanager
+def case_index(directory: str | Path):
+    """Keep the parsed YAML of `directory`'s case files and its bundle digests on disk, so a new process reads only what changed. #2191."""
+    from harness import file_index
+    name = _index_name(directory)
+    seeded = (name, file_index.file_for(name)) in _SEEDED
+    if not seeded:
+        _SEEDED.add((name, file_index.file_for(name)))
+        got = file_index.read(name, _INDEX_FORMAT)
+        for key, blob in got.get("parsed", {}).items():
+            _PARSED.setdefault(key, blob)
+        for key, digest in got.get("bundles", {}).items():
+            _BUNDLE_DIGESTS.setdefault(key, digest)
+    before = _PARSES[0]
+    yield
+    if _PARSES[0] == before and (seeded or file_index.file_for(name).exists()):
+        return
+    keep = {k: _PARSED[k] for k in files(directory) if k in _PARSED}
+    under = Path(directory).as_posix() + "/"
+    latest = {k[0]: (k, d) for k, d in _BUNDLE_DIGESTS.items() if k[0].startswith(under)}
+    file_index.write(name, _INDEX_FORMAT, {"parsed": keep, "bundles": dict(latest.values())})
 
 
 #: The cases a clone ships.
@@ -1389,6 +1421,7 @@ def _agent_params(path: Path, params: dict, assertions: dict) -> dict:
             h.update(f.as_posix()[cut:].encode("utf-8") + b"\x00")
             h.update(f.read_bytes().replace(b"\r\n", b"\n") + b"\x00")
         _BUNDLE_DIGESTS[key] = h.hexdigest()[:16]
+        _PARSES[0] += 1
     return {"repo_digest": _BUNDLE_DIGESTS[key]}
 
 

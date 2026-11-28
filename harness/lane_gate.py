@@ -1,7 +1,9 @@
 """The lane gate: a lane whose power plan at its adopt effect is below lane_gate_power takes no challengers; the owner's recorded, expiring override (#2164)."""
 from __future__ import annotations
 
+import contextlib
 import json
+from threading import local as _Local
 import time
 from dataclasses import dataclass, replace
 
@@ -81,7 +83,7 @@ def profile(lane: str, receipts: dict, conn, scored: bool | None = None) -> tupl
     """(incumbent key, its spec, its draws per case, its median seconds here at the lane's budget, settings, machines); error rates, not pass bits, on a continuous lane unless `scored` is False."""
     from harness import adopt, candidates, continuous, power, reply_cap, runs, screen, winners
     scored = bool(continuous.metric_of(lane)) if scored is None else scored
-    served = adopt.default_for(lane, winners.typed().get(lane, ""))
+    served = adopt.default_for(lane, winners.typed().get(lane, ""), conn)
     spec = (screen.candidate_for(lane, served) or served) if served else ""
     try:
         key = candidates.key_of(spec) if spec else ""
@@ -133,13 +135,41 @@ def closes(plan, threshold: float | None = None) -> bool:
     return not plan.unmeasured and plan.power < (GATE_POWER if threshold is None else threshold)
 
 
-def gate_for(conn, lane: str) -> Gate | None:
+_memo = _Local()
+
+
+@contextlib.contextmanager
+def remembered():
+    """gate_for answers once per (store, lane) in this block: one status build asks for every lane's gate from two sections. #2191."""
+    if getattr(_memo, "seen", None) is not None:
+        yield
+        return
+    _memo.seen = {}
+    try:
+        yield
+    finally:
+        _memo.seen = None
+
+
+def gate_for(conn, lane: str, split=None) -> Gate | None:
     """The gate on one lane from its power plan, whatever the owner's override says; None when it is open by power."""
+    from harness import lanes
+    seen = getattr(_memo, "seen", None)
+    key = (id(conn), lanes.canonical(lane))
+    if seen is not None and key in seen:
+        return seen[key]
+    got = _gate_for(conn, lane, split)
+    if seen is not None:
+        seen[key] = got
+    return got
+
+
+def _gate_for(conn, lane: str, split=None) -> Gate | None:
     import math
 
     from harness import holdout, lanes
     lane = lanes.canonical(lane)
-    split = holdout.for_lane(lane)
+    split = split or holdout.for_lane(lane)
     if not (split.dev or split.holdout):
         return None
     c = calc(conn, lane, split)
@@ -266,11 +296,13 @@ def record(conn, rows: list[dict], gates: dict[str, Gate], lane_of=None) -> None
 
 def status(conn, now: float | None = None) -> dict:
     """Every lane the gate closes, and the ones the owner has opened anyway, for the status page and `soh lane-gate`."""
-    from harness import holdout
+    from harness import holdout, power
     now = time.time() if now is None else now
     closed, opened = [], []
-    for lane in sorted(holdout.splits()):
-        g = gate_for(conn, lane)
+    splits = holdout.splits()
+    with power.prefetched(conn):
+        gates = {lane: gate_for(conn, lane, splits[lane]) for lane in sorted(splits)}
+    for lane, g in gates.items():
         if g is None:
             continue
         o = override(conn, lane, now)

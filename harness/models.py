@@ -6,6 +6,7 @@ alias (cloud-opus), and an old nickname kept one release with `deprecated_for`.
 """
 from __future__ import annotations
 
+import copy
 import re
 
 from harness import gateway
@@ -25,7 +26,7 @@ WORKFLOW_PREFIXES = ("repair:",)
 def _entries(config=None) -> list[dict]:
     """The served config's entries when serve-gateway.sh wrote one, else the base config's."""
     served = gateway.serving_path(config)
-    data = gateway.load(served) if served.exists() else gateway.load(config)
+    data = gateway.load(served, share=True) if served.exists() else gateway.load(config, share=True)
     return [e for e in data.get("model_list") or [] if isinstance(e, dict)]
 
 
@@ -41,7 +42,7 @@ def _entry(name: str, config=None) -> dict | None:
     want = name.lower()
     for e in _entries(config):
         if str(e.get("model_name", "")).strip().lower() == want:
-            return e
+            return copy.deepcopy(e)
     return None
 
 

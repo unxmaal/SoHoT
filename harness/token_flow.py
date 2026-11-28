@@ -1,7 +1,6 @@
 """Cloud counted tokens by stream kind, agent type and cache write cause, from Claude Code transcripts (#2031)."""
 from __future__ import annotations
 
-import itertools
 import json
 import re
 import statistics
@@ -118,27 +117,71 @@ def pr_of(opened: list, at: float, kind: str) -> str | None:
     return opened[-1][1] if opened and kind == SUB else None
 
 
+#: One transcript's usage records and marks by (path, mtime_ns, size), kept on disk: a restart reads only the files that grew. #2191.
+_SCANS: dict = {}
+_SCAN_FORMAT = 1
+
+
+def _scan(path) -> dict:
+    """What `read` takes from one transcript: its usage records cut to the fields it folds, and its compaction and pull request marks."""
+    marks, recs, agent = Marks(), [], ""
+    for _p, rec, msg, at in ledger.usage_records([path], marks.line):
+        agent = str(rec.get("attributionAgent") or agent)
+        tool = None
+        for block in msg.get("content") if isinstance(msg.get("content"), list) else ():
+            if isinstance(block, dict) and block.get("type") == "tool_use":
+                tool = tool_label(str(block.get("name") or "?"), block.get("input"))
+        recs.append((ledger.usage_key(rec, msg), at, {"sessionId": rec.get("sessionId")},
+                     {"model": msg.get("model"), "stop_reason": msg.get("stop_reason"),
+                      "usage": {src: msg["usage"].get(src) for src, _name in ledger.USAGE_KEYS}},
+                     lifetime(msg["usage"]), tool))
+    return {"recs": recs, "agent": agent, "compactions": marks.compactions.get(path, []), "prs": marks.prs.get(path, [])}
+
+
+def _scans(files) -> dict:
+    """path -> `_scan` of each file, from the disk index when the file is unchanged, written back when any was read."""
+    import os
+    from harness import file_index
+    if not _SCANS:
+        _SCANS.update(file_index.read("transcripts", _SCAN_FORMAT))
+    out, fresh = {}, False
+    for path in files:
+        try:
+            st = os.stat(path)
+        except OSError:
+            continue
+        key = (str(path), st.st_mtime_ns, st.st_size)
+        if key not in _SCANS:
+            _SCANS[key] = _scan(path)
+            fresh = True
+        out[path] = _SCANS[key]
+    if fresh:
+        here = {str(p) for p in out}
+        file_index.write("transcripts", _SCAN_FORMAT, {k: v for k, v in _SCANS.items() if k[0] in here})
+    return out
+
+
 def read(files, since: float, until: float | None = None, root=None) -> list[dict]:
     """Each API request counted in the window, once, with its stream, agent type, cache write cause and pull request."""
     counted: dict = {}
     owner: dict = {}
     streams = []
     marks = Marks()
-    for path, recs in itertools.groupby(ledger.usage_records(files, marks.line), key=lambda r: r[0]):
+    files = list(files)
+    for path, got in _scans(files).items():
+        if not got["recs"]:
+            continue
+        marks.compactions[path], marks.prs[path] = got["compactions"], got["prs"]
         rows: dict = {}
-        agent = ""
-        for _path, rec, msg, at in recs:
-            key = ledger.usage_key(rec, msg)
+        for key, at, rec, msg, ttl, tool in got["recs"]:
             owner.setdefault(key, len(streams))
             if ledger.in_window(at, since, until):
                 ledger.merge_usage(counted, key, rec, msg, at)
             row = ledger.merge_usage(rows, key, rec, msg, at)
-            row["ttl"] = lifetime(msg["usage"]) or row.get("ttl")
-            agent = str(rec.get("attributionAgent") or agent)
-            for block in msg.get("content") if isinstance(msg.get("content"), list) else ():
-                if isinstance(block, dict) and block.get("type") == "tool_use":
-                    row["tool"] = tool_label(str(block.get("name") or "?"), block.get("input"))
-        streams.append({"stream": Path(path).stem, "kind": kind_of(path, root), "agent": agent, "rows": rows,
+            row["ttl"] = ttl or row.get("ttl")
+            if tool is not None:
+                row["tool"] = tool
+        streams.append({"stream": Path(path).stem, "kind": kind_of(path, root), "agent": got["agent"], "rows": rows,
                         "path": path})
     out = []
     for i, s in enumerate(streams):
