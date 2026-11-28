@@ -54,8 +54,8 @@ FUTILITY, WORSE = "futility", "worse"
 REDECIDED = "re-decided"
 
 
-def alpha_for(tested: int = 0) -> float:
-    """The level the next challenger faces: ALPHA over FAMILY, whatever `tested` earlier verdicts the lane holds. #698, #2199."""
+def alpha_for() -> float:
+    """The level the next challenger faces: ALPHA over FAMILY, whatever number of earlier verdicts the lane holds. #698, #2199."""
     return ALPHA / FAMILY
 
 
@@ -166,15 +166,15 @@ def decide(lane: str, incumbent: dict, challenger: dict,
     """
     name_i = incumbent.get("candidate", "")
     name_c = challenger.get("candidate", "")
-    alpha = alpha_for(tested) if alpha is None else alpha
+    alpha = alpha_for() if alpha is None else alpha
     evidence: dict = ({"comparisons": tested + 1, "alpha": alpha}
                       if split is not None or tested else {})
     notes = []
-    if abs(alpha - alpha_for(tested)) > 1e-12:
+    if abs(alpha - alpha_for()) > 1e-12:
         evidence["alpha"] = alpha
-        notes.append(f"tested at alpha {alpha:.4f}: {alpha_for(tested) - alpha:.4f} was spent on interim looks")
+        notes.append(f"tested at alpha {alpha:.4f}: {alpha_for() - alpha:.4f} was spent on interim looks")
     if tested:
-        notes.append(f"comparison {tested + 1} on this holdout, alpha {ALPHA}/{FAMILY} = {alpha_for(tested):.4f}")
+        notes.append(f"comparison {tested + 1} on this holdout, alpha {ALPHA}/{FAMILY} = {alpha_for():.4f}")
     if split is not None:
         from harness import holdout
         evidence["split"] = split.as_dict()
@@ -193,7 +193,7 @@ def decide(lane: str, incumbent: dict, challenger: dict,
     if plan is not None:
         evidence["power"] = plan.as_dict()
         planned = getattr(plan, "alpha", None)
-        if planned is not None and abs(planned - alpha_for(tested)) > 1e-12:
+        if planned is not None and abs(planned - alpha_for()) > 1e-12:
             evidence["planned_alpha"] = planned
             notes.append(f"planned at alpha {planned}, tested at {alpha:.4f}: the level "
                          f"changed during the run")

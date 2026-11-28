@@ -124,7 +124,7 @@ def test_the_adopt_gate_still_rounds_against_the_challenger(monkeypatch):
 
 
 def test_the_twentieth_challenger_on_one_holdout_faces_the_same_alpha_as_the_first():
-    assert adopt.alpha_for(0) == adopt.alpha_for(19) == pytest.approx(adopt.ALPHA / adopt.FAMILY)
+    assert adopt.alpha_for() == adopt.alpha_for() == pytest.approx(adopt.ALPHA / adopt.FAMILY)
     cells = {c: [(True, True)] for c in _cases(20)}
     for c in _cases(20)[:8]:
         cells[c] = [(False, True)]
@@ -284,3 +284,10 @@ def test_adopt_power_plans_at_the_holdouts_adjusted_alpha(store, capsys, monkeyp
         power.draws_from(rows, "inc")[0], split.holdout)[0].values()]
     assert row["power"] == pytest.approx(
         power.power(rates, row["effect"], row["repeat"], adopt.alpha_for(), row["rho"]), abs=1e-4)
+    conn = ms.connect()
+    for i in range(3, 30):
+        adopt.record(conn, adopt.Verdict("code", "inc", f"org/c{i}", False, "x", evidence=ev), spec=f"org/c{i}")
+    conn.close()
+    assert cli.main(["adopt", "--json", "--power", "--lane", "code", "--receipt", str(receipt)]) == 0
+    more = json.loads(capsys.readouterr().out)["lanes"][0]
+    assert more["comparisons"] == 30 and more["alpha"] == row["alpha"] and more["power"] == row["power"]

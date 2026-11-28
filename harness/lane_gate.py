@@ -122,7 +122,7 @@ def calc(conn, lane: str, split, receipts: dict | None = None, effect: float | N
     metric = continuous.metric_of(lane)
     effect = effect or (continuous.effect_for(lane) if metric else power.effect_for(lane))
     tested = adopt.comparisons(conn, lane, split.version)
-    alpha = adopt.alpha_for(tested)
+    alpha = adopt.alpha_for()
     model = continuous.model_for(draws, split.holdout, metric) if metric else None
     plan = power.plan([rates[c] for c in split.holdout], effect, stochastic=lane in STOCHASTIC_MODALITIES,
                       observed=seen, rho=rho, alpha=alpha, unmeasured=not any(draws.values()), model=model)

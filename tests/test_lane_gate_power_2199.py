@@ -5,7 +5,6 @@ from types import SimpleNamespace
 import pytest
 
 from harness import adopt, holdout, lane_gate, power
-from harness import memory_store as ms
 
 SPLIT = SimpleNamespace(version=holdout.VERSION, dev=["d"], holdout=["h"], as_dict=lambda: {"version": holdout.VERSION})
 
@@ -13,20 +12,8 @@ SPLIT = SimpleNamespace(version=holdout.VERSION, dev=["d"], holdout=["h"], as_di
 def _fake(monkeypatch, by_lane):
     def calc(conn, lane, split, receipts=None, effect=None):
         plan = SimpleNamespace(power=by_lane[lane], unmeasured=False, cases_needed=400, rho=0.5)
-        return lane_gate.Calc("k", "spec", {}, None, (), [], {}, 5, 0.1, 0, adopt.alpha_for(0), plan)
+        return lane_gate.Calc("k", "spec", {}, None, (), [], {}, 5, 0.1, 0, adopt.alpha_for(), plan)
     monkeypatch.setattr(lane_gate, "calc", calc)
-
-
-def test_a_lane_gaining_verdicts_keeps_the_level_of_its_next_comparison():
-    conn = ms.connect()
-    ev = {"split": {"version": holdout.VERSION}, "power": {}}
-    before = adopt.alpha_for(adopt.comparisons(conn, "code", holdout.VERSION))
-    for i in range(30):
-        adopt.record(conn, adopt.Verdict("code", "inc", f"org/c{i}", False, "x", evidence=ev), spec=f"org/c{i}")
-    tested = adopt.comparisons(conn, "code", holdout.VERSION)
-    assert tested == 30
-    assert adopt.alpha_for(tested) == before == pytest.approx(adopt.ALPHA / adopt.FAMILY)
-    conn.close()
 
 
 def test_an_open_lane_at_079_stays_open_and_a_closed_one_at_079_stays_closed(monkeypatch):

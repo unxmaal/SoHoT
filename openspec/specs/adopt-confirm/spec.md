@@ -86,7 +86,7 @@ Test: tests/test_adopt_assumptions.py::test_the_twentieth_challenger_on_one_hold
 #### Scenario: a lane gaining verdicts keeps its level
 - **WHEN** a lane records 30 more verdicts on its holdout version
 - **THEN** the level of its next comparison is unchanged
-Test: tests/test_lane_gate_power_2199.py::test_a_lane_gaining_verdicts_keeps_the_level_of_its_next_comparison
+Test: tests/test_adopt_assumptions.py::test_adopt_power_plans_at_the_holdouts_adjusted_alpha
 
 #### Scenario: comparisons are per lane and holdout version
 - **WHEN** three code verdicts and one svg verdict are recorded on one version
