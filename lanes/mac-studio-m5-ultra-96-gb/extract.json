@@ -845,22 +845,22 @@
     "candidate": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
     "cases": 1501,
     "first_s": 1.39,
-    "median_s": 1.674,
+    "median_s": 1.677,
     "metrics": {
-     "completion_tokens": 58.5093,
-     "tokens_per_s": 32.2716
+     "completion_tokens": 58.5104,
+     "tokens_per_s": 32.2689
     },
     "model": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
     "not_run": "",
     "pass_rate": 0.906,
-    "passed": 1223,
+    "passed": 1224,
     "peak_gb": 0.0,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-11-28T13:45:14Z",
+    "run_at": "2026-11-28T15:51:28Z",
     "served_as": "",
     "source": "https://huggingface.co/OBLITERATUS/Qwen3.8-27B-OBLITERATED",
-    "total": 1350,
+    "total": 1351,
     "ttft_median_s": 1.527,
     "ttft_p95_s": 2.603
    },
@@ -883,22 +883,22 @@
     "candidate": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
     "cases": 1501,
     "first_s": 1.39,
-    "median_s": 1.674,
+    "median_s": 1.677,
     "metrics": {
-     "completion_tokens": 58.5093,
-     "tokens_per_s": 32.2716
+     "completion_tokens": 58.5104,
+     "tokens_per_s": 32.2689
     },
     "model": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
     "not_run": "",
     "pass_rate": 0.906,
-    "passed": 1223,
+    "passed": 1224,
     "peak_gb": 0.0,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-11-28T13:45:14Z",
+    "run_at": "2026-11-28T15:51:28Z",
     "served_as": "",
     "source": "https://huggingface.co/OBLITERATUS/Qwen3.8-27B-OBLITERATED",
-    "total": 1350,
+    "total": 1351,
     "ttft_median_s": 1.527,
     "ttft_p95_s": 2.603
    },
@@ -4732,22 +4732,22 @@
     "first_s": 0.707,
     "median_s": 0.324,
     "metrics": {
-     "completion_tokens": 6.0509,
-     "tokens_per_s": 18.103
+     "completion_tokens": 6.0517,
+     "tokens_per_s": 18.0918
     },
     "model": "mlx-community/Qwen2.5-7B-Instruct-4bit",
     "not_run": "",
     "pass_rate": 0.82,
-    "passed": 931,
+    "passed": 932,
     "peak_gb": 0.0,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-11-28T13:45:14Z",
+    "run_at": "2026-11-28T15:51:28Z",
     "served_as": "",
     "source": "https://huggingface.co/mlx-community/Qwen2.5-7B-Instruct-4bit",
-    "total": 1135,
+    "total": 1136,
     "ttft_median_s": 0.178,
-    "ttft_p95_s": 0.28
+    "ttft_p95_s": 0.282
    },
    "outcome": "",
    "proposal": "",
@@ -10909,21 +10909,21 @@
      "about": "family Qwen/Qwen3.8-27B, 27B params, by OBLITERATUS",
      "candidate": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
      "first_s": 1.39,
-     "median_s": 1.674,
+     "median_s": 1.677,
      "metrics": {
-      "completion_tokens": 58.5093,
-      "tokens_per_s": 32.2716
+      "completion_tokens": 58.5104,
+      "tokens_per_s": 32.2689
      },
      "model": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
      "not_run": "",
      "pass_rate": 0.906,
-     "passed": 1223,
+     "passed": 1224,
      "peak_gb": 0.0,
      "reference": false,
-     "run_at": "2026-11-28T13:45:14Z",
+     "run_at": "2026-11-28T15:51:28Z",
      "served_as": "",
      "source": "https://huggingface.co/OBLITERATUS/Qwen3.8-27B-OBLITERATED",
-     "total": 1350,
+     "total": 1351,
      "ttft_median_s": 1.527,
      "ttft_p95_s": 2.603
     },
@@ -10955,21 +10955,21 @@
      "first_s": 0.707,
      "median_s": 0.324,
      "metrics": {
-      "completion_tokens": 6.0509,
-      "tokens_per_s": 18.103
+      "completion_tokens": 6.0517,
+      "tokens_per_s": 18.0918
      },
      "model": "mlx-community/Qwen2.5-7B-Instruct-4bit",
      "not_run": "",
      "pass_rate": 0.82,
-     "passed": 931,
+     "passed": 932,
      "peak_gb": 0.0,
      "reference": false,
-     "run_at": "2026-11-28T13:45:14Z",
+     "run_at": "2026-11-28T15:51:28Z",
      "served_as": "",
      "source": "https://huggingface.co/mlx-community/Qwen2.5-7B-Instruct-4bit",
-     "total": 1135,
+     "total": 1136,
      "ttft_median_s": 0.178,
-     "ttft_p95_s": 0.28
+     "ttft_p95_s": 0.282
     },
     {
      "about": "family Qwen/Qwen3.8-27B, 27B params, 4bit, by ddalcu",
@@ -10994,7 +10994,7 @@
      "ttft_p95_s": 11.346
     }
    ],
-   "run_at": "2026-11-28T13:45:14Z",
+   "run_at": "2026-11-28T15:51:28Z",
    "runs": 4
   },
   {
@@ -12937,7 +12937,7 @@
    "runs": 3
   }
  ],
- "generated_at": "2026-11-28T15:00:45Z",
+ "generated_at": "2026-11-28T15:59:01Z",
  "knobs": [],
  "lane": {
   "cases": 2200,
@@ -12956,11 +12956,11 @@
   "adopted_at": "",
   "adopted_how": "",
   "incumbent": "",
-  "measured_at": "2026-11-28T13:45:14Z",
+  "measured_at": "2026-11-28T15:51:28Z",
   "median_s": 0.324,
   "metrics": {
-   "completion_tokens": 6.0509,
-   "tokens_per_s": 18.103
+   "completion_tokens": 6.0517,
+   "tokens_per_s": 18.0918
   },
   "not_run": "",
   "parked": "",
