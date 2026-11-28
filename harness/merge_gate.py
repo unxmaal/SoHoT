@@ -7,11 +7,15 @@ import os
 import re
 import shutil
 import subprocess
+import time
 from pathlib import Path
 
 from harness import deploy_guard as guard
 from harness import paths
 
+#: A `--pr` call waits this long for the lock another pass holds, polling at LOCK_POLL_S, then reports the verdict its tree has. #2206
+LOCK_POLL_S = 5.0
+WAIT_S = 14400.0
 STEP_TIMEOUT_S = 3600.0
 CONTEXT = guard.GATE
 #: Who a queued pass says asked for it; one waits or runs at a time.
@@ -129,12 +133,13 @@ def plan(repo, pr: dict | None, gh) -> dict:
         tree = _out(repo, "rev-parse", f"{main}^{{tree}}")
         state = {guard.PASSED: SUCCESS, guard.FAILED: FAILURE}.get(guard.gated(main, gh, repo)[0], "")
         return {"pr": None, "head": main, "base": _out(repo, "rev-parse", f"{main}^"), "tree": tree,
-                "key": guard.stamp(tree), "state": state}
+                "key": guard.stamp(tree), "state": state, "since": 0}
     head = pr["headRefOid"]
     _out(repo, "fetch", "-q", "--no-tags", "origin", f"refs/pull/{pr['number']}/head")
     tree = merged(repo, main, head)
     key = guard.stamp(tree) if tree else f"conflict {main}"
-    return {"pr": pr, "head": head, "base": main, "tree": tree, "key": key, "state": verdict(head, key, gh)}
+    since = int(_out(repo, "log", "-1", "--format=%ct", head))
+    return {"pr": pr, "head": head, "base": main, "tree": tree, "key": key, "state": verdict(head, key, gh), "since": since}
 
 
 def _env(home: Path) -> dict:
@@ -217,25 +222,65 @@ def _settle(repo, item: dict, gh, run) -> dict:
     return item
 
 
-def run_pass(repo, only: int | None = None, again: bool = False, gh=None, run=None, say=print) -> list[dict]:
-    """Test main's tip and each candidate pull request whose merged tree has no verdict, and post one; the rows it judged.
+def run_pass(repo, only: int | None = None, again: bool = False, gh=None, run=None, say=print, wait: float = 0.0,
+             sleep=time.sleep, clock=time.monotonic) -> list[dict]:
+    """Test main's tip and each open pull request whose merged tree has no verdict, longest-waiting first, and post one; the rows it judged.
 
     A pass that finds the lock held leaves a mark, and the holder runs one more pass when it lets go. #2140
+    With `only` and `wait`, the call waits that long for the holder, and a tree the holder judged comes back as a row with `cached` set. #2206
     """
-    held, rows = _pass(repo, only, again, gh, run, say)
+    gh = gh or (lambda argv: guard._gh(argv, cwd=str(repo)))
+    held, rows = _pass(repo, only, again, gh, run, say, wait, sleep, clock)
     while held:
         try:
             _again_path().unlink()
         except FileNotFoundError:
             break
-        held, more = _pass(repo, None, False, gh, run, say)
+        held, more = _pass(repo, None, False, gh, run, say, 0.0, sleep, clock)
         rows += more
+    if only is not None and wait > 0 and not any((r["pr"] or {}).get("number") == only for r in rows):
+        rows += _recorded(repo, only, gh, say)
     return rows
 
 
-def _pass(repo, only, again, gh, run, say) -> tuple[bool, list[dict]]:
+def _recorded(repo, number: int, gh, say) -> list[dict]:
+    """The verdict an earlier pass left on pull request `number`'s current tree, as a row; [] when it has none."""
+    try:
+        pr = next((p for p in candidates(gh) if p["number"] == number), None)
+        item = plan(repo, pr, gh) if pr else None
+    except (GateError, guard.GhError, ValueError, LookupError, TypeError) as exc:
+        say(f"not planned, #{number}: {exc}")
+        return []
+    return [{**item, "cached": True}] if item and item["state"] in FINAL else []
+
+
+def _lock(fd: int, wait: float, say, sleep, clock) -> bool:
+    """Take the lock, waiting up to `wait` seconds for its holder while leaving the mark that makes it run one more pass."""
+    from harness import cuts, exclusive
+    _again_path().touch()
+    if exclusive._take(fd):
+        _again_path().unlink(missing_ok=True)
+        return True
+    if wait <= 0:
+        return False
+    say(f"another merge gate pass is running: waiting up to {int(wait)} s for it")
+    end = clock() + wait
+    try:
+        with cuts.timeout("merge_gate_wait", "a merge gate call waiting for the pass that holds the lock"):
+            while True:
+                if exclusive._take(fd):
+                    _again_path().unlink(missing_ok=True)
+                    return True
+                if clock() >= end:
+                    raise TimeoutError(f"the lock was held for {int(wait)} s")
+                _again_path().touch()
+                sleep(LOCK_POLL_S)
+    except TimeoutError:
+        return False
+
+
+def _pass(repo, only, again, gh, run, say, wait=0.0, sleep=time.sleep, clock=time.monotonic) -> tuple[bool, list[dict]]:
     from harness import exclusive
-    gh = gh or (lambda argv: guard._gh(argv, cwd=str(repo)))
     def due(pr):
         try:
             item = plan(repo, pr, gh)
@@ -244,32 +289,33 @@ def _pass(repo, only, again, gh, run, say) -> tuple[bool, list[dict]]:
             return None
         return item if again or item["state"] not in FINAL else None
     fd = os.open(root() / "lock", os.O_RDWR | os.O_CREAT, 0o644)
-    held = exclusive._take(fd)
+    held = _lock(fd, wait, say, sleep, clock)
     try:
-        if not held:
-            _again_path().touch()
-            held = exclusive._take(fd)
-            if held:
-                _again_path().unlink(missing_ok=True)
         if not held:
             say("another merge gate pass is running")
             return False, []
-        wanted = [pr for pr in candidates(gh) if only in (None, pr["number"])]
-        if only is not None and not wanted:
-            raise GateError(f"#{only} is not an open, non-draft pull request on main from this repository's own branch")
-        todo = [i for i in map(due, ([None] if only is None else []) + wanted) if i]
-        if only is None:
-            for head in set(opened()) - {pr["headRefOid"] for pr in wanted} - {i["head"] for i in todo}:
-                _track(head, FAILURE, "")
-        for i in todo:
-            if i["tree"]:
-                post(i["head"], PENDING, f"{i['key']} on {i['base'][:12]}: queued", gh)
-        rows = []
-        for i in todo:
-            # main may have moved while the ones before this were tested
-            now = due(i["pr"])
-            if now:
-                rows.append(_settle(repo, now, gh, run))
+        rows, tried, queued, first = [], set(), set(), True
+        # the open pull requests are listed again before each tree, so one that merged, closed or moved while another was tested is not
+        while True:
+            wanted = [pr for pr in candidates(gh) if only in (None, pr["number"])]
+            if only is not None and not wanted:
+                if first:
+                    raise GateError(f"#{only} is not an open, non-draft pull request on main from this repository's own branch")
+                break
+            first = False
+            todo = [i for i in map(due, ([None] if only is None else []) + wanted) if i and (i["head"], i["key"]) not in tried]
+            if only is None:
+                for head in set(opened()) - {pr["headRefOid"] for pr in wanted} - {i["head"] for i in todo}:
+                    _track(head, FAILURE, "")
+            for i in todo:
+                if i["tree"] and (i["head"], i["key"]) not in queued:
+                    queued.add((i["head"], i["key"]))
+                    post(i["head"], PENDING, f"{i['key']} on {i['base'][:12]}: queued", gh)
+            if not todo:
+                break
+            item = min(todo, key=lambda i: (i["pr"] is not None, i["since"], (i["pr"] or {}).get("number", 0)))
+            tried.add((item["head"], item["key"]))
+            rows.append(_settle(repo, item, gh, run))
         return True, rows
     finally:
         if held:

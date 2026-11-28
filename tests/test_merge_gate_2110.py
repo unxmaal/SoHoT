@@ -414,7 +414,7 @@ def test_a_head_later_in_the_pass_is_tested_on_the_main_that_moved_meanwhile(wor
 
 
 @pytest.mark.gauntlet("an-effect-reachable-from-a-run-that-is-not-the-live-deploy",
-                      site="harness/merge_gate.py:_pass:_gh")
+                      site="harness/merge_gate.py:run_pass:_gh")
 def test_the_only_thing_a_pass_writes_to_github_is_the_gate_status_of_the_head_it_tested(world, monkeypatch):
     head = world["pr"](7, {"x": "x\n"})
     world["pr"](8, {"w": "w\n"}, world["base"])
