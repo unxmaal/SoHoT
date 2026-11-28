@@ -477,11 +477,11 @@
    "runs": 1
   }
  ],
- "generated_at": "2026-11-25T19:25:39Z",
+ "generated_at": "2026-11-28T08:08:44Z",
  "knobs": [],
  "lane": {
-  "cases": 299,
-  "cases_digest": "360e1b7d505c985c",
+  "cases": 1739,
+  "cases_digest": "c71b4f01dfa77dc8",
   "name": "claims",
   "params": {},
   "wanted": true
