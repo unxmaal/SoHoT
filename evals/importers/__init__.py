@@ -6,6 +6,7 @@ Imported | None. Lane checks for the negative control live beside them.
 """
 from __future__ import annotations
 
+import hashlib
 import importlib
 import shutil
 from dataclasses import dataclass
@@ -17,6 +18,8 @@ from evals.benchmark_import import ALLOWED_LICENSES
 
 CASES = Path(__file__).resolve().parent.parent / "cases"
 MARK = "Imported by evals/importers"
+#: Written beside a source's cases: the fingerprint of the module and manifest that produced them. #2194.
+STAMP = ".importer-fingerprint"
 
 
 @dataclass(frozen=True)
@@ -74,6 +77,15 @@ def provenance(mod, item, transform: str, date: str = "") -> dict:
             "date": date, "transform": transform, "importer": mod.__name__}
 
 
+def fingerprint(name: str, folder: Path | None = None) -> str:
+    """A hash of an importer's module and every manifest or data file named for it, in `folder`."""
+    folder = Path(folder) if folder else Path(__file__).resolve().parent
+    h = hashlib.sha256()
+    for path in sorted(folder.glob(f"{name}.*")):
+        h.update(path.name.encode() + b"\0" + path.read_bytes() + b"\0")
+    return h.hexdigest()
+
+
 def _dump(mod, case: dict) -> str:
     head = (f"# {mod.DATASET}, {mod.LICENSE} ({mod.URL}).\n"
             f"# {MARK} from {mod.SOURCE}@{mod.REVISION}; re-import, do not edit.\n")
@@ -86,6 +98,7 @@ def write(mod, name: str, made: list[Imported], root: Path = CASES) -> list[Path
     if out.exists():
         shutil.rmtree(out)
     out.mkdir(parents=True)
+    (out / STAMP).write_text(fingerprint(name) + "\n", encoding="utf-8")
     written, held = [], {}
     for one in sorted(made, key=lambda m: m.case["id"]):
         path = out / f"{one.case['id']}.yaml"

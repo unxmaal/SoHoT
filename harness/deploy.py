@@ -20,6 +20,9 @@ from harness import deploy_state as ds
 from harness import deploy_switch, job_claim, job_procs, job_state as js, paths, proc_identity, queue_hold, queue_pause
 from harness import workqueue as wq
 
+#: How long one source's `soh cases import` may take in a release whose importer changed. #2194.
+REIMPORT_TIMEOUT_S = 1800.0
+
 KIND = "deploy"
 #: Ahead of every measurement job; a due deploy pauses a running one at its checkpoint (#1672).
 PRIORITY = 1000
@@ -72,6 +75,8 @@ class DeployError(RuntimeError):
 class Steps:
     """The commands a deploy runs, each in the release named; tests plant their own."""
     sync: list = field(default_factory=lambda: ["uv", "sync", "--frozen"])
+    #: Run once per source whose importer changed, with the source's name appended. #2194.
+    reimport: list = field(default_factory=lambda: [*SOH, "cases", "import"])
     probe: list = field(default_factory=lambda: ["bash", "scripts/launchd.sh", "probe"] if sys.platform == "darwin"
                         else [])
     smoke: list = field(default_factory=lambda: ["bash", "scripts/smoke.sh"])
@@ -523,6 +528,22 @@ def carry(src: Path, dst: Path) -> list[str]:
     return carried
 
 
+def stale_imports(previous: Path, release: Path, carried: list[str]) -> list[str]:
+    """Sources whose carried cases an importer change since they were written makes stale. #2194."""
+    from evals import importers
+    cases, want_dir, had_dir = release / "evals" / "cases", release / "evals" / "importers", previous / "evals" / "importers"
+    out = []
+    for d in sorted(cases.glob("*/*/")):
+        rel = d.relative_to(release).as_posix() + "/"
+        if not (want_dir / f"{d.name}.py").is_file() or not any(rel.startswith(c) for c in carried):
+            continue
+        stamp = d / importers.STAMP
+        had = stamp.read_text(encoding="utf-8").strip() if stamp.is_file() else importers.fingerprint(d.name, had_dir)
+        if importers.fingerprint(d.name, want_dir) != had:
+            out.append(d.name)
+    return out
+
+
 def _order(p: Path) -> int:
     head = p.name.split("-", 1)[0]
     return int(head) if head.isdigit() else -1
@@ -756,12 +777,19 @@ def run(sha: str, job_id=None, *, conn=None, link: Path | None = None, steps: St
                 _git(previous, "fetch", "-q", "origin", "main")
                 _git(previous, "worktree", "add", "-q", "--detach", str(release), sha)
                 go(ds.BUILDING, release=str(release))
-                log.write(f"carried {', '.join(carry(previous, release)) or 'nothing'} from {previous}\n")
+                carried = carry(previous, release)
+                log.write(f"carried {', '.join(carried) or 'nothing'} from {previous}\n")
+                stale = stale_imports(previous, release, carried)
             except (DeployError, OSError) as exc:
                 return stop(f"build: {exc}")
             why = _run(steps.sync, release, SYNC_TIMEOUT_S, log, site_knob="harness/deploy.py:SYNC_TIMEOUT_S")
             if why:
                 return stop(why)
+            for name in stale:
+                log.write(f"importer {name} changed since its carried cases were written; re-importing\n")
+                why = _run([*steps.reimport, name], release, REIMPORT_TIMEOUT_S, log,
+                           site_knob="harness/deploy.py:REIMPORT_TIMEOUT_S")
+                log.write(f"re-import of {name} failed, carried cases kept: {why}\n" if why else f"re-imported {name}\n")
             why = _probe(steps.probe, release, log, log_path)
             if why:
                 return stop(f"launchd probe of the new release before the switch: {why}")
