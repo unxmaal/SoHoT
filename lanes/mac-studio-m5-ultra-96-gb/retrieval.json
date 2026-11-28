@@ -258,11 +258,11 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-11-27T11:09:19Z",
+ "generated_at": "2026-11-28T08:08:42Z",
  "knobs": [],
  "lane": {
-  "cases": 594,
-  "cases_digest": "d85d077002cd5aff",
+  "cases": 1434,
+  "cases_digest": "047dc6b0d936f83c",
   "name": "retrieval",
   "params": {},
   "wanted": true
