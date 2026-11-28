@@ -8373,8 +8373,8 @@
   },
   {
    "candidate": "NemoStation/Marlin-2B",
-   "decided_at": "2026-11-28T16:29:08Z",
-   "detail": "prefilter: refetch: NemoStation/Marlin-2B was downloaded 21.1 h ago (0.0 GiB) and no verdict was written since, so it is not downloaded again within 24 h (asked for by the prefilter)",
+   "decided_at": "2026-11-28T16:56:25Z",
+   "detail": "prefilter: refetch: NemoStation/Marlin-2B was downloaded 21.5 h ago (0.0 GiB) and no verdict was written since, so it is not downloaded again within 24 h (asked for by the prefilter)",
    "exam": null,
    "outcome": "queued",
    "proposal": "NemoStation/Marlin-2B",
@@ -8388,8 +8388,8 @@
   },
   {
    "candidate": "NemoStation/Marlin-2B,temperature=0",
-   "decided_at": "2026-11-28T16:29:08Z",
-   "detail": "prefilter: refetch: NemoStation/Marlin-2B was downloaded 21.1 h ago (0.0 GiB) and no verdict was written since, so it is not downloaded again within 24 h (asked for by the prefilter)",
+   "decided_at": "2026-11-28T16:56:25Z",
+   "detail": "prefilter: refetch: NemoStation/Marlin-2B was downloaded 21.5 h ago (0.0 GiB) and no verdict was written since, so it is not downloaded again within 24 h (asked for by the prefilter)",
    "exam": null,
    "outcome": "queued",
    "proposal": "NemoStation/Marlin-2B",
@@ -8593,8 +8593,8 @@
   },
   {
    "candidate": "llamacpp:command-a-plus-05-2026-IQ1_S",
-   "decided_at": "2026-11-28T16:29:08Z",
-   "detail": "prefilter: refetch: bartowski/command-a-plus-05-2026-GGUF was downloaded 19.1 h ago (45.9 GiB) and no verdict was written since, so it is not downloaded again within 24 h (asked for by the prefilter)",
+   "decided_at": "2026-11-28T16:56:25Z",
+   "detail": "prefilter: refetch: bartowski/command-a-plus-05-2026-GGUF was downloaded 19.5 h ago (45.9 GiB) and no verdict was written since, so it is not downloaded again within 24 h (asked for by the prefilter)",
    "exam": {
     "about": "family CohereLabs/command-a-plus-05-2026-bf16, IQ1_S, by bartowski",
     "candidate": "llamacpp:command-a-plus-05-2026-IQ1_S",
@@ -8632,8 +8632,8 @@
   },
   {
    "candidate": "llamacpp:command-a-plus-05-2026-IQ1_S,temperature=0",
-   "decided_at": "2026-11-28T16:29:08Z",
-   "detail": "prefilter: refetch: bartowski/command-a-plus-05-2026-GGUF was downloaded 19.1 h ago (45.9 GiB) and no verdict was written since, so it is not downloaded again within 24 h (asked for by the prefilter)",
+   "decided_at": "2026-11-28T16:56:25Z",
+   "detail": "prefilter: refetch: bartowski/command-a-plus-05-2026-GGUF was downloaded 19.5 h ago (45.9 GiB) and no verdict was written since, so it is not downloaded again within 24 h (asked for by the prefilter)",
    "exam": {
     "about": "family CohereLabs/command-a-plus-05-2026-bf16, IQ1_S, by bartowski",
     "candidate": "llamacpp:command-a-plus-05-2026-IQ1_S",
@@ -26140,7 +26140,7 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-11-28T16:30:28Z",
+ "generated_at": "2026-11-28T16:57:43Z",
  "knobs": [],
  "lane": {
   "cases": 2381,
