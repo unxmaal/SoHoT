@@ -67,6 +67,30 @@ def effect_for(lane: str) -> float:
     return used(noise_for(lane))
 
 
+def effect_in(lane: str) -> float:
+    """The gain the lane adopts for in its own units: a drop in its error rate on a continuous lane, else effect_for. #2181."""
+    from harness import continuous
+    return continuous.effect_for(lane) or effect_for(lane)
+
+
+def noise_in(lane: str) -> float:
+    """effect_in, with a continuous lane's noise being the effect itself."""
+    from harness import continuous
+    return continuous.effect_for(lane) or noise_for(lane)
+
+
+def unit_of(plan) -> str:
+    """What a plan's effect is a gain in: the metric a continuous plan scores, else "per cell"."""
+    got = (plan.get("continuous") if isinstance(plan, dict) else getattr(plan, "continuous", None)) or {}
+    return got.get("metric") or "per cell"
+
+
+def unit_note(plan) -> str:
+    """The unit as a suffix to a gain, empty for the pass/fail plan whose gain reads as a bare number."""
+    got = unit_of(plan)
+    return "" if got == "per cell" else f" {got}"
+
+
 def _alpha() -> float:
     from harness import adopt
     return adopt.ALPHA
@@ -170,7 +194,7 @@ def _cell_odds(rates, effect: float) -> tuple[float, float]:
 
 
 def power(rates, effect: float, repeat: int = 1, alpha: float | None = None,
-          rho: float = 0.0) -> float:
+          rho: float = 0.0, model=None) -> float:
     """P(the gate adopts) when the challenger is better by `effect` per cell.
 
     `rho` is the within-case correlation of repeats: at 1 a case repeated r
@@ -180,6 +204,8 @@ def power(rates, effect: float, repeat: int = 1, alpha: float | None = None,
     rates = list(rates)
     if not rates or repeat < 1:
         return 0.0
+    if model is not None:
+        return model.power_cells(effective_cells(len(rates), repeat, rho), effect, alpha)
     gain, lose = _cell_odds(rates, effect)
     return power_cells(gain, lose, effective_cells(len(rates), repeat, rho), alpha)
 
@@ -197,27 +223,27 @@ def loss_odds(rows, deff: float, metric: str, floor: float) -> tuple[list[float]
     return [1.0 - sum(v) / len(v) for v in got.values()], max(1, round(repeat)), rho
 
 
-def mde(rates, repeat: int, alpha: float, rho: float, target: float) -> float | None:
+def mde(rates, repeat: int, alpha: float, rho: float, target: float, model=None) -> float | None:
     """Smallest per-cell gain in (0, 1] this many cases and repeats detect at `target`, rounded up to 0.001."""
     rates = list(rates)
-    if not rates or power(rates, 1.0, repeat, alpha, rho) < target:
+    if not rates or power(rates, 1.0, repeat, alpha, rho, model) < target:
         return None
     lo, hi = 0.0, 1.0
     for _ in range(30):
         mid = (lo + hi) / 2
-        if power(rates, mid, repeat, alpha, rho) >= target:
+        if power(rates, mid, repeat, alpha, rho, model) >= target:
             hi = mid
         else:
             lo = mid
     e = math.ceil(hi * 1000 - 1e-9) / 1000
-    while e < 1.0 and power(rates, e, repeat, alpha, rho) < target:
+    while e < 1.0 and power(rates, e, repeat, alpha, rho, model) < target:
         e = round(e + 0.001, 3)
     return e
 
 
 def cases_needed(rates, effect: float, *, rho: float, stochastic: bool = True,
                  alpha: float | None = None, target: float = TARGET,
-                 cap: int = CAP, most: int | None = None) -> int | None:
+                 cap: int = CAP, most: int | None = None, model=None) -> int | None:
     """The smallest holdout, at least today's, reaching `target` at some repeat up to `cap`.
 
     New cases are assumed to look like today's holdout. None when the incumbent
@@ -227,13 +253,15 @@ def cases_needed(rates, effect: float, *, rho: float, stochastic: bool = True,
     rates = list(rates)
     if not rates:
         return None
-    gain, lose = _cell_odds(rates, effect)
-    if gain <= 0:
+    gain, lose = (1.0, 0.0) if model is not None else _cell_odds(rates, effect)
+    if gain <= 0 or (model is not None and model.sd_diff <= 0):
         return None
     repeats = range(1, cap + 1) if stochastic else (1,)
+    at = (lambda n: model.power_cells(n, effect, alpha)) if model is not None else (
+        lambda n: power_cells(gain, lose, n, alpha))
     for k in range(len(rates), (most or MAX_CASES) + 1):
         cells = {effective_cells(k, r, rho) for r in repeats}
-        if any(power_cells(gain, lose, n, alpha) >= target for n in cells):
+        if any(at(n) >= target for n in cells):
             return k
     if most is None:
         from harness import cuts
@@ -333,6 +361,10 @@ class Plan:
     rates: dict | None = None
     #: Holdout cells between interim looks (looks.every), None for looks by the clock alone. #2167.
     look_cells: int | None = None
+    #: The error-rate model a continuous lane is planned on (harness.continuous.Model), None for the pass/fail sign test. #2181.
+    continuous: dict | None = None
+    #: Holdout cases the pass/fail sign test would need at the same repeats, for a continuous lane's report. #2181.
+    sign_cases_needed: int | None = None
 
     def as_dict(self) -> dict:
         return asdict(self)
@@ -345,7 +377,7 @@ class Plan:
 def plan(rates, effect: float | None = None, *, stochastic: bool = True,
          alpha: float | None = None, target: float = TARGET, cap: int = CAP,
          repeat: int | None = None, observed: int = 0,
-         rho: float | None = None, unmeasured: bool | None = None) -> Plan:
+         rho: float | None = None, unmeasured: bool | None = None, model=None) -> Plan:
     """The smallest repeat reaching `target`, or `repeat` if one was chosen.
 
     `rho` is the incumbent's measured within-case correlation; None assumes
@@ -360,21 +392,22 @@ def plan(rates, effect: float | None = None, *, stochastic: bool = True,
     measured = rho is not None
     rho = DEFAULT_RHO if rho is None else rho
     need = cases_needed(rates, effect, rho=rho, stochastic=stochastic,
-                        alpha=alpha, target=target, cap=cap)
+                        alpha=alpha, target=target, cap=cap, model=model)
     most = max(cap, repeat or 0) if stochastic else 1
     extra = {"rho": rho, "rho_measured": measured, "cases_needed": need,
              "unmeasured": observed <= 0 if unmeasured is None else unmeasured,
-             "max_power": power(rates, 1.0, most, alpha, rho if measured else 0.0) if rates else None}
+             "max_power": power(rates, 1.0, most, alpha, rho if measured else 0.0, model) if rates else None,
+             "continuous": model.as_dict() if model is not None else None}
 
     def at(r: int) -> float:
-        return power(rates, effect, r, alpha, rho)
+        return power(rates, effect, r, alpha, rho, model)
 
     def made(r, got, capped, why):
         return Plan(r, got, effective_cells(k, r, rho), k, effect, alpha, target,
                     cap, capped, stochastic, observed, why, **extra,
-                    mde=mde(rates, r, alpha, rho, target))
+                    mde=mde(rates, r, alpha, rho, target, model))
 
-    more = _more_cases(rates, effect, k, need, target)
+    more = _more_cases(rates, effect, k, need, target, model)
     if not stochastic:
         got = at(1)
         return made(1, got, False, "" if got >= target else
@@ -422,9 +455,9 @@ def too_small(plan: Plan) -> int | None:
     return plan.cases_needed if plan.cases_needed > plan.cases else None
 
 
-def _more_cases(rates, effect, k: int, need: int | None, target: float) -> str:
+def _more_cases(rates, effect, k: int, need: int | None, target: float, model=None) -> str:
     if need is None:
-        if not rates or _cell_odds(rates, effect)[0] <= 0:
+        if not rates or (model.sd_diff <= 0 if model is not None else _cell_odds(rates, effect)[0] <= 0):
             return ("the holdout is saturated: the incumbent passes every case, "
                     "so no number of cases can show a gain")
         return f"no holdout of up to {MAX_CASES} cases reaches {target}"
@@ -516,11 +549,12 @@ def within_budget(chosen: Plan, rates, *, cases_run: int, median_s: float | None
         note = (f"repeat {chosen.repeat} for power {chosen.power:.2f} would take "
                 f"{_hm(cost(chosen.repeat))}, over the {_hm(budget_s)} budget; "
                 f"ran repeat {r}")
+    from harness import continuous
     got = plan(rates, chosen.effect, stochastic=True, alpha=chosen.alpha,
                target=chosen.target, cap=chosen.cap, repeat=r,
                observed=chosen.observed,
                rho=chosen.rho if chosen.rho_measured else None,
-               unmeasured=chosen.unmeasured)
+               unmeasured=chosen.unmeasured, model=continuous.Model.of(chosen.continuous))
     return replace(got, needed_repeat=chosen.repeat, projected_s=cost(r),
                    budget_s=budget_s, **run,
                    why="; ".join(x for x in (note, got.why) if x))
@@ -541,9 +575,12 @@ def _row_metric(row, name: str):
     return float(value) if isinstance(value, (int, float)) else None
 
 
-def draw(row, lane: str = "") -> int:
-    """A row's planning draw: where the gate pairs on a lane metric, whether the row's is at its best, else its pass bit. #1007."""
-    from harness import winners
+def draw(row, lane: str = "", scored: bool = False):
+    """A row's planning draw: where the gate pairs on a lane metric, whether the row's is at its best, else its pass bit; its capped error rate when `scored` on a continuous lane. #1007, #2181."""
+    from harness import continuous, winners
+    if scored and continuous.metric_of(lane):
+        got = _row_metric(row, continuous.metric_of(lane))
+        return continuous.SCORE_CAP if got is None else min(continuous.SCORE_CAP, max(0.0, got))
     name = winners.PRIMARY.get((lane or "").strip().lower(), "")
     value = _row_metric(row, name) if name else None
     if value is None:
@@ -552,7 +589,7 @@ def draw(row, lane: str = "") -> int:
     return int(value >= 1.0 if direction_of(name) == "higher" else value <= 0.0)
 
 
-def draws_from(rows, key: str, lane: str = "") -> tuple[dict[str, list[int]], float | None]:
+def draws_from(rows, key: str, lane: str = "", scored: bool = False) -> tuple[dict[str, list[int]], float | None]:
     """case -> one candidate's draws (see draw), and its mean seconds per case: wall time is a sum. #796, #1007."""
     from harness import holdout
     by: dict[str, list[int]] = {}
@@ -560,7 +597,7 @@ def draws_from(rows, key: str, lane: str = "") -> tuple[dict[str, list[int]], fl
     for r in rows:
         if r["candidate"] != key:
             continue
-        by.setdefault(holdout.base_id(r["case_id"]), []).append(draw(r, lane))
+        by.setdefault(holdout.base_id(r["case_id"]), []).append(draw(r, lane, scored))
         if r["seconds"] is not None:
             secs.append(float(r["seconds"]))
     return by, (statistics.fmean(secs) if secs else None)
@@ -631,22 +668,22 @@ def served_keys(conn, lane: str, spec: str = "", cid: int | None = None) -> list
     return keys if keys or not spec else [key(spec)]
 
 
-def _served_rows(conn, lane: str, spec: str = "", cid: int | None = None, on_metric: bool = True):
+def _served_rows(conn, lane: str, spec: str = "", cid: int | None = None, on_metric: bool = True, scored: bool = False):
     lane = (lane or "").strip().lower()
     draws: dict[str, list[int]] = {}
     rows = []
     for key in served_keys(conn, lane, spec, cid):
         got = _candidate_rows(conn, lane, key)
-        for case, oks in draws_from(got, key, lane if on_metric else "")[0].items():
+        for case, oks in draws_from(got, key, lane if on_metric else "", scored)[0].items():
             draws.setdefault(case, []).extend(oks)
         rows += [dict(r, candidate="") for r in got]
     return draws, rows
 
 
 def served_profile(conn, lane: str, spec: str = "", settings: tuple | None = None, machines=None,
-                   cid: int | None = None, on_metric: bool = True) -> tuple[dict[str, list[int]], float | None]:
+                   cid: int | None = None, on_metric: bool = True, scored: bool = False) -> tuple[dict[str, list[int]], float | None]:
     """The served incumbent's draws per case over every key its rows carry, store-wide; its mean seconds only at `settings` on `machines`. #673, #696, #740."""
-    draws, rows = _served_rows(conn, lane, spec, cid, on_metric)
+    draws, rows = _served_rows(conn, lane, spec, cid, on_metric, scored)
     return draws, _median(rows, (lane or "").strip().lower(), "", settings, machines)
 
 

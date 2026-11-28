@@ -87,7 +87,8 @@ def look(rows, *, lane: str, inc_key: str, ch_key: str, split, plan: dict, alpha
     got = holdout.rows_on(rows, split, "holdout")
     cell, _, _ = adopt.paired_p(got, inc_key, ch_key, lane)
     done = cell.gained + cell.lost + cell.unchanged
-    repeat = int(plan.get("repeat") or 1)
+    # A continuous lane's cells are cases, each the mean of its draws, so the repeat is not a multiplier. #2181.
+    repeat = 1 if cell.p_value is not None else int(plan.get("repeat") or 1)
     planned = max(1, len(split.holdout) * repeat)
     t = min(1.0, done / planned)
     gain, lose = plan.get("odds") or (0.0, 0.0)
@@ -97,9 +98,15 @@ def look(rows, *, lane: str, inc_key: str, ch_key: str, split, plan: dict, alpha
         gain, lose = weedout.rest_odds(plan.get("rates") or {}, missing, float(plan.get("effect") or 0.0))
     used = spent(t, alpha) if not missing else spent_before
     nominal = max(0.0, used - spent_before)
-    deff = _deff(plan)
+    deff = _deff(plan) if cell.p_value is None else 1.0
     lost, gained = paired.shrink(cell.lost, cell.gained, deff)
-    cp = conditional_power(gained, lost, int((planned - done) / deff), gain, lose, alpha)
+    if cell.p_value is not None:
+        from harness import continuous
+        model = continuous.Model.of(plan.get("continuous"))
+        cp = (continuous.conditional_power(cell.shift or 0.0, done, planned, float(plan.get("effect") or 0.0),
+                                           model.sd_diff, alpha) if model is not None else 1.0)
+    else:
+        cp = conditional_power(gained, lost, int((planned - done) / deff), gain, lose, alpha)
     head = (f"look {n} at {done}/{planned} holdout cells: {cell.gained} gained, {cell.lost} lost, "
             f"conditional power {cp:.2f}, alpha {nominal:.4f} of {alpha:.4f} spendable here"
             f"{f', no adopt until {len(missing)} more case(s) have a cell' if missing else ''}")
@@ -112,7 +119,7 @@ def look(rows, *, lane: str, inc_key: str, ch_key: str, split, plan: dict, alpha
         if v.adopt:
             return Look(n, t, cell.gained, cell.lost, nominal, used, cp, "success",
                         f"{head}; stopped for success", done), v
-    if done and cp < FUTILITY_CP and cell.gained <= cell.lost:
+    if done and cp < FUTILITY_CP and not cell.ahead:
         v = adopt.Verdict(lane, inc_key, ch_key, False,
                           f"futility: {head}; under the plan's +{plan.get('effect', 0):.2f} the "
                           f"challenger reaches the gate with probability {cp:.2f} < {FUTILITY_CP}", event=adopt.FUTILITY)

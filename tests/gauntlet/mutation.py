@@ -67,7 +67,7 @@ MODULES = {
         "tests/test_adopt_effect_confirm_725.py", "tests/test_min_effect_1320.py",
         "tests/test_limit_cuts_1087_harness_ac.py", "tests/test_limit_cuts_1087_harness_ps.py",
         "tests/test_adopt_store_given_1673.py", "tests/test_adoption_state_1735.py",
-        "tests/test_scratch_home_serving_1711.py"],
+        "tests/test_scratch_home_serving_1711.py", "tests/test_continuous_2181.py"],
     "harness/serving.py": [
         "tests/test_harness_serving.py", "tests/test_lane_routes.py", "tests/test_gguf_route.py",
         "tests/test_schema_lanes.py", "tests/test_ds4.py", "tests/test_remote_upstreams.py",

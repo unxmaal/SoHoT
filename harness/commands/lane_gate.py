@@ -9,8 +9,12 @@ from harness.commands.common import emit, err, lent_store, note
 def add_parser(sub) -> None:
     p = sub.add_parser("lane-gate", help="the lanes whose holdout cannot reach lane_gate_power at their adopt effect "
                        "take no challengers; open one anyway for a while, or close it again")
-    p.add_argument("action", choices=("status", "open", "close"))
-    p.add_argument("lane", nargs="?", default="", help="the lane to open or close")
+    p.add_argument("action", choices=("status", "open", "close", "replay"))
+    p.add_argument("lane", nargs="?", default="", help="the lane to open or close, or replay")
+    p.add_argument("--incumbent", default="", help="replay: the incumbent's receipt key (default: the served one)")
+    p.add_argument("--challenger", action="append", default=[], help="replay: a challenger's key (default: every stored one)")
+    p.add_argument("--also", action="append", default=[], help="replay: a store copy whose rows join the live store's, read only")
+    p.add_argument("--reps", type=int, default=200, help="replay: bootstrap draws per holdout size")
     p.set_defaults(func=cmd_lane_gate)
 
 
@@ -34,6 +38,8 @@ def cmd_lane_gate(a) -> int:
         return 0
     if not a.lane:
         return err(f"soh lane-gate {a.action} names a lane")
+    if a.action == "replay":
+        return _replay(a)
     conn = ms.connect()
     try:
         if a.action == "open":
@@ -48,4 +54,32 @@ def cmd_lane_gate(a) -> int:
     finally:
         conn.close()
     emit(lane=a.lane, action=a.action, override=got)
+    return 0
+
+
+def _replay(a) -> int:
+    """Stored pairs of a WER/CER lane under the pass/fail sign test, the sign test on the metric and the signed-rank test (#2181)."""
+    from harness import continuous, holdout, lane_gate, lanes, store
+    lane = lanes.canonical(a.lane)
+    if not continuous.metric_of(lane):
+        return err(f"{lane} is not scored on an error rate; lanes that are: {', '.join(sorted(continuous.METRIC))}")
+    with lent_store() as conn:
+        rows = continuous.stored_rows(conn, lane)
+        key = a.incumbent or lane_gate.profile(lane, {}, conn)[0]
+    for path in a.also:
+        extra = store.open_ro(path)
+        try:
+            rows += continuous.stored_rows(extra, lane)
+        finally:
+            extra.close()
+    got = continuous.replays(rows, lane, key, a.challenger, reps=a.reps)
+    note(f"{lane} holdout {len(holdout.for_lane(lane).holdout)}, {key} as incumbent; holdout cases for power 0.8 by bootstrap, "
+         f"p observed; sign_pass = the old pass/fail test, sign_metric = signs of the {continuous.metric_of(lane)} drop")
+    for r in got:
+        if not r["cases"]:
+            continue
+        need = " ".join(f"{k} {r['cases_needed'][k] or '>%d' % continuous.GRID[-1]}" for k in continuous.TESTS)
+        p = " ".join(f"{k} {r['p'][k]:.3g}" for k in continuous.TESTS)
+        note(f"  {'control' if r['control'] else r['challenger']:42} {r['cases']} cases, drop {r['shift']:+.4f}  p: {p}  needs: {need}")
+    emit(lane=lane, incumbent=key, pairs=got)
     return 0

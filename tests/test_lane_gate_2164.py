@@ -156,7 +156,7 @@ def test_the_gate_decides_as_the_power_table_does_over_every_lane(conn, monkeypa
     from harness import adopt as adopt_mod
     monkeypatch.setattr(adopt_mod, "default_for", lambda lane, fallback, *a, **k: "inc")
 
-    def profile(lane, receipts, c):
+    def profile(lane, receipts, c, scored=None):
         split = holdout.for_lane(lane)
         draws = {cid: [1.0, 0.0] if i % 3 else [1.0, 1.0] for i, cid in enumerate(split.holdout + split.dev)}
         return "k", "spec", draws, None, (), []

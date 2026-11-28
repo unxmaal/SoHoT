@@ -56,7 +56,7 @@ NOT_OWNER = {
                      "specs", "votes", "gate status", "hold status", "jobs list", "deploy status",
                      "monitor render", "monitor status", "volume status", "store pg-status",
                      "store pg-check", "store dry-run", "interactive", "ci-times", "burndown", "fetch",
-                     "kb-filter", "review stats", "blame", "gauntlet", "yield-stop", "climb", "lane-gate status"], READ),
+                     "kb-filter", "review stats", "blame", "gauntlet", "yield-stop", "climb", "lane-gate status", "lane-gate replay"], READ),
     **dict.fromkeys(["label-score", "label-select", "rubric", "vision", "craft", "judge", "repo-screen",
                      "staging", "degenerate", "floors", "coherence", "load-log", "cases", "weedout-replay",
                      "reuse-replay", "residency-sim", "route-trial", "canary", "verify", "sensitivity",

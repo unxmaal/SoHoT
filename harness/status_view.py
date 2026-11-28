@@ -453,10 +453,11 @@ def _closed_lanes(lg: dict, now: float, acts=None) -> str:
     for g, anyway in rows:
         need = ("no holdout size reaches it" if g.get("more_holdout") is None else
                 f"needs {g['more_holdout']} more holdout cases ({g['more_cases']} lane cases)")
+        gain = f"+{g['effect']:.2f}" if g.get("unit", "per cell") == "per cell" else f"-{g['effect']:.2f} {esc(g['unit'])}"
         until = f" · open anyway until <time title='{stamp(g['until'])}'>{esc(ago(g['until'], now))}</time>" if anyway else ""
         out.append(f"<div class='fr' data-lane='{esc(g['lane'])}'><span class='fs {'warn' if anyway else 'bad'}'>"
                    f"{'open anyway' if anyway else 'closed'}</span><span class='fn'>{esc(g['lane'])}</span>"
-                   f"<span class='fb'>power {g['power']:.2f} at +{g['effect']:.2f}, {esc(need)}{until}</span>"
+                   f"<span class='fb'>power {g['power']:.2f} at {gain}, {esc(need)}{until}</span>"
                    + (f"<span class='fa'>{acts(g['lane'])}</span>" if acts else "") + "</div>")
     return "".join(out) + "</div></section>"
 

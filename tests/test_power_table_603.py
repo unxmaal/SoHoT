@@ -2,7 +2,7 @@
 import json
 import math
 
-from harness import adopt, cli, holdout, lanes, power
+from harness import adopt, cli, continuous, holdout, lanes, power
 
 
 def _rows(capsys, *argv):
@@ -16,7 +16,7 @@ def test_the_table_prints_one_row_per_lane_with_holdout_and_cases_needed(capsys,
     out = capsys.readouterr().out.splitlines()
     head = next(i for i, line in enumerate(out) if line.split()[:1] == ["lane"])
     assert out[head].split() == ["lane", "cases", "holdout", "noise", "effect", "from", "rho", "rows", "power",
-                                 "needed", "more_holdout", "more_cases", "status"]
+                                 "needed", "sign_needed", "more_holdout", "more_cases", "status"]
     svg = out[head + 1].split()
     split = holdout.for_lane("svg")
     assert svg[:6] == ["svg", str(len(split.dev) + len(split.holdout)), str(len(split.holdout)),
@@ -55,3 +55,13 @@ def test_a_lane_whose_holdout_reaches_its_need_is_enough(capsys, monkeypatch):
     monkeypatch.setattr(adopt, "default_for", lambda lane, fallback, *a, **k: "inc")
     row = _rows(capsys, "--lane", "svg", "--effect", "1.0")["svg"]
     assert row["more_holdout"] == 0 and row["more_cases"] == 0 and row["status"] == "enough"
+
+
+def test_a_wer_lane_row_states_its_effect_in_the_metric_and_the_sign_test_beside_it(capsys, monkeypatch):
+    monkeypatch.setattr(adopt, "default_for", lambda lane, fallback, *a, **k: "inc")
+    rows = _rows(capsys, "--lane", "tts")
+    tts = rows["tts"]
+    assert tts["unit"] == "wer" and tts["effect"] == continuous.EFFECT["tts"] and tts["noise_effect"] == tts["effect"]
+    assert tts["effect_from"] == "measured" and "sign_cases_needed" in tts
+    svg = _rows(capsys, "--lane", "svg")["svg"]
+    assert svg["unit"] == "per cell" and svg["sign_cases_needed"] is None and svg["effect"] == power.effect_for("svg")

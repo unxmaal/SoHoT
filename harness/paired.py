@@ -51,6 +51,20 @@ class Cell:
     deff: float = 1.0
     #: Why the two sides could not be paired; p is then 1.0 and the verdict says so.
     refused: str = ""
+    #: The test's own p when it is not the sign test (harness.continuous), and the mean paired gain in the metric. #2181.
+    p_value: float | None = None
+    shift: float | None = None
+    #: Paired draws behind a continuous cell, whose gained/lost/unchanged count cases.
+    draws: int = 0
+
+    @property
+    def ahead(self) -> bool:
+        """Whether the challenger is ahead: the mean paired gain when a metric scored it, else more cells gained than lost."""
+        return self.shift > 0 if self.shift is not None else self.gained > self.lost
+
+    @property
+    def behind(self) -> bool:
+        return self.shift < 0 if self.shift is not None else self.lost > self.gained
 
     @property
     def discordant(self) -> int:
@@ -60,6 +74,8 @@ class Cell:
     def p(self) -> float:
         if self.refused:
             return 1.0
+        if self.p_value is not None:
+            return self.p_value
         lost, gained = shrink(self.lost, self.gained, self.deff)
         return sign_test(min(lost, gained), lost + gained)
 

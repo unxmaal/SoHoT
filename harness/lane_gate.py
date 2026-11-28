@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 #: A lane whose plan power at its adopt effect is under this is closed to challengers. #2164.
 GATE_POWER = 0.8
@@ -32,6 +32,8 @@ class Calc:
     tested: int
     alpha: float
     plan: object
+    #: The pass/fail sign test's plan on the same holdout, kept beside a continuous lane's own for the report. #2181.
+    sign_plan: object = None
 
 
 @dataclass(frozen=True)
@@ -45,6 +47,9 @@ class Gate:
     more_cases: int | None
     kind: str = "power"
     detail: str = ""
+    #: What the effect is a gain in: the metric of a continuous lane (its effect a drop in it), else "per cell". #2181.
+    unit: str = "per cell"
+    sign_cases_needed: int | None = None
 
     @property
     def why(self) -> str:
@@ -52,12 +57,18 @@ class Gate:
             return f"{self.lane} lane closed to challengers: {self.detail}; soh reverify --lane {self.lane} clears it once it answers"
         need = ("no holdout size reaches it" if self.cases_needed is None else
                 f"needs {self.more_holdout} more holdout cases ({self.cases_needed} in all, {self.holdout} here)")
-        return (f"{self.lane} lane closed to challengers: power {self.power:.2f} at +{self.effect:.2f} is under "
+        if self.unit != "per cell" and self.sign_cases_needed is not None:
+            need += f"; the pass/fail sign test needed {self.sign_cases_needed}"
+        return (f"{self.lane} lane closed to challengers: power {self.power:.2f} at {self.gain} is under "
                 f"lane_gate_power {GATE_POWER:.2f}, {need}; soh lane-gate open {self.lane} overrides for a while")
+
+    @property
+    def gain(self) -> str:
+        return f"+{self.effect:.2f}" if self.unit == "per cell" else f"-{self.effect:.2f} {self.unit}"
 
     def as_dict(self) -> dict:
         return {"lane": self.lane, "power": round(self.power, 4), "effect": self.effect, "holdout": self.holdout,
-                "cases_needed": self.cases_needed, "more_holdout": self.more_holdout, "more_cases": self.more_cases,
+                "unit": self.unit, "sign_cases_needed": self.sign_cases_needed, "cases_needed": self.cases_needed, "more_holdout": self.more_holdout, "more_cases": self.more_cases,
                 "why": self.why, "issue": GROWTH_ISSUE}
 
 
@@ -66,9 +77,10 @@ def _row(r: dict) -> dict:
             "passed": r.get("passed"), "seconds": r.get("seconds"), "metrics": r.get("metrics")}
 
 
-def profile(lane: str, receipts: dict, conn) -> tuple[str, str, dict, float | None, tuple, list]:
-    """(incumbent key, its spec, its draws per case, its median seconds here at the lane's budget, settings, machines)."""
-    from harness import adopt, candidates, power, reply_cap, runs, screen, winners
+def profile(lane: str, receipts: dict, conn, scored: bool | None = None) -> tuple[str, str, dict, float | None, tuple, list]:
+    """(incumbent key, its spec, its draws per case, its median seconds here at the lane's budget, settings, machines); error rates, not pass bits, on a continuous lane unless `scored` is False."""
+    from harness import adopt, candidates, continuous, power, reply_cap, runs, screen, winners
+    scored = bool(continuous.metric_of(lane)) if scored is None else scored
     served = adopt.default_for(lane, winners.typed().get(lane, ""))
     spec = (screen.candidate_for(lane, served) or served) if served else ""
     try:
@@ -80,12 +92,12 @@ def profile(lane: str, receipts: dict, conn) -> tuple[str, str, dict, float | No
     if lane in receipts:
         sets = [[_row(r) for r in got["rows"]] for got in receipts[lane]]
         key = power.control_of(sets, prefer=[k for k in (key, spec, served) if k])
-        draws, _ = power.draws_from([r for rows in sets for r in rows], key, lane)
+        draws, _ = power.draws_from([r for rows in sets for r in rows], key, lane, scored)
         timed = [_row(r) for got in receipts[lane] if power.receipt_here(got["environment"])
                  and power.reply_settings(json.dumps(got["receipt"]), lane) == settings for r in got["rows"]]
         return key, spec or served, draws, power.draws_from(timed, key)[1], settings, machines
     key = key or spec
-    draws, median = (power.served_profile(conn, lane, spec, settings, machines)
+    draws, median = (power.served_profile(conn, lane, spec, settings, machines, scored=scored)
                      if spec else ({}, None))
     return key, spec or served, draws, median, settings, machines
 
@@ -93,17 +105,27 @@ def profile(lane: str, receipts: dict, conn) -> tuple[str, str, dict, float | No
 def calc(conn, lane: str, split, receipts: dict | None = None, effect: float | None = None) -> Calc:
     """The power plan over the lane's holdout at the incumbent's measured rates; `soh adopt --power` and the gate share it."""
     from evals.run import STOCHASTIC_MODALITIES
-    from harness import adopt, power
+    from harness import adopt, continuous, power
     receipts = receipts or {}
     key, inc_spec, draws, inc_s, settings, machines = profile(lane, receipts, conn)
     rates, seen = power.rates_from(draws, split.holdout)
     rho = power.icc([list(draws.values())])
-    effect = effect or power.effect_for(lane)
+    metric = continuous.metric_of(lane)
+    effect = effect or (continuous.effect_for(lane) if metric else power.effect_for(lane))
     tested = adopt.comparisons(conn, lane, split.version)
     alpha = adopt.alpha_for(tested)
+    model = continuous.model_for(draws, split.holdout, metric) if metric else None
     plan = power.plan([rates[c] for c in split.holdout], effect, stochastic=lane in STOCHASTIC_MODALITIES,
-                      observed=seen, rho=rho, alpha=alpha, unmeasured=not any(draws.values()))
-    return Calc(key, inc_spec, draws, inc_s, settings, machines, rates, seen, effect, tested, alpha, plan)
+                      observed=seen, rho=rho, alpha=alpha, unmeasured=not any(draws.values()), model=model)
+    sign = None
+    if metric:
+        bits, _ = profile(lane, receipts, conn, scored=False)[2:4]
+        bit_rates, bit_seen = power.rates_from(bits, split.holdout)
+        sign = power.plan([bit_rates[c] for c in split.holdout], power.effect_for(lane),
+                          stochastic=lane in STOCHASTIC_MODALITIES, observed=bit_seen, rho=power.icc([list(bits.values())]),
+                          alpha=alpha, unmeasured=not any(bits.values()))
+        plan = replace(plan, sign_cases_needed=sign.cases_needed)
+    return Calc(key, inc_spec, draws, inc_s, settings, machines, rates, seen, effect, tested, alpha, plan, sign)
 
 
 def closes(plan, threshold: float | None = None) -> bool:
@@ -125,8 +147,10 @@ def gate_for(conn, lane: str) -> Gate | None:
         return None
     need = c.plan.cases_needed
     more = max(0, need - len(split.holdout)) if need else None
+    from harness import power
     return Gate(lane, c.plan.power, c.effect, len(split.holdout), need, more,
-                None if more is None else math.ceil(more / holdout.FRACTION))
+                None if more is None else math.ceil(more / holdout.FRACTION),
+                unit=power.unit_of(c.plan), sign_cases_needed=getattr(c.plan, "sign_cases_needed", None))
 
 
 def override(conn, lane: str, now: float | None = None) -> dict | None:

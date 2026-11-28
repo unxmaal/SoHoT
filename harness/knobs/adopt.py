@@ -29,6 +29,9 @@ KNOBS = [
             "417, tts 1734; at 0.15 code 196, decide 134 (enough), extract 249, ocr 208, pii 233, retrieval 278, "
             "tts 835; at 0.20 code 135 (enough), extract 175, ocr 154, pii 174, retrieval 208, tts 510. Replaying "
             "the 221 stored adopt verdicts, none changes class because of it (#1320)"),
+    _k("continuous_effect", ["harness/continuous.py:EFFECT", "harness/continuous.py:DEFAULT_EFFECT"], [0.01, 0.02, 0.03, 0.05], unit="wer/cer",
+       lane_values={"stt": (0.01, 0.02, 0.03, 0.05), "tts": (0.02, 0.03, 0.05, 0.08), "ocr": (0.03, 0.05, 0.08, 0.1)},
+       note="smallest drop in wer/cer a lane adopts for, in the metric's own units; a null that could not see it is not a loss (#2181)"),
     _k("deadline_grace", ["harness/power.py:DEADLINE_GRACE"], [1.0, 1.25, 1.5, 2.0],
        note="how far past its budget a paired run's slice may go before it is stopped; its rows are checkpointed and it resumes (#673, #813)"),
     _k("decode_tok_s", ["harness/power.py:DECODE_TOK_S", "harness/completion.py:MIN_DECODE_TOK_S"],
@@ -109,6 +112,9 @@ NOT_GATING = {
                                     "count equals the exact one (#1590)",
     "harness/looks.py:LOOK_COST_S": "sizes how many holdout cells a look waits for; every cell still runs and the looks spend alpha by information fraction (#2167)",
     "harness/looks.py:LOOK_SHARE": "the share of a run's time a look may cost, which sizes the cells between looks; no case is dropped (#2167)",
+    "harness/continuous.py:EXACT_N": "picks the exact signed-rank permutation sum or the tie-corrected normal for the same p; the two differ by under 0.006 at the switch, with or without a block of ties (#2181)",
+    "harness/continuous.py:SCORE_CAP": "bounds one case's error at 1.0, a wholly wrong case; it matters only for a transcript with more insertions than reference words (#2181)",
+    "harness/continuous.py:replays(floor)": "the least shared holdout cases a replay report lists a pair at; it gates no verdict (#2181)",
 }
 
 NEVER_CUTS = {
