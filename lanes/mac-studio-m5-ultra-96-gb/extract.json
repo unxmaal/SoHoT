@@ -845,23 +845,23 @@
     "candidate": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
     "cases": 1501,
     "first_s": 1.39,
-    "median_s": 1.662,
+    "median_s": 1.661,
     "metrics": {
-     "completion_tokens": 63.3377,
-     "tokens_per_s": 33.2024
+     "completion_tokens": 63.2464,
+     "tokens_per_s": 33.1674
     },
     "model": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
     "not_run": "",
-    "pass_rate": 0.858,
-    "passed": 533,
+    "pass_rate": 0.859,
+    "passed": 534,
     "peak_gb": 0.0,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-11-28T11:00:15Z",
+    "run_at": "2026-11-28T12:38:03Z",
     "served_as": "",
     "source": "https://huggingface.co/OBLITERATUS/Qwen3.8-27B-OBLITERATED",
-    "total": 621,
-    "ttft_median_s": 1.534,
+    "total": 622,
+    "ttft_median_s": 1.533,
     "ttft_p95_s": 3.215
    },
    "outcome": "declined",
@@ -883,23 +883,23 @@
     "candidate": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
     "cases": 1501,
     "first_s": 1.39,
-    "median_s": 1.662,
+    "median_s": 1.661,
     "metrics": {
-     "completion_tokens": 63.3377,
-     "tokens_per_s": 33.2024
+     "completion_tokens": 63.2464,
+     "tokens_per_s": 33.1674
     },
     "model": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
     "not_run": "",
-    "pass_rate": 0.858,
-    "passed": 533,
+    "pass_rate": 0.859,
+    "passed": 534,
     "peak_gb": 0.0,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-11-28T11:00:15Z",
+    "run_at": "2026-11-28T12:38:03Z",
     "served_as": "",
     "source": "https://huggingface.co/OBLITERATUS/Qwen3.8-27B-OBLITERATED",
-    "total": 621,
-    "ttft_median_s": 1.534,
+    "total": 622,
+    "ttft_median_s": 1.533,
     "ttft_p95_s": 3.215
    },
    "outcome": "declined",
@@ -4732,20 +4732,20 @@
     "first_s": 0.707,
     "median_s": 0.324,
     "metrics": {
-     "completion_tokens": 5.5584,
-     "tokens_per_s": 16.5699
+     "completion_tokens": 5.5548,
+     "tokens_per_s": 16.541
     },
     "model": "mlx-community/Qwen2.5-7B-Instruct-4bit",
     "not_run": "",
-    "pass_rate": 0.734,
-    "passed": 331,
+    "pass_rate": 0.735,
+    "passed": 332,
     "peak_gb": 0.0,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-11-28T11:00:15Z",
+    "run_at": "2026-11-28T12:38:03Z",
     "served_as": "",
     "source": "https://huggingface.co/mlx-community/Qwen2.5-7B-Instruct-4bit",
-    "total": 451,
+    "total": 452,
     "ttft_median_s": 0.168,
     "ttft_p95_s": 0.29
    },
@@ -10909,22 +10909,22 @@
      "about": "family Qwen/Qwen3.8-27B, 27B params, by OBLITERATUS",
      "candidate": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
      "first_s": 1.39,
-     "median_s": 1.662,
+     "median_s": 1.661,
      "metrics": {
-      "completion_tokens": 63.3377,
-      "tokens_per_s": 33.2024
+      "completion_tokens": 63.2464,
+      "tokens_per_s": 33.1674
      },
      "model": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
      "not_run": "",
-     "pass_rate": 0.858,
-     "passed": 533,
+     "pass_rate": 0.859,
+     "passed": 534,
      "peak_gb": 0.0,
      "reference": false,
-     "run_at": "2026-11-28T11:00:15Z",
+     "run_at": "2026-11-28T12:38:03Z",
      "served_as": "",
      "source": "https://huggingface.co/OBLITERATUS/Qwen3.8-27B-OBLITERATED",
-     "total": 621,
-     "ttft_median_s": 1.534,
+     "total": 622,
+     "ttft_median_s": 1.533,
      "ttft_p95_s": 3.215
     },
     {
@@ -10955,19 +10955,19 @@
      "first_s": 0.707,
      "median_s": 0.324,
      "metrics": {
-      "completion_tokens": 5.5584,
-      "tokens_per_s": 16.5699
+      "completion_tokens": 5.5548,
+      "tokens_per_s": 16.541
      },
      "model": "mlx-community/Qwen2.5-7B-Instruct-4bit",
      "not_run": "",
-     "pass_rate": 0.734,
-     "passed": 331,
+     "pass_rate": 0.735,
+     "passed": 332,
      "peak_gb": 0.0,
      "reference": false,
-     "run_at": "2026-11-28T11:00:15Z",
+     "run_at": "2026-11-28T12:38:03Z",
      "served_as": "",
      "source": "https://huggingface.co/mlx-community/Qwen2.5-7B-Instruct-4bit",
-     "total": 451,
+     "total": 452,
      "ttft_median_s": 0.168,
      "ttft_p95_s": 0.29
     },
@@ -10994,7 +10994,7 @@
      "ttft_p95_s": 11.346
     }
    ],
-   "run_at": "2026-11-28T11:00:15Z",
+   "run_at": "2026-11-28T12:38:03Z",
    "runs": 4
   },
   {
@@ -12937,7 +12937,7 @@
    "runs": 3
   }
  ],
- "generated_at": "2026-11-28T11:23:22Z",
+ "generated_at": "2026-11-28T12:41:25Z",
  "knobs": [],
  "lane": {
   "cases": 2200,
@@ -12956,16 +12956,16 @@
   "adopted_at": "",
   "adopted_how": "",
   "incumbent": "",
-  "measured_at": "2026-11-28T11:00:15Z",
+  "measured_at": "2026-11-28T12:38:03Z",
   "median_s": 0.324,
   "metrics": {
-   "completion_tokens": 5.5584,
-   "tokens_per_s": 16.5699
+   "completion_tokens": 5.5548,
+   "tokens_per_s": 16.541
   },
   "not_run": "",
   "parked": "",
   "parked_until": "",
-  "pass_rate": 0.734,
+  "pass_rate": 0.735,
   "serves": "mlx-community/Qwen2.5-7B-Instruct-4bit",
   "serves_model": "mlx-community/Qwen2.5-7B-Instruct-4bit; 7B params, 4bit, by mlx-community",
   "stale": false
