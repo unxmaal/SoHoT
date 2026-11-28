@@ -117,6 +117,7 @@ def test_the_router_is_relisted_once_for_what_the_page_says_is_stale(tmp_path, c
 
 
 @pytest.mark.gauntlet("nothing-and-failed-return-the-same-value", site="harness/status_page.py:store:chooser")
+@pytest.mark.sqlite_store
 def test_the_store_dumps_once_a_day_and_the_button_goes_with_the_dump(tmp_path, client, monkeypatch, in_process):
     made = []
 
