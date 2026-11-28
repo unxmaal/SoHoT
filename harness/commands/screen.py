@@ -478,7 +478,8 @@ def _screen_one(a, store, r: dict) -> tuple[bool, str | None, int | None]:
 
     # Headroom, including what is already resident, sized from the listing before anything is fetched. #284, #2015.
     room, why_not = memory.check_model(r["name"], spec=r["candidate"], parallel=1, remote=True)
-    windowed = not room and screen_window.wanted(memory.need_gb(r["name"], None, r["candidate"], 1, True))
+    need = None if room else memory.need_gb(r["name"], None, r["candidate"], 1, True)
+    windowed = not room and screen_window.wanted(need, landing=memory.landing_gb(r["name"], need))
     if windowed:
         print(f"   WINDOW: {why_not}; the pinned set is released for this screen")
     if not room and not windowed:

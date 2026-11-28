@@ -587,7 +587,8 @@ def check_model(repo: str, resident_gb: float = 0.0,
         return False, held
     if reserve_gb is None:
         reserve_gb = measured_reserve_gb()
-    free, whole = available_gb(), ceiling_gb()
+    # A fetch the check runs ahead of lands in the cache the screen will then read: its bytes are not free. #2202.
+    free, whole = max(available_gb() - (landing_gb(repo, need) if remote else 0.0), 0.0), ceiling_gb()
     from harness import containers
     pinned, vm = pinned_gb(), containers.vm_gb()
     ceiling = whole - pinned - vm
@@ -663,27 +664,50 @@ def held_back(need_gb: float | None) -> str:
             f"server's pinned models stay held (beside the system reserve and the Docker VM); a screen window can release them")
 
 
-def released_gb(free: float | None = None, pinned: float | None = None) -> float:
-    """What fits() would budget with the pinned set released: the memory free plus what the pins hold, under the ceiling less the Docker VM. #2161."""
+def landing_gb(repo: str, need: float | str | None) -> float:
+    """GB a fetch of `repo` is still to write: its whole need while no copy is cached, else 0. #2202."""
+    return float(need) if isinstance(need, (int, float)) and not cache_path(repo) else 0.0
+
+
+def released_gb(free: float | None = None, pinned: float | None = None, landing: float = 0.0) -> float:
+    """What fits() would budget with the pinned set released: the memory free, less what a fetch still to land takes of it, plus what the pins hold, under the ceiling less the Docker VM. #2161, #2202."""
     from harness import containers
-    free = available_gb() if free is None else free
+    free = max((available_gb() if free is None else free) - landing, 0.0)
     pinned = pinned_gb() if pinned is None else pinned
     return budget_gb(free + pinned, ceiling_gb() - containers.vm_gb(), 0.0, measured_reserve_gb())
 
 
-def released_fits(need_gb: float | None, free: float | None = None, pinned: float | None = None) -> tuple[bool, str]:
-    """The one answer to "would this load fit with the pins released", asked before the fetch and again once the window is open. #2174."""
+def released_fits(need_gb: float | None, free: float | None = None, pinned: float | None = None,
+                  landing: float = 0.0) -> tuple[bool, str]:
+    """The one answer to "would this load fit with the pins released", asked before the fetch and again once the window is open. #2174, #2202."""
     if not isinstance(need_gb, (int, float)) or need_gb <= 0:
         return True, ""
     from harness import containers
     free = available_gb() if free is None else free
     pinned = pinned_gb() if pinned is None else pinned
-    budget = released_gb(free, pinned)
+    budget = released_gb(free, pinned, landing)
     if need_gb <= budget + 1e-9:
         return True, f"{need_gb:.1f} GB into {budget:.1f} GB"
     return False, (f"needs {need_gb:.1f} GB but only {budget:.1f} GB is safely available with the pinned set released "
-                   f"({free:.1f} GB free, {pinned:.1f} GB pinned, {ceiling_gb():.1f} GB GPU ceiling, "
+                   f"({free:.1f} GB free{f', {landing:.1f} GB still to land' if landing else ''}, {pinned:.1f} GB pinned, {ceiling_gb():.1f} GB GPU ceiling, "
                    f"{measured_reserve_gb():.1f} GB reserved, {containers.vm_gb():.1f} GB Docker VM)")
+
+
+def can_load(need_gb: float | None, landing: float = 0.0, free: float | None = None,
+             pinned: float | None = None) -> tuple[str, str]:
+    """The one answer to "can this load here": ('now', ...), ('window', why) once the pinned set is released, or ('never', why); `landing` is what a fetch still to land takes of the free memory the screen will then see. #2202."""
+    if not isinstance(need_gb, (int, float)) or need_gb <= 0:
+        return "now", ""
+    free = available_gb() if free is None else free
+    pinned = pinned_gb() if pinned is None else pinned
+    from harness import containers
+    seen = max(free - landing, 0.0)
+    now, why = fits(need_gb, seen, ceiling_gb(), 0.0, measured_reserve_gb(), pinned, containers.vm_gb())
+    if now:
+        return "now", why
+    if released_fits(need_gb, free, pinned, landing)[0]:
+        return "window", held_back(need_gb) or why
+    return "never", held_back(need_gb) or why
 
 
 def room_gb() -> float:
