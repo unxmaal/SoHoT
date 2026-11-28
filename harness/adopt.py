@@ -370,7 +370,8 @@ def _null(lane, name_i, name_c, got: Verdict, plan) -> Verdict:
         over = seen > (0.0 if unit != "per cell" else power.MIN_EFFECT) + 1e-9
         return Verdict(lane, name_i, name_c, False,
                        f"{got.why}; no gain of +{seen:.2f} or more {unit} at power {plan.target}",
-                       evidence={"lane_effect": {"noise": noise, "seen": round(seen, 4)}} if over else {})
+                       evidence={"lane_effect": {"noise": noise, "seen": round(seen, 4),
+                                                 **({"unit": unit} if unit != "per cell" else {})}} if over else {})
     return Verdict(lane, name_i, name_c, False,
                    f"{got.why}; no gain of +{seen:.2f} or more {unit} at power {plan.target}; reruns could see "
                    f"+{noise:.2f}, but a gain under adopt_min_effect +{wanted:.2f} is not worth a switch",
@@ -694,8 +695,7 @@ def record(conn, verdict: Verdict, spec: str = "",
     lane_effect = verdict.evidence.get("lane_effect")
     if lane_effect:
         from harness import cuts
-        from harness import continuous
-        cuts.cut("continuous_effect" if continuous.metric_of(verdict.lane) else "adopt_effect",
+        cuts.cut("continuous_effect" if lane_effect.get("unit") else "adopt_effect",
                  f"{verdict.lane}: {spec} declined on a null that sees only "
                  f"+{lane_effect['seen']:.2f}, inside the lane's +{lane_effect['noise']:.2f} noise",
                  value=lane_effect["noise"], kept=0, dropped=1, conn=conn)

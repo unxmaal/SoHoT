@@ -116,7 +116,7 @@ def test_a_lane_the_metric_table_does_not_name_keeps_the_pass_fail_sign_test():
         assert continuous.metric_of(lane) == ""
         assert adopt.lane_cell(_rows([(0.0, 1.0)] * 3, "x"), "inc", "ch", lane, "challenger").p_value is None
     assert continuous.metric_of(" STT ") == "wer"
-    assert adopt.lane_cell(_rows(_planted()), "inc", "ch", "ocr", "challenger").p_value is not None
+    assert adopt.lane_cell(_rows(_planted(), "cer"), "inc", "ch", "ocr", "challenger").p_value is not None
 
 
 @pytest.mark.gauntlet("a-closed-table-fronting-an-open-set", site="harness/continuous.py:EFFECT")
@@ -186,6 +186,7 @@ def test_the_lane_gate_plans_a_continuous_lane_on_its_error_rate_and_keeps_the_s
     scored = {c: [rng.choice([0.0] * 5 + [0.1, 0.4])] for c in split.holdout}
     bits = {c: [int(v[0] <= 0.0)] for c, v in scored.items()}
     monkeypatch.setattr(lane_gate, "profile", _profile(scored, bits))
+    monkeypatch.setattr(holdout, "for_lane", lambda lane, root=None: split)
     conn = ms.connect()
     try:
         got = lane_gate.calc(conn, "stt", split)
@@ -260,3 +261,26 @@ def test_a_replay_of_a_planted_pair_needs_fewer_cases_under_the_signed_rank_test
     assert got["null_rate"]["signed_rank"] <= adopt.ALPHA
     ctl = continuous.replay(_rows([(x, x) for x, _ in _planted(80, seed=4)]), "inc", "ch", "stt", reps=40)
     assert set(ctl["p"].values()) == {1.0} and set(ctl["cases_needed"].values()) == {None}
+
+
+def test_a_null_on_a_wer_lane_that_sees_only_the_noise_is_cut_under_the_continuous_effect_knob():
+    plan = power.plan([0.0] * 400, 0.02, stochastic=False, alpha=0.05, rho=1.0, observed=400, model=continuous.Model("wer", 0.09))
+    assert plan.enough and plan.mde and plan.mde <= 0.02 + 1e-9
+    got = adopt._null("stt", "inc", "ch", adopt.Verdict("stt", "inc", "ch", False, "not established"), plan)
+    assert got.evidence["lane_effect"] == {"noise": 0.02, "seen": plan.mde, "unit": "wer"} and "wer" in got.why
+    conn = ms.connect()
+    try:
+        ms.record(conn, ms.Seen(name="org/new", source="feeds", lane="stt", kind="weights", resolved="org/new"))
+        adopt.record(conn, got)
+        assert [r[0] for r in conn.execute("SELECT knob FROM limit_cuts")] == ["continuous_effect"]
+    finally:
+        conn.close()
+
+
+def test_rows_that_carry_no_error_rate_are_paired_on_their_pass_bits_as_before():
+    rows = [{"candidate": n, "case_id": f"c{i}", "passed": ok, "failure_class": "", "metrics": {}}
+            for i in range(8) for n, ok in (("inc", False), ("ch", True))]
+    cell = adopt.lane_cell(rows, "inc", "ch", "tts", "challenger")
+    assert cell.p_value is None and cell.gained == 8 and cell.lost == 0 and cell.p == paired.sign_test(0, 8)
+    won = adopt.decide("tts", {"candidate": "inc"}, {"candidate": "ch"}, rows)
+    assert won.adopt and "8 gained against 0 lost" in won.why

@@ -150,7 +150,7 @@ def gate_for(conn, lane: str) -> Gate | None:
     from harness import power
     return Gate(lane, c.plan.power, c.effect, len(split.holdout), need, more,
                 None if more is None else math.ceil(more / holdout.FRACTION),
-                unit=power.unit_of(c.plan), sign_cases_needed=c.plan.sign_cases_needed)
+                unit=power.unit_of(c.plan), sign_cases_needed=getattr(c.plan, "sign_cases_needed", None))
 
 
 def override(conn, lane: str, now: float | None = None) -> dict | None:

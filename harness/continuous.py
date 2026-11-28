@@ -105,9 +105,11 @@ def signed_rank(diffs) -> tuple[float, int, float]:
 
 
 def cell(rows, inc: str, ch: str, lane: str):
-    """The two candidates paired by case on the lane's error rate: a Cell whose p is the signed-rank test and whose shift is the mean drop. #2181."""
+    """The two candidates paired by case on the lane's error rate: a Cell whose p is the signed-rank test and whose shift is the mean drop; rows that carry no such metric pair on pass bits. #2181."""
     from harness import paired
     metric = metric_of(lane)
+    if not any(_value(r, metric) is not None for r in rows if r.get("candidate") in (inc, ch)):
+        return paired.head_to_head(rows, inc, ch)
     diffs, draws = differences(rows, inc, ch, metric)
     if not diffs:
         mine = {r.get("candidate") for r in rows}
