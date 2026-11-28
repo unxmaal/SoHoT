@@ -39,6 +39,7 @@ def test_an_open_lane_at_079_stays_open_and_a_closed_one_at_079_stays_closed(mon
     assert lane_gate.gate_for(None, "svg", SPLIT) is not None
 
 
+@pytest.mark.gauntlet("a-copy-whose-key-leaves-out-an-input-or-that-nothing-invalidates", site="harness/lane_gate.py:_remember")
 def test_an_open_lane_closes_under_the_stay_bar_and_reopens_only_at_the_opening_bar(monkeypatch):
     by = {"code": 0.85}
     _fake(monkeypatch, by)
@@ -81,3 +82,11 @@ def test_a_saturated_unmeasured_block_does_not_read_as_open_through_the_lane_mix
     ids = [f"synth-{i:03d}" for i in range(8, 108)]
     rates, _ = power.rates_from(draws, ids)
     assert sum(rates.values()) / len(rates) == 1.0
+
+
+@pytest.mark.gauntlet("nothing-and-failed-return-the-same-value", site="harness/lane_gate.py:_states:except")
+def test_an_unreadable_state_file_is_judged_at_the_opening_bar_and_rewritten(monkeypatch):
+    _fake(monkeypatch, {"code": 0.79})
+    lane_gate._state_path().write_text("{not json", encoding="utf-8")
+    assert lane_gate.gate_for(None, "code", SPLIT) is not None
+    assert json.loads(lane_gate._state_path().read_text(encoding="utf-8")) == {"code": "closed"}

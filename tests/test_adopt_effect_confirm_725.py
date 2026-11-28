@@ -247,10 +247,10 @@ def test_an_unconfirmed_win_carries_its_null_s_lane_effect(monkeypatch):
 
 def test_the_confirmation_is_tested_at_undivided_alpha():
     won = adopt.Verdict("code", "inc", "ch", True, "won", evidence={"comparisons": 5, "alpha": adopt.alpha_for(4)})
-    rows = _rows({**{f"d{i}": (False, True) for i in range(7)}, **{f"d{i}": (True, True) for i in range(7, 10)}})
+    rows = _rows({**{f"d{i}": (False, True) for i in range(6)}, **{f"d{i}": (True, True) for i in range(6, 10)}})
     got = adopt.confirm(won, rows, SPLIT)
     assert adopt.alpha_for(4) < got.evidence["confirm"]["p"] <= adopt.ALPHA
-    assert got.adopt and "confirmed on 10 dev case(s): 7 gained against 0 lost" in got.why
+    assert got.adopt and "confirmed on 10 dev case(s): 6 gained against 0 lost" in got.why
 
 
 def test_cases_the_challenger_was_screened_on_are_not_confirmation_cells(conn):
