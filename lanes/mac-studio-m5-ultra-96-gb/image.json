@@ -225,21 +225,6 @@
    "until": "runner:diffusers/ZImagePipeline-layout"
   },
   {
-   "candidate": "mflux:Boogu/Boogu-Image-0.1-Edit",
-   "decided_at": "2026-11-21T04:51:44Z",
-   "detail": "the screen exited 75",
-   "exam": null,
-   "outcome": "broken",
-   "proposal": "Boogu/Boogu-Image-0.1-Edit",
-   "reason": "candidate",
-   "receipt_key": "mflux/Boogu/Boogu-Image-0.1-Edit-q8",
-   "run_id": 1094,
-   "serves": false,
-   "status": "rejected",
-   "tier": "screen",
-   "until": ""
-  },
-  {
    "candidate": "mflux:Comfy-Org/Boogu-Image",
    "decided_at": "2026-11-07T15:56:15Z",
    "detail": "re-decided (#1008): needs its own runner: the stock loader could not assemble it: fox-snow: exit 1: FileNotFoundError: No safetensors files found in transformer; geneval-000-single-object: exit 1: FileNotFoundError: No safetensors files found in models--",
@@ -539,6 +524,21 @@
    "proposal": "",
    "reason": "reopened",
    "receipt_key": "diffusers/sdxl-turbo",
+   "run_id": null,
+   "serves": false,
+   "status": "pending",
+   "tier": "inspect",
+   "until": ""
+  },
+  {
+   "candidate": "mflux:Boogu/Boogu-Image-0.1-Edit",
+   "decided_at": "2026-11-28T08:19:13Z",
+   "detail": "retest 1/3: broken at screen",
+   "exam": null,
+   "outcome": "queued",
+   "proposal": "Boogu/Boogu-Image-0.1-Edit",
+   "reason": "reopened",
+   "receipt_key": "mflux/Boogu/Boogu-Image-0.1-Edit-q8",
    "run_id": null,
    "serves": false,
    "status": "pending",
@@ -3747,7 +3747,7 @@
    "runs": 1
   }
  ],
- "generated_at": "2026-11-27T11:09:16Z",
+ "generated_at": "2026-11-28T11:23:16Z",
  "knobs": [],
  "lane": {
   "cases": 584,
