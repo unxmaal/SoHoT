@@ -845,24 +845,24 @@
     "candidate": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
     "cases": 1501,
     "first_s": 1.39,
-    "median_s": 1.688,
+    "median_s": 1.662,
     "metrics": {
-     "completion_tokens": 63.5,
-     "tokens_per_s": 32.9813
+     "completion_tokens": 63.3377,
+     "tokens_per_s": 33.2024
     },
     "model": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
     "not_run": "",
-    "pass_rate": 0.875,
-    "passed": 14,
+    "pass_rate": 0.858,
+    "passed": 533,
     "peak_gb": 0.0,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-11-28T08:06:01Z",
+    "run_at": "2026-11-28T11:00:15Z",
     "served_as": "",
     "source": "https://huggingface.co/OBLITERATUS/Qwen3.8-27B-OBLITERATED",
-    "total": 16,
-    "ttft_median_s": 1.559,
-    "ttft_p95_s": 3.324
+    "total": 621,
+    "ttft_median_s": 1.534,
+    "ttft_p95_s": 3.215
    },
    "outcome": "declined",
    "proposal": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
@@ -883,24 +883,24 @@
     "candidate": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
     "cases": 1501,
     "first_s": 1.39,
-    "median_s": 1.688,
+    "median_s": 1.662,
     "metrics": {
-     "completion_tokens": 63.5,
-     "tokens_per_s": 32.9813
+     "completion_tokens": 63.3377,
+     "tokens_per_s": 33.2024
     },
     "model": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
     "not_run": "",
-    "pass_rate": 0.875,
-    "passed": 14,
+    "pass_rate": 0.858,
+    "passed": 533,
     "peak_gb": 0.0,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-11-28T08:06:01Z",
+    "run_at": "2026-11-28T11:00:15Z",
     "served_as": "",
     "source": "https://huggingface.co/OBLITERATUS/Qwen3.8-27B-OBLITERATED",
-    "total": 16,
-    "ttft_median_s": 1.559,
-    "ttft_p95_s": 3.324
+    "total": 621,
+    "ttft_median_s": 1.534,
+    "ttft_p95_s": 3.215
    },
    "outcome": "declined",
    "proposal": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
@@ -1898,6 +1898,82 @@
    "serves": false,
    "status": "rejected",
    "tier": "screen",
+   "until": ""
+  },
+  {
+   "candidate": "ddalcu/Qwen3.8-27B-MLX-Serve-4bit",
+   "decided_at": "2026-11-28T09:27:46Z",
+   "detail": "extract: held for confirmation: no case outside the holdout ran, so the incumbent serves until a night run of the dev cases confirms it (beats mlx-community/Qwen2.5-7B-Instruct-4bit on the lane's metr",
+   "exam": {
+    "about": "family Qwen/Qwen3.8-27B, 27B params, 4bit, by ddalcu",
+    "candidate": "ddalcu/Qwen3.8-27B-MLX-Serve-4bit",
+    "cases": 1501,
+    "first_s": 2.804,
+    "median_s": 3.951,
+    "metrics": {
+     "completion_tokens": 179.935,
+     "tokens_per_s": 35.4875
+    },
+    "model": "ddalcu/Qwen3.8-27B-MLX-Serve-4bit",
+    "not_run": "",
+    "pass_rate": 0.686,
+    "passed": 142,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-28T09:58:21Z",
+    "served_as": "",
+    "source": "https://huggingface.co/ddalcu/Qwen3.8-27B-MLX-Serve-4bit",
+    "total": 207,
+    "ttft_median_s": 3.479,
+    "ttft_p95_s": 11.346
+   },
+   "outcome": "declined",
+   "proposal": "ddalcu/Qwen3.8-27B-MLX-Serve-4bit",
+   "reason": "limit",
+   "receipt_key": "ddalcu/Qwen3.8-27B-MLX-Serve-4bit",
+   "run_id": 1522,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
+   "until": ""
+  },
+  {
+   "candidate": "ddalcu/Qwen3.8-27B-MLX-Serve-4bit,temperature=0",
+   "decided_at": "2026-11-28T09:27:46Z",
+   "detail": "extract: held for confirmation: no case outside the holdout ran, so the incumbent serves until a night run of the dev cases confirms it (beats mlx-community/Qwen2.5-7B-Instruct-4bit on the lane's metr",
+   "exam": {
+    "about": "family Qwen/Qwen3.8-27B, 27B params, 4bit, by ddalcu",
+    "candidate": "ddalcu/Qwen3.8-27B-MLX-Serve-4bit",
+    "cases": 1501,
+    "first_s": 2.804,
+    "median_s": 3.951,
+    "metrics": {
+     "completion_tokens": 179.935,
+     "tokens_per_s": 35.4875
+    },
+    "model": "ddalcu/Qwen3.8-27B-MLX-Serve-4bit",
+    "not_run": "",
+    "pass_rate": 0.686,
+    "passed": 142,
+    "peak_gb": 0.0,
+    "reference": false,
+    "repeat": 1,
+    "run_at": "2026-11-28T09:58:21Z",
+    "served_as": "",
+    "source": "https://huggingface.co/ddalcu/Qwen3.8-27B-MLX-Serve-4bit",
+    "total": 207,
+    "ttft_median_s": 3.479,
+    "ttft_p95_s": 11.346
+   },
+   "outcome": "declined",
+   "proposal": "ddalcu/Qwen3.8-27B-MLX-Serve-4bit",
+   "reason": "limit",
+   "receipt_key": "ddalcu/Qwen3.8-27B-MLX-Serve-4bit",
+   "run_id": 1522,
+   "serves": false,
+   "status": "rejected",
+   "tier": "adopt",
    "until": ""
   },
   {
@@ -4601,82 +4677,6 @@
    "until": "cases:extract>2116"
   },
   {
-   "candidate": "ddalcu/Qwen3.8-27B-MLX-Serve-4bit",
-   "decided_at": "2026-11-10T03:47:34Z",
-   "detail": "4 case(s) passed a screen",
-   "exam": {
-    "about": "family Qwen/Qwen3.8-27B, 27B params, 4bit, by ddalcu",
-    "candidate": "ddalcu/Qwen3.8-27B-MLX-Serve-4bit",
-    "cases": 699,
-    "first_s": 4.037,
-    "median_s": 3.377,
-    "metrics": {
-     "completion_tokens": 210.4945,
-     "tokens_per_s": 38.7615
-    },
-    "model": "ddalcu/Qwen3.8-27B-MLX-Serve-4bit",
-    "not_run": "",
-    "pass_rate": 0.62,
-    "passed": 57,
-    "peak_gb": 0.0,
-    "reference": false,
-    "repeat": 1,
-    "run_at": "2026-11-28T03:47:36Z",
-    "served_as": "",
-    "source": "https://huggingface.co/ddalcu/Qwen3.8-27B-MLX-Serve-4bit",
-    "total": 92,
-    "ttft_median_s": 3.033,
-    "ttft_p95_s": 17.641
-   },
-   "outcome": "screened",
-   "proposal": "ddalcu/Qwen3.8-27B-MLX-Serve-4bit",
-   "reason": "candidate",
-   "receipt_key": "ddalcu/Qwen3.8-27B-MLX-Serve-4bit",
-   "run_id": 794,
-   "serves": false,
-   "status": "screened",
-   "tier": "screen",
-   "until": ""
-  },
-  {
-   "candidate": "ddalcu/Qwen3.8-27B-MLX-Serve-4bit,temperature=0",
-   "decided_at": "2026-11-10T03:47:34Z",
-   "detail": "4 case(s) passed a screen",
-   "exam": {
-    "about": "family Qwen/Qwen3.8-27B, 27B params, 4bit, by ddalcu",
-    "candidate": "ddalcu/Qwen3.8-27B-MLX-Serve-4bit",
-    "cases": 699,
-    "first_s": 4.037,
-    "median_s": 3.377,
-    "metrics": {
-     "completion_tokens": 210.4945,
-     "tokens_per_s": 38.7615
-    },
-    "model": "ddalcu/Qwen3.8-27B-MLX-Serve-4bit",
-    "not_run": "",
-    "pass_rate": 0.62,
-    "passed": 57,
-    "peak_gb": 0.0,
-    "reference": false,
-    "repeat": 1,
-    "run_at": "2026-11-28T03:47:36Z",
-    "served_as": "",
-    "source": "https://huggingface.co/ddalcu/Qwen3.8-27B-MLX-Serve-4bit",
-    "total": 92,
-    "ttft_median_s": 3.033,
-    "ttft_p95_s": 17.641
-   },
-   "outcome": "screened",
-   "proposal": "ddalcu/Qwen3.8-27B-MLX-Serve-4bit",
-   "reason": "candidate",
-   "receipt_key": "ddalcu/Qwen3.8-27B-MLX-Serve-4bit",
-   "run_id": 794,
-   "serves": false,
-   "status": "screened",
-   "tier": "screen",
-   "until": ""
-  },
-  {
    "candidate": "llamacpp:Qwen2.5-7B-Instruct-Q4_K_M",
    "decided_at": "",
    "detail": "",
@@ -4730,24 +4730,24 @@
     "candidate": "mlx-community/Qwen2.5-7B-Instruct-4bit",
     "cases": 1501,
     "first_s": 0.707,
-    "median_s": 0.38,
+    "median_s": 0.324,
     "metrics": {
-     "completion_tokens": 6.2222,
-     "tokens_per_s": 13.3667
+     "completion_tokens": 5.5584,
+     "tokens_per_s": 16.5699
     },
     "model": "mlx-community/Qwen2.5-7B-Instruct-4bit",
     "not_run": "",
-    "pass_rate": 0.7,
-    "passed": 7,
+    "pass_rate": 0.734,
+    "passed": 331,
     "peak_gb": 0.0,
     "reference": false,
     "repeat": 1,
-    "run_at": "2026-11-28T08:06:01Z",
+    "run_at": "2026-11-28T11:00:15Z",
     "served_as": "",
     "source": "https://huggingface.co/mlx-community/Qwen2.5-7B-Instruct-4bit",
-    "total": 10,
-    "ttft_median_s": 0.217,
-    "ttft_p95_s": 0.322
+    "total": 451,
+    "ttft_median_s": 0.168,
+    "ttft_p95_s": 0.29
    },
    "outcome": "",
    "proposal": "",
@@ -4760,7 +4760,7 @@
    "until": ""
   }
  ],
- "cursor": 1795835928792713,
+ "cursor": 1795858066990260,
  "events": [
   {
    "at": "2026-09-18T20:46:27Z",
@@ -10881,6 +10881,21 @@
    "reason": "limit",
    "run_id": 1477,
    "tier": "adopt"
+  },
+  {
+   "at": "2026-11-28T09:27:46Z",
+   "candidate": "ddalcu/Qwen3.8-27B-MLX-Serve-4bit",
+   "chosen": null,
+   "detail": "extract: held for confirmation: no case outside the holdout ran, so the incumbent serves until a night run of the dev cases confirms it (beats mlx-community/Qwen2.5-7B-Instruct-4bit on the lane's metr",
+   "how": "",
+   "id": 1795858066990260,
+   "incumbent": "",
+   "kind": "verdict",
+   "knob": "",
+   "outcome": "declined",
+   "reason": "limit",
+   "run_id": 1522,
+   "tier": "adopt"
   }
  ],
  "exams": [
@@ -10894,23 +10909,23 @@
      "about": "family Qwen/Qwen3.8-27B, 27B params, by OBLITERATUS",
      "candidate": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
      "first_s": 1.39,
-     "median_s": 1.688,
+     "median_s": 1.662,
      "metrics": {
-      "completion_tokens": 63.5,
-      "tokens_per_s": 32.9813
+      "completion_tokens": 63.3377,
+      "tokens_per_s": 33.2024
      },
      "model": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
      "not_run": "",
-     "pass_rate": 0.875,
-     "passed": 14,
+     "pass_rate": 0.858,
+     "passed": 533,
      "peak_gb": 0.0,
      "reference": false,
-     "run_at": "2026-11-28T08:06:01Z",
+     "run_at": "2026-11-28T11:00:15Z",
      "served_as": "",
      "source": "https://huggingface.co/OBLITERATUS/Qwen3.8-27B-OBLITERATED",
-     "total": 16,
-     "ttft_median_s": 1.559,
-     "ttft_p95_s": 3.324
+     "total": 621,
+     "ttft_median_s": 1.534,
+     "ttft_p95_s": 3.215
     },
     {
      "about": "family OBLITERATUS/Qwen3.8-27B-OBLITERATED, 27B params, 4bit, by mlx-community",
@@ -10938,27 +10953,49 @@
      "about": "7B params, 4bit, by mlx-community",
      "candidate": "mlx-community/Qwen2.5-7B-Instruct-4bit",
      "first_s": 0.707,
-     "median_s": 0.38,
+     "median_s": 0.324,
      "metrics": {
-      "completion_tokens": 6.2222,
-      "tokens_per_s": 13.3667
+      "completion_tokens": 5.5584,
+      "tokens_per_s": 16.5699
      },
      "model": "mlx-community/Qwen2.5-7B-Instruct-4bit",
      "not_run": "",
-     "pass_rate": 0.7,
-     "passed": 7,
+     "pass_rate": 0.734,
+     "passed": 331,
      "peak_gb": 0.0,
      "reference": false,
-     "run_at": "2026-11-28T08:06:01Z",
+     "run_at": "2026-11-28T11:00:15Z",
      "served_as": "",
      "source": "https://huggingface.co/mlx-community/Qwen2.5-7B-Instruct-4bit",
-     "total": 10,
-     "ttft_median_s": 0.217,
-     "ttft_p95_s": 0.322
+     "total": 451,
+     "ttft_median_s": 0.168,
+     "ttft_p95_s": 0.29
+    },
+    {
+     "about": "family Qwen/Qwen3.8-27B, 27B params, 4bit, by ddalcu",
+     "candidate": "ddalcu/Qwen3.8-27B-MLX-Serve-4bit",
+     "first_s": 2.804,
+     "median_s": 3.951,
+     "metrics": {
+      "completion_tokens": 179.935,
+      "tokens_per_s": 35.4875
+     },
+     "model": "ddalcu/Qwen3.8-27B-MLX-Serve-4bit",
+     "not_run": "",
+     "pass_rate": 0.686,
+     "passed": 142,
+     "peak_gb": 0.0,
+     "reference": false,
+     "run_at": "2026-11-28T09:58:21Z",
+     "served_as": "",
+     "source": "https://huggingface.co/ddalcu/Qwen3.8-27B-MLX-Serve-4bit",
+     "total": 207,
+     "ttft_median_s": 3.479,
+     "ttft_p95_s": 11.346
     }
    ],
-   "run_at": "2026-11-28T08:06:01Z",
-   "runs": 3
+   "run_at": "2026-11-28T11:00:15Z",
+   "runs": 4
   },
   {
    "cases": 699,
@@ -11011,6 +11048,28 @@
      "ttft_p95_s": 2.714
     },
     {
+     "about": "family Qwen/Qwen3.8-27B, 27B params, 4bit, by ddalcu",
+     "candidate": "ddalcu/Qwen3.8-27B-MLX-Serve-4bit",
+     "first_s": 4.037,
+     "median_s": 3.47,
+     "metrics": {
+      "completion_tokens": 155.402,
+      "tokens_per_s": 34.0089
+     },
+     "model": "ddalcu/Qwen3.8-27B-MLX-Serve-4bit",
+     "not_run": "",
+     "pass_rate": 0.897,
+     "passed": 627,
+     "peak_gb": 0.0,
+     "reference": false,
+     "run_at": "2026-11-28T09:27:45Z",
+     "served_as": "",
+     "source": "https://huggingface.co/ddalcu/Qwen3.8-27B-MLX-Serve-4bit",
+     "total": 699,
+     "ttft_median_s": 3.081,
+     "ttft_p95_s": 9.69
+    },
+    {
      "about": "family ornith-ai/Ornith-1.5-35B-A3B, 35B (3B active) params, Q4_K_M, by bartowski",
      "candidate": "llamacpp:Ornith-1.5-35B-A3B-Q4_K_M",
      "first_s": 0.912,
@@ -11053,31 +11112,9 @@
      "total": 547,
      "ttft_median_s": 0.176,
      "ttft_p95_s": 0.246
-    },
-    {
-     "about": "family Qwen/Qwen3.8-27B, 27B params, 4bit, by ddalcu",
-     "candidate": "ddalcu/Qwen3.8-27B-MLX-Serve-4bit",
-     "first_s": 4.037,
-     "median_s": 3.377,
-     "metrics": {
-      "completion_tokens": 210.4945,
-      "tokens_per_s": 38.7615
-     },
-     "model": "ddalcu/Qwen3.8-27B-MLX-Serve-4bit",
-     "not_run": "",
-     "pass_rate": 0.62,
-     "passed": 57,
-     "peak_gb": 0.0,
-     "reference": false,
-     "run_at": "2026-11-28T03:47:36Z",
-     "served_as": "",
-     "source": "https://huggingface.co/ddalcu/Qwen3.8-27B-MLX-Serve-4bit",
-     "total": 92,
-     "ttft_median_s": 3.033,
-     "ttft_p95_s": 17.641
     }
    ],
-   "run_at": "2026-11-28T03:47:36Z",
+   "run_at": "2026-11-28T09:27:45Z",
    "runs": 4
   },
   {
@@ -12900,7 +12937,7 @@
    "runs": 3
   }
  ],
- "generated_at": "2026-11-28T08:08:45Z",
+ "generated_at": "2026-11-28T11:23:22Z",
  "knobs": [],
  "lane": {
   "cases": 2200,
@@ -12919,16 +12956,16 @@
   "adopted_at": "",
   "adopted_how": "",
   "incumbent": "",
-  "measured_at": "2026-11-28T08:06:01Z",
-  "median_s": 0.38,
+  "measured_at": "2026-11-28T11:00:15Z",
+  "median_s": 0.324,
   "metrics": {
-   "completion_tokens": 6.2222,
-   "tokens_per_s": 13.3667
+   "completion_tokens": 5.5584,
+   "tokens_per_s": 16.5699
   },
   "not_run": "",
   "parked": "",
   "parked_until": "",
-  "pass_rate": 0.7,
+  "pass_rate": 0.734,
   "serves": "mlx-community/Qwen2.5-7B-Instruct-4bit",
   "serves_model": "mlx-community/Qwen2.5-7B-Instruct-4bit; 7B params, 4bit, by mlx-community",
   "stale": false
