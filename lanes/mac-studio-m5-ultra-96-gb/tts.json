@@ -449,8 +449,8 @@
   },
   {
    "candidate": "tts:OpenMOSS-Team/MOSS-TTS-Nano-100M",
-   "decided_at": "2026-11-28T12:40:05Z",
-   "detail": "tts lane closed to challengers: power 0.80 at -0.03 wer is under lane_gate_power 0.80, needs 3 more holdout cases (246 in all, 243 here); the pass/fail sign test needed 1491; soh lane-gate open tts overrides for a while",
+   "decided_at": "2026-11-28T16:14:14Z",
+   "detail": "tts lane closed to challengers: power 0.71 at -0.03 wer is under lane_gate_power 0.80, needs 55 more holdout cases (298 in all, 243 here); the pass/fail sign test needed 1735; soh lane-gate open tts overrides for a while",
    "exam": null,
    "outcome": "queued",
    "proposal": "OpenMOSS-Team/MOSS-TTS-Nano-100M",
@@ -464,8 +464,8 @@
   },
   {
    "candidate": "tts:nvidia/magpie_tts_multilingual_357m",
-   "decided_at": "2026-11-28T12:40:05Z",
-   "detail": "tts lane closed to challengers: power 0.80 at -0.03 wer is under lane_gate_power 0.80, needs 3 more holdout cases (246 in all, 243 here); the pass/fail sign test needed 1491; soh lane-gate open tts overrides for a while",
+   "decided_at": "2026-11-28T16:14:14Z",
+   "detail": "tts lane closed to challengers: power 0.71 at -0.03 wer is under lane_gate_power 0.80, needs 55 more holdout cases (298 in all, 243 here); the pass/fail sign test needed 1735; soh lane-gate open tts overrides for a while",
    "exam": null,
    "outcome": "queued",
    "proposal": "nvidia/magpie_tts_multilingual_357m",
@@ -479,8 +479,8 @@
   },
   {
    "candidate": "tts:owensong/Inflect-Nano-v1",
-   "decided_at": "2026-11-28T12:40:05Z",
-   "detail": "tts lane closed to challengers: power 0.80 at -0.03 wer is under lane_gate_power 0.80, needs 3 more holdout cases (246 in all, 243 here); the pass/fail sign test needed 1491; soh lane-gate open tts overrides for a while",
+   "decided_at": "2026-11-28T16:14:14Z",
+   "detail": "tts lane closed to challengers: power 0.71 at -0.03 wer is under lane_gate_power 0.80, needs 55 more holdout cases (298 in all, 243 here); the pass/fail sign test needed 1735; soh lane-gate open tts overrides for a while",
    "exam": null,
    "outcome": "queued",
    "proposal": "owensong/Inflect-Nano-v1",
@@ -1496,7 +1496,7 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-11-28T12:41:27Z",
+ "generated_at": "2026-11-28T16:14:54Z",
  "knobs": [],
  "lane": {
   "cases": 810,
