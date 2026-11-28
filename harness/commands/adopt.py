@@ -21,10 +21,8 @@ def _run_name(run: Path) -> str:
 
 def cleanup_confirms(conn, apply: bool = False, say=print) -> dict:
     """Cancel the paused `adopt --confirm` jobs of every verdict, and queue one for a verdict still held with none live; says each. #2201."""
-    from harness import adopt, machine_scope, workqueue
-    here, mine = machine_scope.here(conn, "jobs.twin")
-    rows = conn.execute(f"SELECT argv FROM jobs WHERE state = ? AND argv LIKE ? AND {here}", (workqueue.PAUSED, '%"--confirm", "%', *mine)).fetchall()
-    vids = sorted({int(json.loads(r["argv"])[-1]) for r in rows if str(json.loads(r["argv"])[-1]).isdigit()})
+    from harness import adopt, workqueue
+    vids = sorted(workqueue.confirm_counts(conn, (workqueue.PAUSED,)))
     out = {"cancelled": 0, "queued": 0, "verdicts": len(vids)}
     for vid in vids:
         paused = workqueue.confirm_jobs(conn, vid, (workqueue.PAUSED,))

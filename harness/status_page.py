@@ -362,7 +362,7 @@ def _gather(now, connect, beat, where, git, mon, health, reach, flow, home, envi
         tree = fetched.get("tree") or {}
         r["deploy"] = _section(deploy_section, conn, now, where, git, None if "error" in tree else {k: v for k, v in tree.items() if k != "as_of"})
         r["stops"] = {"holds": _section(needs_you.read_holds, conn, now), "jobs": _section(needs_you.read_jobs, conn, now),
-                      "gateway": _section(needs_you.read_gateway), "incumbent": _section(needs_you.read_incumbent), "router": _section(needs_you.read_router), "deploying": _section(needs_you.read_deploying, now, r["queue"]), "gate": _section(needs_you.read_gate),
+                      "gateway": _section(needs_you.read_gateway), "incumbent": _section(needs_you.read_incumbent), "router": _section(needs_you.read_router), "confirms": _section(needs_you.read_confirms, conn, now), "deploying": _section(needs_you.read_deploying, now, r["queue"]), "gate": _section(needs_you.read_gate),
                       "monit": _section(needs_you.read_monit, now, home, r["monitor"])}
         if (r["queue"].get("deploy_hold") or {}).get("live"):
             r["deploy"]["in_progress"] = r["queue"]["deploy_hold"]

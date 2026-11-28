@@ -110,6 +110,14 @@ def read_router() -> dict:
     return {"pending": gguf.pending()}
 
 
+def read_confirms(conn, now: float) -> dict:
+    """Held holdout wins with more than one paused confirm job: the pile `soh adopt --confirm-cleanup` clears. #2201."""
+    from harness import workqueue as wq
+    if conn is None:
+        return {"rows": [], "why": "store down: confirm jobs not read"}
+    return {"rows": [{"verdict": v, "paused": n} for v, n in sorted(wq.confirm_counts(conn, (wq.PAUSED,)).items()) if n > 1]}
+
+
 def read_gate() -> dict:
     from harness import merge_gate
     return {"rows": [{"head": h, "text": v["text"], "tries": v["tries"]} for h, v in merge_gate.stranded().items()]}
@@ -285,6 +293,16 @@ def _router(r: dict) -> list[dict]:
                  + ", ".join(pending[:5]), source="router", alert=False, fix=[("router_relist", "")])]
 
 
+def _confirm_pile(r: dict) -> list[dict]:
+    rows = ((r.get("stops") or {}).get("confirms") or {}).get("rows") or []
+    if not rows:
+        return []
+    return [cond("confirm-jobs-piled", "Held holdout wins have paused confirm jobs piled up",
+                 f"{sum(x['paused'] for x in rows)} paused confirm jobs across {len(rows)} verdict(s): "
+                 + ", ".join(f"{x['verdict']} ({x['paused']})" for x in rows[:6]), source="confirms", alert=False,
+                 fix=[("confirm_cleanup", "")])]
+
+
 def _paused_deploys(r: dict) -> list[dict]:
     row = next((x for x in (r.get("features") or {}).get("rows") or [] if x.get("kind") == "switch" and x.get("name") == "deploys"
                 and x.get("state") == "paused"), None)
@@ -354,7 +372,7 @@ def _machine(r: dict) -> list[dict]:
 def conditions(r: dict) -> list[dict]:
     """Every condition that stops work in the gathered status `r`, oldest first; each from the source its CLI reads."""
     held = bool(_holds_of(r, "benchmarks"))
-    out = (_machine(r) + _holds(r) + _queue(r) + _discovery(r, held) + _jobs(r) + _deploy(r) + _paused_deploys(r) + _router(r) + _incumbent(r) + _gateway(r) + _gate(r) + _monit(r))
+    out = (_machine(r) + _holds(r) + _queue(r) + _discovery(r, held) + _jobs(r) + _deploy(r) + _paused_deploys(r) + _confirm_pile(r) + _router(r) + _incumbent(r) + _gateway(r) + _gate(r) + _monit(r))
     out += [cond(f"unread-{k}", f"{k.capitalize()} was not read", r[k]["error"], source=k, alert=False,
                  line=f"{k} not read: {r[k]['error']}") for k in ("store", "queue", "deploy", "discovery", "services", "ratio",
                                                                   "timeline") if (r.get(k) or {}).get("error")]

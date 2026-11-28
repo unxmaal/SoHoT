@@ -24,7 +24,6 @@ OWNER_EXEMPT = {
     "deploy migrate": "the deploy job's own step and a store migration: too dangerous for one tap",
     "gate hold": "folded into hold gpu, which is the gate_hold button",
     "gate release": "folded into hold release gpu, which is the gate_release button",
-    "adopt": "runs a paired GPU measurement for hours and names a lane and a challenger; not one tap, nor in 120 s",
     "decline": "a terminal verdict on a repo with the owner's reason, and the page gathers no list of candidates awaiting one",
     "propose": "takes free text naming a technique; not one tap",
     "monitor install": "installs the monit config; a deploy step, not one tap",
