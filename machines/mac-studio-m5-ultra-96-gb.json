@@ -66,12 +66,12 @@
   }
  ],
  "export_version": 4,
- "generated_at": "2026-11-28T11:23:00Z",
+ "generated_at": "2026-11-28T12:40:59Z",
  "lanes": [
   {
    "adopted": true,
    "adopted_how": "by-hand",
-   "age_days": 1.04,
+   "age_days": 1.1,
    "comparison": [
     {
      "about": "",
@@ -472,7 +472,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 0.52,
+   "age_days": 0.57,
    "comparison": [
     {
      "about": "35B (3B active) params, Q4_K_M, by ornith-ai",
@@ -2929,7 +2929,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 3.42,
+   "age_days": 3.48,
    "comparison": [
     {
      "about": "4B params, 4bit, by mlx-community",
@@ -3653,7 +3653,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 1.01,
+   "age_days": 1.07,
    "comparison": [
     {
      "about": "30B (3B active) params, 4bit, by mlx-community",
@@ -4445,7 +4445,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.73,
+   "age_days": 0.78,
    "comparison": [
     {
      "about": "",
@@ -4659,7 +4659,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 26.16,
+   "age_days": 26.22,
    "comparison": [
     {
      "about": "",
@@ -4802,7 +4802,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.05,
+   "age_days": 0.11,
    "comparison": [
     {
      "about": "9B params",
@@ -5616,15 +5616,15 @@
    "pass_rate": 0.0,
    "passed": 0,
    "real_use": {
-    "completion_tokens": 31680,
+    "completion_tokens": 31704,
     "error_rate": 0.0,
     "errors": 0,
     "gateway_error_rate": 0.0,
     "gateway_errors": 0,
     "invalid_calls": 0,
     "invalid_rate": null,
-    "prompt_tokens": 338652,
-    "requests": 2661,
+    "prompt_tokens": 338718,
+    "requests": 2663,
     "tool_calls": 0,
     "ttft_p50": 0.5816390514373779,
     "ttft_p95": 0.5816390514373779
@@ -5641,7 +5641,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 7.06,
+   "age_days": 7.11,
    "comparison": [
     {
      "about": "35B (3B active) params, Q4_K_M, by ornith-ai",
@@ -6142,7 +6142,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 0.5,
+   "age_days": 0.56,
    "comparison": [
     {
      "about": "",
@@ -6409,7 +6409,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 8.03,
+   "age_days": 8.08,
    "comparison": [
     {
      "about": "",
@@ -6547,7 +6547,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 8.03,
+   "age_days": 8.08,
    "comparison": [
     {
      "about": "",
@@ -6769,7 +6769,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 2.82,
+   "age_days": 2.87,
    "comparison": [
     {
      "about": "7B params, Q4_K_M, by bartowski",
@@ -7118,15 +7118,15 @@
    "pass_rate": 0.003,
    "passed": 1,
    "real_use": {
-    "completion_tokens": 165193,
+    "completion_tokens": 165387,
     "error_rate": 0.0,
     "errors": 0,
     "gateway_error_rate": 0.0,
     "gateway_errors": 0,
     "invalid_calls": 0,
     "invalid_rate": null,
-    "prompt_tokens": 74966,
-    "requests": 1704,
+    "prompt_tokens": 75054,
+    "requests": 1706,
     "tool_calls": 0,
     "ttft_p50": null,
     "ttft_p95": null
@@ -7143,7 +7143,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 0.51,
+   "age_days": 0.57,
    "comparison": [
     {
      "about": "35B (3B active) params, Q4_K_M, by ornith-ai",
@@ -8774,27 +8774,27 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.02,
+   "age_days": 0.0,
    "comparison": [
     {
      "about": "family Qwen/Qwen3.8-27B, 27B params, by OBLITERATUS",
      "candidate": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
      "first_s": 1.39,
-     "median_s": 1.662,
+     "median_s": 1.661,
      "metrics": {
-      "completion_tokens": 63.3377,
-      "tokens_per_s": 33.2024
+      "completion_tokens": 63.2464,
+      "tokens_per_s": 33.1674
      },
      "model": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
      "not_run": "",
-     "pass_rate": 0.858,
-     "passed": 533,
+     "pass_rate": 0.859,
+     "passed": 534,
      "peak_gb": 0.0,
      "reference": false,
      "served_as": "",
      "source": "https://huggingface.co/OBLITERATUS/Qwen3.8-27B-OBLITERATED",
-     "total": 621,
-     "ttft_median_s": 1.534,
+     "total": 622,
+     "ttft_median_s": 1.533,
      "ttft_p95_s": 3.215
     },
     {
@@ -8803,18 +8803,18 @@
      "first_s": 0.707,
      "median_s": 0.324,
      "metrics": {
-      "completion_tokens": 5.5584,
-      "tokens_per_s": 16.5699
+      "completion_tokens": 5.5548,
+      "tokens_per_s": 16.541
      },
      "model": "mlx-community/Qwen2.5-7B-Instruct-4bit",
      "not_run": "",
-     "pass_rate": 0.734,
-     "passed": 331,
+     "pass_rate": 0.735,
+     "passed": 332,
      "peak_gb": 0.0,
      "reference": false,
      "served_as": "",
      "source": "https://huggingface.co/mlx-community/Qwen2.5-7B-Instruct-4bit",
-     "total": 451,
+     "total": 452,
      "ttft_median_s": 0.168,
      "ttft_p95_s": 0.29
     }
@@ -8830,22 +8830,22 @@
        "about": "family Qwen/Qwen3.8-27B, 27B params, by OBLITERATUS",
        "candidate": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
        "first_s": 1.39,
-       "median_s": 1.662,
+       "median_s": 1.661,
        "metrics": {
-        "completion_tokens": 63.3377,
-        "tokens_per_s": 33.2024
+        "completion_tokens": 63.2464,
+        "tokens_per_s": 33.1674
        },
        "model": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
        "not_run": "",
-       "pass_rate": 0.858,
-       "passed": 533,
+       "pass_rate": 0.859,
+       "passed": 534,
        "peak_gb": 0.0,
        "reference": false,
-       "run_at": "2026-11-28T11:00:15Z",
+       "run_at": "2026-11-28T12:38:03Z",
        "served_as": "",
        "source": "https://huggingface.co/OBLITERATUS/Qwen3.8-27B-OBLITERATED",
-       "total": 621,
-       "ttft_median_s": 1.534,
+       "total": 622,
+       "ttft_median_s": 1.533,
        "ttft_p95_s": 3.215
       },
       {
@@ -8876,19 +8876,19 @@
        "first_s": 0.707,
        "median_s": 0.324,
        "metrics": {
-        "completion_tokens": 5.5584,
-        "tokens_per_s": 16.5699
+        "completion_tokens": 5.5548,
+        "tokens_per_s": 16.541
        },
        "model": "mlx-community/Qwen2.5-7B-Instruct-4bit",
        "not_run": "",
-       "pass_rate": 0.734,
-       "passed": 331,
+       "pass_rate": 0.735,
+       "passed": 332,
        "peak_gb": 0.0,
        "reference": false,
-       "run_at": "2026-11-28T11:00:15Z",
+       "run_at": "2026-11-28T12:38:03Z",
        "served_as": "",
        "source": "https://huggingface.co/mlx-community/Qwen2.5-7B-Instruct-4bit",
-       "total": 451,
+       "total": 452,
        "ttft_median_s": 0.168,
        "ttft_p95_s": 0.29
       },
@@ -8915,7 +8915,7 @@
        "ttft_p95_s": 11.346
       }
      ],
-     "run_at": "2026-11-28T11:00:15Z",
+     "run_at": "2026-11-28T12:38:03Z",
      "runs": 4
     },
     {
@@ -10859,36 +10859,36 @@
     }
    ],
    "lane": "extract",
-   "last_run_at": "2026-11-28T11:00:15Z",
-   "measured_at": "2026-11-28T11:00:15Z",
+   "last_run_at": "2026-11-28T12:38:03Z",
+   "measured_at": "2026-11-28T12:38:03Z",
    "median_s": 0.324,
    "metrics": {
-    "completion_tokens": 5.5584,
-    "tokens_per_s": 16.5699
+    "completion_tokens": 5.5548,
+    "tokens_per_s": 16.541
    },
    "not_run": "",
    "parked": "",
    "parked_until": "",
-   "pass_rate": 0.734,
-   "passed": 331,
+   "pass_rate": 0.735,
+   "passed": 332,
    "real_use": {
-    "completion_tokens": 52447,
+    "completion_tokens": 53804,
     "error_rate": 0.0,
     "errors": 0,
     "gateway_error_rate": 0.0,
     "gateway_errors": 0,
     "invalid_calls": 0,
     "invalid_rate": null,
-    "prompt_tokens": 705843,
-    "requests": 2201,
+    "prompt_tokens": 724019,
+    "requests": 2214,
     "tool_calls": 0,
-    "ttft_p50": 1.7548859119415283,
+    "ttft_p50": 1.799483060836792,
     "ttft_p95": 12.257301092147827
    },
    "serves": "mlx-community/Qwen2.5-7B-Instruct-4bit",
    "serves_model": "mlx-community/Qwen2.5-7B-Instruct-4bit; 7B params, 4bit, by mlx-community",
    "stale": false,
-   "total": 451,
+   "total": 452,
    "ttft_median_s": 0.168,
    "ttft_p95_s": 0.29,
    "unverified": false,
@@ -10897,7 +10897,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.0,
+   "age_days": 0.05,
    "comparison": [
     {
      "about": "0.6B params",
@@ -11342,7 +11342,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.04,
+   "age_days": 0.09,
    "comparison": [
     {
      "about": "",
@@ -11635,7 +11635,7 @@
   "first_seen": "2026-10-05T19:28:52Z",
   "hw_model": "Mac17,15",
   "label": "Mac Studio M5 Ultra 96 GB",
-  "last_seen": "2026-11-28T11:22:57Z",
+  "last_seen": "2026-11-28T12:40:51Z",
   "memory_gb": 96.0,
   "os": "macOS 27.2",
   "runtimes": [
@@ -11936,7 +11936,7 @@
       "2026-11-25": 44048.0,
       "2026-11-26": 325124.0,
       "2026-11-27": 643324.0,
-      "2026-11-28": 126897.0
+      "2026-11-28": 167135.0
      },
      "Edit": {
       "2026-09-03": 159.0,
@@ -12001,7 +12001,8 @@
       "2026-11-22": 58.0,
       "2026-11-24": 34.0,
       "2026-11-26": 162.0,
-      "2026-11-27": 106.0
+      "2026-11-27": 106.0,
+      "2026-11-28": 36.0
      },
      "Read": {
       "2026-09-03": 1485.0,
@@ -12152,7 +12153,7 @@
       "2026-11-22": 3429.0,
       "2026-11-24": 1069.0,
       "2026-11-27": 3960.0,
-      "2026-11-28": 1386.0
+      "2026-11-28": 1823.0
      },
      "mcm-engine report_error": {
       "2026-09-07": 158.0,
@@ -12307,7 +12308,7 @@
       "2026-11-25": 6361.0,
       "2026-11-26": 126688.0,
       "2026-11-27": 163062.0,
-      "2026-11-28": 38568.0
+      "2026-11-28": 50242.0
      },
      "other": {
       "2026-09-03": 1399.0,
@@ -12387,7 +12388,7 @@
       "2026-11-25": 3228.0,
       "2026-11-26": 15461.0,
       "2026-11-27": 29262.0,
-      "2026-11-28": 3648.0
+      "2026-11-28": 4214.0
      }
     },
     "title": "Tool-result tokens into Claude's context",
@@ -12420,7 +12421,7 @@
       "2026-11-22": "11 accepted, 7 rejected, 10 unknown, 0 pending",
       "2026-11-26": "4 accepted, 1 rejected, 33 unknown, 0 pending",
       "2026-11-27": "18 accepted, 12 rejected, 0 unknown, 123 pending",
-      "2026-11-28": "5 accepted, 0 rejected, 0 unknown, 9 pending"
+      "2026-11-28": "10 accepted, 1 rejected, 0 unknown, 10 pending"
      }
     },
     "note": "Share of closed outcomes, reported or inferred from the caller's transcript, that were accepted rather than rejected.",
@@ -12450,7 +12451,7 @@
       "2026-11-22": 0.6111,
       "2026-11-26": 0.8,
       "2026-11-27": 0.6,
-      "2026-11-28": 1.0
+      "2026-11-28": 0.9091
      }
     },
     "title": "Delegation acceptance by lane",
