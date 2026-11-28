@@ -23,10 +23,11 @@ def cmd_list(a) -> int:
         items = owner_picks.view(conn)
     finally:
         conn.close()
-    for i in items:
-        print(f"item {i['id']}: {i['lane']}, {i['open']} of {len(i['pairs'])} pairs left")
-    if not items:
-        print("no item waits for picks")
+    if not getattr(a, "json", False):
+        for i in items:
+            print(f"item {i['id']}: {i['lane']}, {i['open']} of {len(i['pairs'])} pairs left")
+        if not items:
+            print("no item waits for picks")
     emit(items=items)
     return 0
 
@@ -42,6 +43,7 @@ def cmd_pick(a) -> int:
             return err(str(exc))
     finally:
         conn.close()
-    print(said)
+    if not getattr(a, "json", False):
+        print(said)
     emit(said=said)
     return 0
