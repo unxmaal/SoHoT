@@ -396,11 +396,11 @@
    "runs": 2
   }
  ],
- "generated_at": "2026-11-27T11:09:19Z",
+ "generated_at": "2026-11-28T08:08:43Z",
  "knobs": [],
  "lane": {
-  "cases": 556,
-  "cases_digest": "a4ba6ad7e44495f0",
+  "cases": 1456,
+  "cases_digest": "7a27b3df1dbd6293",
   "name": "pii",
   "params": {},
   "wanted": true
