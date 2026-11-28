@@ -258,6 +258,7 @@ def test_the_server_never_takes_the_peer_address_from_a_header(monkeypatch):
     monkeypatch.setattr(uvicorn.Server, "run", lambda self, sockets=None: got.setdefault("config", self.config))
     monkeypatch.setattr(srv, "listen_sockets", lambda host, port: [])
     monkeypatch.setattr(srv, "stale_report", lambda port, pid: [])
+    monkeypatch.setattr("harness.status_page.warm", lambda: None)
     srv.serve("0.0.0.0", 8899)
     assert got["config"].proxy_headers is False
 

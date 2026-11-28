@@ -113,6 +113,12 @@ def _select(conn, where: str = "", args=()) -> list[dict]:
     return [_row(conn, r) for r in rows]
 
 
+def last_of_kind(conn, kind: str, n: int) -> list[dict]:
+    """The newest `n` jobs of `kind`, oldest first; the table's other rows are not read. #2188."""
+    rows = conn.execute("SELECT * FROM jobs WHERE kind = ? ORDER BY id DESC LIMIT ?", (kind, n)).fetchall()
+    return [_row(conn, r) for r in reversed(rows)]
+
+
 def jobs(conn=None) -> list[dict]:
     with _store(conn) as c:
         return _select(c)

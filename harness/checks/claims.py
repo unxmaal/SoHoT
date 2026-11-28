@@ -132,6 +132,10 @@ def response_format(schema: dict) -> dict:
     return {"type": "json_schema", "json_schema": {"name": "claims", "strict": True, "schema": schema}}
 
 
+#: Reply schemas already checked: the 1700 claims cases share a few, and a check is milliseconds each. #2188.
+_SCHEMAS_OK: set[str] = set()
+
+
 def validate_case(system, schema, reviews, expect_empty) -> None:
     """Raise ValueError naming what is wrong with a case's system, schema or reviews."""
     from jsonschema import Draft202012Validator, SchemaError
@@ -139,10 +143,13 @@ def validate_case(system, schema, reviews, expect_empty) -> None:
         raise ValueError("a claims case needs params.system, the prompt it is asked with")
     if not isinstance(schema, dict):
         raise ValueError("a claims case needs params.schema, the reply schema")
-    try:
-        Draft202012Validator.check_schema(schema)
-    except SchemaError as exc:
-        raise ValueError(f"params.schema is not a JSON schema: {exc.message}") from exc
+    key = json.dumps(schema, sort_keys=True, default=str)
+    if key not in _SCHEMAS_OK:
+        try:
+            Draft202012Validator.check_schema(schema)
+        except SchemaError as exc:
+            raise ValueError(f"params.schema is not a JSON schema: {exc.message}") from exc
+        _SCHEMAS_OK.add(key)
     if not isinstance(reviews, list):
         raise ValueError("a claims case needs assert.reviews, a list")
     for n, r in enumerate(reviews):

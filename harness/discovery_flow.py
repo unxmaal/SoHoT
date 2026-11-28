@@ -238,4 +238,5 @@ def gather(conn, now: float, window_s: float = WINDOW_S) -> dict:
         leaks.append({"key": "refetched", "n": again["gib"], "text": f"{again['gib']:.1f} GiB downloaded again in {refetch.REFETCH_WINDOW_S / 3600:g} h "
                       f"({again['n']} download(s) of {again['repos']} repo(s) already fetched): Hugging Face warns of an egress quota"})
     return {"since": since, "until": now, "cycle": next((s["cycle"] for s in reversed(steps) if s["cycle"]), ""),
-            "nodes": nodes, "edges": edges, "leaks": leaks, "wip": wip.status(conn)}
+            "nodes": nodes, "edges": edges, "leaks": leaks, "wip": wip.status(conn),
+            "refused": refetch.refused(conn, now)}

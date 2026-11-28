@@ -355,6 +355,12 @@ def _flow(fl: dict, now: float, needs: list) -> str:
                         f"{how} {r['n']} times{link('job-failed-', r.get('jobs') or ())}</li>")
     for lk in fl["leaks"]:
         rows.append(f"<li class='lk' data-leak='{esc(lk['key'])}'>{esc(lk['text'])}{link(lk.get('need', '')) if lk.get('need') else ''}</li>")
+    from harness import refetch
+    ref = fl.get("refused") or {}
+    if ref.get("n"):
+        items = "".join(f"<li data-refused='{esc(x['repo'])}'>{esc(x['repo'])}, {x['gib']:g} GiB, asked for by {esc(x['via'] or '?')}</li>" for x in ref["rows"])
+        rows.append(f"<li class='rf' data-refused-n='{ref['n']}'><details><summary>{ref['n']} model(s) refused a second download within "
+                    f"{refetch.REFETCH_WINDOW_S / 3600:g} h, {ref['gib']:g} GiB not refetched</summary><ul>{items}</ul></details></li>")
     out.append(f"<ul class='fl'>{''.join(rows)}</ul>" if rows else "<p class='nn'>No repeats and no leaks.</p>")
     return "".join(out) + "</section>"
 
@@ -545,12 +551,17 @@ def _need(c: dict, now: float, tok: str) -> str:
 
 
 def _band(r: dict, now: float, tok: str) -> str:
-    """Every condition that stops work, each with its age, cause and button; one line when nothing is stopped."""
-    conds = r.get("needs_you") or []
+    """Every condition the owner can act on, each with its age, cause and button; the stops with nothing to press fold below. #2188."""
+    from harness import needs_you
+    every = r.get("needs_you") or []
+    conds = needs_you.owner_items(every)
+    rest = [c for c in every if c not in conds]
+    held = (f"<details class='fg' data-stopped='{len(rest)}'><summary><b>{len(rest)}</b> stopped with nothing for you to press</summary>"
+            f"{''.join(_need(c, now, tok) for c in rest)}</details>") if rest else ""
     if not conds:
-        return f"<section class='needs ok' data-needs='0'><p class='clear'>{_badge(OK)} Nothing is stopped.</p></section>"
+        return f"<section class='needs ok' data-needs='0'><p class='clear'>{_badge(OK)} {'Nothing needs you.' if rest else 'Nothing is stopped.'}</p>{held}</section>"
     return (f"<section class='needs' data-needs='{len(conds)}' aria-live='polite'><h2>Needs you "
-            f"<span class='count'>{len(conds)}</span></h2>{''.join(_need(c, now, tok) for c in conds)}</section>")
+            f"<span class='count'>{len(conds)}</span></h2>{''.join(_need(c, now, tok) for c in conds)}{held}</section>")
 
 
 REFRESH_JS = """(function(){
