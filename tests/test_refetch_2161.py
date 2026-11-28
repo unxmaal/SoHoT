@@ -117,7 +117,7 @@ def test_a_screen_whose_load_need_is_over_the_window_but_whose_weights_are_not_f
 
 def test_the_same_screen_whose_load_need_fits_the_window_is_fetched(screening, monkeypatch):
     conn, fetched = screening
-    _priced(conn, monkeypatch, 40.0, 8.0, available=64.0)
+    _priced(conn, monkeypatch, 40.0, 8.0, available=96.0)
     screen_cmd._screen_one(None, conn, _row(BIG))
     assert fetched == [BIG]
 
