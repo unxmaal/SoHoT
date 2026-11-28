@@ -188,7 +188,7 @@ def test_a_head_whose_suite_fails_gets_a_failing_status_and_the_guard_refuses_it
     assert [r["state"] for r in rows] == [mg.FAILURE]
     said = world["hub"].said(head)
     assert [s for s, _ in said] == ["pending", "pending", "failure"]
-    assert said[-1][1].endswith("make check failed") and said[-1][1].startswith(g.stamp(rows[0]["tree"]) + " on ")
+    assert said[-1][1].split(": ", 1)[1].startswith("make check failed, log ") and said[-1][1].startswith(g.stamp(rows[0]["tree"]) + " on ")
     assert all(s["context"] == g.GATE for s in world["hub"].statuses[head])
     assert suite.ran == ["make PYTEST_N=6 check"]
     sha = world["squash"]("add x (#7)", {"x": "x\n"})
@@ -307,7 +307,7 @@ def test_a_store_change_adds_the_postgres_suite_and_each_failing_step_is_named(w
     rows, suite = _pass(world, Suite(fails=fails), only=7)
     assert suite.ran == [s.replace("BASE", world["base"]) for s in steps]
     assert rows[0]["state"] == (mg.FAILURE if said else mg.SUCCESS)
-    assert world["hub"].said(rows[0]["head"])[-1][1].endswith(f"{said} failed" if said else "passed")
+    assert world["hub"].said(rows[0]["head"])[-1][1].split(": ", 1)[1].startswith(f"{said} failed" if said else "passed")
 
 
 def test_each_changed_module_is_mutated_on_its_changed_functions_and_a_survivor_fails_the_verdict(world):
@@ -319,7 +319,7 @@ def test_each_changed_module_is_mutated_on_its_changed_functions_and_a_survivor_
     assert rows[0]["state"] == mg.SUCCESS
     rows, suite = _pass(world, Suite(plan=plan, fails="harness/b.py"), only=7, again=True)
     assert rows[0]["state"] == mg.FAILURE
-    assert world["hub"].said(rows[0]["head"])[-1][1].endswith("mutation of harness/b.py failed")
+    assert world["hub"].said(rows[0]["head"])[-1][1].split(": ", 1)[1].startswith("mutation of harness/b.py failed")
 
 
 def test_a_tree_whose_ci_names_no_store_seam_runs_the_postgres_suite(world):

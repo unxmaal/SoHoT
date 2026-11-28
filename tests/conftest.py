@@ -103,19 +103,32 @@ def own_schema(monkeypatch):
     store.refuse_live(postgres=True)
     admin_dsn = store.dsn()
     name = f"t_{uuid.uuid4().hex[:16]}"
-    with psycopg.connect(admin_dsn, autocommit=True) as admin:
-        admin.execute(f"CREATE SCHEMA {name}")
+    admin = _admin(admin_dsn, psycopg)
+    admin.execute(f"CREATE SCHEMA {name}")
     monkeypatch.setenv("PGOPTIONS", f"-c search_path={name}")
     try:
         yield name
     finally:
-        with psycopg.connect(admin_dsn, autocommit=True) as admin:
-            # A connection the test leaked idles in a transaction holding locks the drop would wait on.
-            admin.execute("SELECT pg_terminate_backend(l.pid) FROM pg_locks l "
-                          "JOIN pg_class c ON c.oid = l.relation "
-                          "JOIN pg_namespace n ON n.oid = c.relnamespace "
-                          "WHERE n.nspname = %s AND l.pid <> pg_backend_pid()", (name,))
-            admin.execute(f"DROP SCHEMA IF EXISTS {name} CASCADE")
+        admin = _admin(admin_dsn, psycopg)
+        # A connection the test leaked idles in a transaction holding locks the drop would wait on.
+        admin.execute("SELECT pg_terminate_backend(l.pid) FROM pg_locks l "
+                      "JOIN pg_class c ON c.oid = l.relation "
+                      "JOIN pg_namespace n ON n.oid = c.relnamespace "
+                      "WHERE n.nspname = %s AND l.pid <> pg_backend_pid()", (name,))
+        admin.execute(f"DROP SCHEMA IF EXISTS {name} CASCADE")
+
+
+_ADMINS: dict = {}
+
+
+def _admin(dsn: str, psycopg):
+    """This process's one autocommit connection to the server `dsn` names; a connect per fixture step was a third of the suite's. #2203."""
+    conn = _ADMINS.get(dsn)
+    try:
+        conn.execute("SELECT 1")
+    except (AttributeError, psycopg.Error):
+        conn = _ADMINS[dsn] = psycopg.connect(dsn, autocommit=True)
+    return conn
 
 
 @pytest.fixture(autouse=True)
@@ -282,6 +295,12 @@ def pytest_configure(config):
     from harness import store
     # The suite never takes its backend from the developer's home store.json; check-postgres sets it. #1614.
     os.environ.setdefault(store.BACKEND_ENV, store.SQLITE)
+    os.environ["PGAPPNAME"] = os.environ.get("PYTEST_XDIST_WORKER", "ctl")
+    if os.environ[store.BACKEND_ENV] == store.POSTGRES:
+        import psycopg
+        from tests import pg_retry
+        if getattr(psycopg.connect, "real", None) is None:
+            psycopg.connect = pg_retry.retrying(psycopg.connect)
     # Not a monkeypatch, so no test's monkeypatch.undo() drops it; a pytest a test starts inherits it. #1826.
     os.environ[store.GUARD_ENV] = store.guard_flag(paths.DEFAULT_HOME, os.environ.get(store.GUARD_ENV, ""))
     _guard_sqlite()

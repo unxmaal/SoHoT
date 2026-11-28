@@ -1,6 +1,7 @@
 """The local merge gate: test a pull request's head merged onto main in a clean worktree and post the verdict as a commit status (#2110)."""
 from __future__ import annotations
 
+import functools
 import hashlib
 import json
 import os
@@ -151,22 +152,49 @@ def _env(home: Path) -> dict:
             paths.ENV_VAR: str(home), store.BACKEND_ENV: "sqlite"}
 
 
-def _run(argv: list[str], cwd: Path, env: dict, capture: bool = False) -> tuple[int, str]:
+def log_path(head: str) -> Path:
+    """Where a pass writes the output of every step it runs on `head`; it outlives the pass's worktree."""
+    return root() / f"{head[:12]}.log"
+
+
+def shown(path: Path, home: Path | None = None) -> str:
+    """`path` as a status description names it: under the user's home, `~/...`."""
+    try:
+        return "~/" + path.relative_to(home or Path.home()).as_posix()
+    except ValueError:
+        return str(path)
+
+
+def _run(argv: list[str], cwd: Path, env: dict, capture: bool = False, log: Path | None = None) -> tuple[int, str]:
     from harness import cuts
+    sink = open(log, "a", encoding="utf-8") if log else None
+    if sink:
+        sink.write(f"$ {' '.join(argv)}\n")
+        sink.flush()
     try:
         with cuts.timeout("merge_gate_step_timeout", " ".join(argv[:3])):
             got = subprocess.run(argv, cwd=str(cwd), env=env, timeout=STEP_TIMEOUT_S, text=True,
-                                 stdin=subprocess.DEVNULL, stdout=subprocess.PIPE if capture else None)
+                                 stdin=subprocess.DEVNULL, stdout=subprocess.PIPE if capture else sink,
+                                 stderr=sink)
     except subprocess.TimeoutExpired:
+        if sink:
+            sink.write(f"-> timed out after {STEP_TIMEOUT_S:.0f}s\n")
         return TIMED_OUT, ""
-    return got.returncode, got.stdout or ""
+    finally:
+        if sink:
+            sink.close()
+    out = got.stdout or ""
+    if log:
+        with open(log, "a", encoding="utf-8") as f:
+            f.write(f"{out}-> rc {got.returncode}\n")
+    return got.returncode, out
 
 
-def suite(work: Path, base: str, home: Path, run=None) -> str:
-    """'' when the suite, the Postgres suite a store change needs and the changed functions' mutation run pass in `work`; else the step that did not."""
+def suite(work: Path, base: str, home: Path, run=None, log: Path | None = None) -> str:
+    """'' when the suite, the Postgres suite a store change needs and the changed functions' mutation run pass in `work`; else the step that did not. Each step's output goes to `log`."""
     env = _env(home)
     def go(argv, capture=False):
-        return (run or _run)(list(argv), work, env, capture)
+        return (run or functools.partial(_run, log=log))(list(argv), work, env, capture)
     if go([*MAKE, "check"])[0]:
         return "make check"
     changed = _out(work, "diff", "--name-only", f"{base}...HEAD").splitlines()
@@ -197,11 +225,12 @@ def tested(repo, item: dict, run=None) -> str:
     """Run the suite on the item's tree in a fresh worktree whose commit has base and head as parents; '' when it passed."""
     work = root() / item["head"][:12]
     _clear(repo, work)
+    log_path(item["head"]).unlink(missing_ok=True)
     commit = _out(repo, "-c", "user.name=merge-gate", "-c", "user.email=merge-gate@localhost", "commit-tree",
                   item["tree"], "-p", item["base"], "-p", item["head"], "-m", f"merge gate: {item['key']}")
     _out(repo, "worktree", "add", "-q", "--detach", str(work / "tree"), commit)
     try:
-        return suite(work / "tree", item["base"], work / "home", run)
+        return suite(work / "tree", item["base"], work / "home", run, log_path(item["head"]))
     finally:
         _clear(repo, work)
 
@@ -215,7 +244,8 @@ def _settle(repo, item: dict, gh, run) -> dict:
     post(item["head"], PENDING, f"{where}: running", gh, started=True)
     try:
         failed = tested(repo, item, run)
-        item["state"], said = (FAILURE, f"{failed} failed") if failed else (SUCCESS, "passed")
+        item["state"], said = ((FAILURE, f"{failed} failed, log {shown(log_path(item['head']))}") if failed
+                               else (SUCCESS, "passed"))
     except (GateError, guard.GhError, OSError, subprocess.SubprocessError) as exc:
         item["state"], said = ERROR, f"not tested: {exc}"
     post(item["head"], item["state"], f"{where}: {said}", gh)
