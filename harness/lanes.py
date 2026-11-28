@@ -107,6 +107,14 @@ def human_judged(lane) -> bool:
     return canonical(lane) in HUMAN_JUDGED
 
 
+#: Lanes whose output a metric cannot rate as better: a holdout win waits for the owner's blind picks. #2183.
+PERCEPTUAL = ("image", "music", "video", "tts")
+
+
+def perceptual(lane) -> bool:
+    return canonical(lane) in PERCEPTUAL
+
+
 def canonical(lane) -> str:
     """The surviving name for `lane`. Empty means no lane at all."""
     got = (lane or "").strip().lower()

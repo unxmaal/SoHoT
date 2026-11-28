@@ -498,6 +498,8 @@ capabilities:
       - harness/status_buttons.py
       - harness/discovery_flow.py
       - harness/incumbent_down.py
+      - harness/owner_picks.py
+      - harness/commands/owner_picks.py
 
   - name: canary
     summary: Planted candidates with known verdicts, run for real under an isolated home.

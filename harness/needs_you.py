@@ -26,10 +26,28 @@ STATE = "needs-you.json"
 
 
 def cond(key: str, title: str, why: str, *, since=None, fix=(), none: str = "", source: str = "", alert: bool = True,
-         line: str = "") -> dict:
+         line: str = "", pairs=None) -> dict:
     """One thing that stops work: `fix` is the (action, arg) buttons that clear it, `none` says why there is no button."""
-    return {"key": key, "title": title, "why": why, "since": since, "fix": [{"action": a, "arg": g} for a, g in fix],
-            "none": none, "source": source, "alert": alert, "line": line or (f"{title}: {why}" if why else title)}
+    got = {"key": key, "title": title, "why": why, "since": since, "fix": [{"action": a, "arg": g} for a, g in fix],
+           "none": none, "source": source, "alert": alert, "line": line or (f"{title}: {why}" if why else title)}
+    return {**got, "pairs": pairs} if pairs is not None else got
+
+
+def read_picks(conn, now: float) -> dict:
+    """The blind A/B items a perceptual lane's holdout win waits on. #2183."""
+    from harness import owner_picks
+    return owner_picks.read(conn, now)
+
+
+def _picks(r: dict) -> list[dict]:
+    """One condition per waiting item; its pairs carry the blind media and the pick buttons, no model name."""
+    out = []
+    for i in ((r.get("stops") or {}).get("picks") or {}).get("items") or []:
+        out.append(cond(f"picks-{i['id']}", f"Pick the better {i['lane']} output",
+                        f"{i['open']} of {len(i['pairs'])} blind pairs wait for you; the models stay hidden until every pair is picked",
+                        since=i.get("since"), source="picks", pairs=i["pairs"],
+                        line=f"{i['lane']}: {i['open']} blind pair(s) wait for your picks"))
+    return out
 
 
 def owner_items(conds: list[dict]) -> list[dict]:
@@ -354,7 +372,7 @@ def _machine(r: dict) -> list[dict]:
 def conditions(r: dict) -> list[dict]:
     """Every condition that stops work in the gathered status `r`, oldest first; each from the source its CLI reads."""
     held = bool(_holds_of(r, "benchmarks"))
-    out = (_machine(r) + _holds(r) + _queue(r) + _discovery(r, held) + _jobs(r) + _deploy(r) + _paused_deploys(r) + _router(r) + _incumbent(r) + _gateway(r) + _gate(r) + _monit(r))
+    out = (_machine(r) + _holds(r) + _queue(r) + _discovery(r, held) + _jobs(r) + _deploy(r) + _paused_deploys(r) + _router(r) + _incumbent(r) + _gateway(r) + _gate(r) + _monit(r) + _picks(r))
     out += [cond(f"unread-{k}", f"{k.capitalize()} was not read", r[k]["error"], source=k, alert=False,
                  line=f"{k} not read: {r[k]['error']}") for k in ("store", "queue", "deploy", "discovery", "services", "ratio",
                                                                   "timeline") if (r.get(k) or {}).get("error")]

@@ -267,6 +267,10 @@ def keepers(conn=None, gateway_files=None, typed=None, adopted=None) -> Keepers:
     for lane, specs in (adopted or {}).items():
         for spec in sorted({specs} if isinstance(specs, str) else specs):
             add(spec, f"{lane} adopted winner", lane)
+    if conn is not None:
+        from harness import owner_picks
+        for lane, spec in owner_picks.pinned_specs(conn):
+            add(spec, f"{lane} challenger awaiting the owner's picks", lane)
     for repo, why in {**TOOLING, **owned()}.items():
         k.repos.setdefault(repo.lower(), f"tooling: {why}")
     for lane, entry in _pinned().items():

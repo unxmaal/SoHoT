@@ -605,10 +605,12 @@ def is_reference(candidate: str) -> bool:
 def outcome_of(verdict: Verdict) -> tuple[str, str]:
     """The (outcome, reason) record() writes for this verdict."""
     from harness import reasons
+    if verdict.failure_class == reasons.OWNER_DECLINED:
+        return "declined", reasons.OWNER_PREFERENCE
     outcome, reason = reasons.CLASSES.get(verdict.failure_class, (
         "declined", reasons.LIMIT
         if verdict.failure_class in (reasons.UNDERPOWERED, reasons.INCONCLUSIVE, reasons.LANE_TOO_SMALL,
-                                     reasons.CONFIRMING)
+                                     reasons.CONFIRMING, reasons.AWAITING_OWNER)
         else reasons.CANDIDATE))
     return ("measured" if verdict.adopt else outcome), reason
 
@@ -634,6 +636,8 @@ def record(conn, verdict: Verdict, spec: str = "",
     spec = spec or verdict.challenger
     verdict = _control_guard(verdict, spec)
     verdict = _schema_guard(verdict, spec)
+    from harness import owner_picks
+    verdict, waits = owner_picks.gate(conn, verdict, spec, run_id)
     outcome, reason = outcome_of(verdict)
     serve = verdict.adopt
     detail = f"{verdict.lane}: {verdict.why}"
@@ -676,8 +680,12 @@ def record(conn, verdict: Verdict, spec: str = "",
                                 if "planned_alpha" in verdict.evidence else {}),
                              **({"confirm": verdict.evidence["confirm"]}
                                 if verdict.evidence.get("confirm") else {}),
+                             **({owner_picks.PICKED: verdict.evidence[owner_picks.PICKED]}
+                                if verdict.evidence.get(owner_picks.PICKED) else {}),
                              **({"min_effect": verdict.evidence["min_effect"]}
                                 if verdict.evidence.get("min_effect") else {})}), vid))
+        if waits:
+            owner_picks.open_item(conn, vid, waits, row["proposal"] or spec)
         if serve:
             from harness import adoption_state
             mid = conn.execute("SELECT machine_id FROM verdicts WHERE id = ?",

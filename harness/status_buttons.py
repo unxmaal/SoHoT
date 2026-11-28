@@ -84,3 +84,27 @@ def closed_lanes(r: dict, tok: str):
     """A function lane -> the open-anyway or close-again button for that Closed lanes row. #2164."""
     got = offered(r)
     return lambda lane: _forms(got, tok, [("lane_open", lane), ("lane_close", lane), ("incumbent_retry", lane)])
+
+
+def _media(kind: str, url: str, side: str) -> str:
+    from harness import status_view as sv
+    src = sv.esc(url)
+    if kind == "image":
+        return f"<img src='{src}' alt='{side}' loading='lazy'>"
+    tag = "video" if kind == "video" else "audio"
+    return f"<{tag} controls preload='metadata' src='{src}'></{tag}>"
+
+
+def picks(c: dict, tok: str) -> str:
+    """A blind-picks item: each pair's two stored outputs side by side and Left, Right and No preference buttons. #2183."""
+    from harness import status_view as sv
+    item = str(c["key"]).removeprefix("picks-")
+    out = []
+    for p in c["pairs"]:
+        btn = "".join(f"<span class='{'on' if p.get('picked') == side else ''}'>"
+                      f"{oa.button('pick', f'{item}:{p['n']}:{side}', tok, bare=True, label=label)}</span>"
+                      for side, label in (("left", "Left is better"), ("right", "Right is better"), ("none", "No preference")))
+        out.append(f"<div class='pp' data-pair='{p['n']}'><b>Pair {p['n'] + 1}</b><div class='ps'>"
+                   f"<div>{_media(p['kind'], p['left'], 'left')}</div><div>{_media(p['kind'], p['right'], 'right')}</div></div>"
+                   f"<div class='pb'>{btn}</div></div>")
+    return f"<div class='picks' data-item='{sv.esc(item)}'>{''.join(out)}</div>"

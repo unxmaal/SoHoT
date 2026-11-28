@@ -515,6 +515,29 @@ async def status_action_route(request):
     return HTMLResponse(text, status_code=code, headers={"cache-control": "no-store"})
 
 
+@SERVER.custom_route("/status/pick-media/{item}/{pair}/{side}", methods=["GET"])
+async def status_pick_media_route(request):
+    """One stored output of a waiting blind-picks pair, under a name that says nothing of its model. #2183."""
+    from starlette.concurrency import run_in_threadpool
+    from starlette.responses import FileResponse, Response
+
+    from harness import owner_picks, store
+
+    def find():
+        p = request.path_params
+        if not (str(p["item"]).isdigit() and str(p["pair"]).isdigit()):
+            return None
+        conn = store.open_ro()
+        try:
+            return owner_picks.media(conn, int(p["item"]), int(p["pair"]), p["side"])
+        finally:
+            conn.close()
+    got = await run_in_threadpool(find)
+    if got is None:
+        return Response("no such pair", status_code=404)
+    return FileResponse(got[0], media_type=got[1], headers={"cache-control": "no-store", "content-disposition": "inline"})
+
+
 def transport_security(host: str, port: int, extra=()):
     """Who is allowed to name this server in a Host header.
 

@@ -220,6 +220,7 @@ def test_another_machines_power_plan_for_this_machines_run_is_not_its_power():
 
 @pytest.mark.gauntlet("an-effect-reachable-from-a-run-that-is-not-the-live-deploy",
                       site="harness/status_page.py:_discovery_flow:gather")
+@pytest.mark.sqlite_store
 def test_the_flow_gather_starts_no_process_and_writes_nothing(monkeypatch):
     import subprocess
 

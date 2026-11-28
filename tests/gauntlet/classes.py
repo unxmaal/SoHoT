@@ -23,6 +23,10 @@ INDEX = {
         "waivers": {
             "harness/exclusive.py:EXCLUSIVE":
                 "the lanes that hold a large local working set under the exclusive flock, not the lanes a screen shrinks (#314)",
+            "harness/lanes.py:PERCEPTUAL":
+                "the lanes whose output no metric rates as better, pinned by test_the_four_perceptual_lanes_hold (#2183)",
+            "evals/core.py:MEDIA_MODALITIES":
+                "the lanes a runner stores a file for; the same four as lanes.PERCEPTUAL by coincidence of the set (#2183)",
             "harness/screen.py:MEDIA_LANES":
                 "the lanes whose screen shrinks a case, pinned by test_only_the_media_lanes_are_shrunk (#2166)",
         },

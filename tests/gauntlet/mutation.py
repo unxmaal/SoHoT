@@ -67,7 +67,7 @@ MODULES = {
         "tests/test_adopt_effect_confirm_725.py", "tests/test_min_effect_1320.py",
         "tests/test_limit_cuts_1087_harness_ac.py", "tests/test_limit_cuts_1087_harness_ps.py",
         "tests/test_adopt_store_given_1673.py", "tests/test_adoption_state_1735.py",
-        "tests/test_scratch_home_serving_1711.py", "tests/test_continuous_2181.py"],
+        "tests/test_scratch_home_serving_1711.py", "tests/test_continuous_2181.py", "tests/test_owner_picks_2183.py"],
     "harness/serving.py": [
         "tests/test_harness_serving.py", "tests/test_lane_routes.py", "tests/test_gguf_route.py",
         "tests/test_schema_lanes.py", "tests/test_ds4.py", "tests/test_remote_upstreams.py",
@@ -91,7 +91,7 @@ LEFT_OUT = {
                                             "test_revisit_tier_1060.py", "test_revisitable_after_deploy_1361.py",
                                             "test_revisitable_met_1749.py", "test_site.py", "test_futility_lane_too_small_1452.py", "test_verdict_lane_1777.py",
                                             "test_two_writes_1887.py", "test_verdict_event_1942.py", "test_detail_prefix_1998.py"),
-    "harness/reasons.py": ("test_needs_you_owner_2188.py", "test_screen_race_2166.py", "test_loop_circuit.py", "test_refetch_2161.py", "test_incumbent_down_2157.py", "test_adapter_measure_2086.py", "test_test_weights_2015.py", "test_harness_error_streak_2012.py", "test_screen_passed_over_2020.py", 
+    "harness/reasons.py": ("test_owner_picks_2183.py", "test_needs_you_owner_2188.py", "test_screen_race_2166.py", "test_loop_circuit.py", "test_refetch_2161.py", "test_incumbent_down_2157.py", "test_adapter_measure_2086.py", "test_test_weights_2015.py", "test_harness_error_streak_2012.py", "test_screen_passed_over_2020.py", 
         "test_passed_over_class_1779.py", "test_owner_decline_1564.py", "test_verdict_lane_1777.py", "test_runtime_trials_1474.py", "test_repo_repair_890.py", "test_agent_cut_call_1547.py", "test_craft_lane_1209.py", "test_staging_1244.py", "test_staging_torch_1358.py",
         "test_vision_engines_1282.py", "test_two_writes_1887.py",
         "test_shots_check_1208.py", "test_node_drain_1815.py",

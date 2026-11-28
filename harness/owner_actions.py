@@ -138,6 +138,13 @@ def _down_lanes(r: dict) -> list[tuple[str, str]]:
     return [(g["lane"], f"{g['lane']} ({g.get('runner') or 'incumbent'})") for g in rows if _NAME.match(str(g.get("lane") or ""))]
 
 
+def _picks(r: dict) -> list[tuple[str, str]]:
+    """Each choice of each pair of each waiting blind-picks item, as `item:pair:choice`; it names no model. #2183."""
+    items = ((r.get("stops") or {}).get("picks") or {}).get("items") or []
+    return [(f"{i['id']}:{p['n']}:{c}", f"item {i['id']} pair {p['n'] + 1}: {c}") for i in items if _JOB.match(str(i.get("id") or ""))
+            for p in i.get("pairs") or [] for c in ("left", "right", "none")]
+
+
 @dataclass(frozen=True)
 class Action:
     name: str
@@ -147,6 +154,10 @@ class Action:
     offers: Callable[[dict], list[tuple[str, str]]] | None = None
     #: The arg is several words joined by ":" (a job id and its new priority).
     split: bool = False
+    #: Runs on the first press: a pick is one tap of six, and a tap that is not the last still can be changed.
+    once: bool = False
+    #: Drawn in the generic Owner actions panel; a pick shows only beside the pair it decides.
+    panel: bool = True
 
     def verb(self, arg: str) -> list[str]:
         out: list[str] = []
@@ -194,6 +205,8 @@ ACTIONS = (
     Action("lane_close", "Close lane again", "ends the open-anyway of a gated lane now", ("lane-gate", "close", "{}"), _opened_lanes),
     Action("lane_reverify", "Reverify lane", "queues a re-run of the lane's served model when a reverify trigger has fired",
            ("reverify", "--lane", "{}"), _lanes),
+    Action("pick", "Pick", "records your blind pick on one pair; the last pick adopts or declines the challenger",
+           ("owner-picks", "pick", "{}"), _picks, True, True, False),
     Action("incumbent_retry", "Retry incumbent", "queues a re-run of the down incumbent's lane now; a pass clears the block on the lane",
            ("reverify", "--lane", "{}", "--retry-incumbent"), _down_lanes),
 )
@@ -275,7 +288,7 @@ def panel(r: dict, tok: str, post: str = "status/action") -> str:
     """The actions as forms: one first press each, a choice only from what `r` offers."""
     from harness import status_view as sv
     out = [f"<style>{CSS}</style><div class='panel'><h2>Owner actions</h2>"]
-    for a in ACTIONS:
+    for a in (a for a in ACTIONS if a.panel):
         out.append(f"<form class='act' method='post' action='{post}'>{_hidden(token=tok, action=a.name)}")
         offered = a.offers(r) if a.offers else None
         if offered:
@@ -299,11 +312,11 @@ def token_for(peer: str | None, headers, *, now: float | None = None) -> str:
     return token(peer or "", who, now) if who else ""
 
 
-def button(action: str, arg: str, tok: str, post: str = "status/action", *, bare: bool = False) -> str:
+def button(action: str, arg: str, tok: str, post: str = "status/action", *, bare: bool = False, label: str = "") -> str:
     """One press of `action` on `arg` from the Needs-you band or a row; the same confirm flow as the panel."""
     from harness import status_view as sv
     a = BY_NAME[action]
-    label = f"{a.label} {arg.split(':')[0][:12]}" if arg and not bare else a.label
+    label = label or (f"{a.label} {arg.split(':')[0][:12]}" if arg and not bare else a.label)
     return (f"<form class='act' method='post' action='{post}'>{_hidden(token=tok, action=action, **({'arg': arg} if arg else {}))}"
             f"<button title='{_attr(a.does)}'>{sv.esc(label)}</button></form>")
 
@@ -337,7 +350,8 @@ def press(peer: str | None, headers, form: dict, r: dict, *, now: float | None =
         return _refused(400, "the page does not offer that choice now; reload the status page", entry, home)
     verb = action.verb(arg)
     bound = (peer, who.get("id") or who.get("name"), name, arg)
-    if not nonce:
+    once = action.once and not nonce
+    if not nonce and not once:
         nonce = secrets.token_urlsafe(24)
         with _lock:
             for k in [k for k, v in _confirms.items() if v[1] < now]:
@@ -350,8 +364,8 @@ def press(peer: str | None, headers, form: dict, r: dict, *, now: float | None =
             f"{_hidden(token=form.get('token'), action=name, arg=arg, confirm=nonce)}"
             f"<button>Confirm: {sv.esc(action.label)}</button></form>"])
     with _lock:
-        held = _confirms.pop(nonce, None)
-    if held is None or held[0] != bound or held[1] < now:
+        held = None if once else _confirms.pop(nonce, None)
+    if not once and (held is None or held[0] != bound or held[1] < now):
         return _refused(409, "that confirmation was already used or has expired; nothing ran", entry, home)
     got = run_verb(verb, run)
     status_page.forget()

@@ -195,6 +195,7 @@ def test_the_page_reads_the_yield_through_its_own_section_and_survives_a_bad_one
 
 @pytest.mark.gauntlet("an-effect-reachable-from-a-run-that-is-not-the-live-deploy", site="harness/commands/pipeline_yield.py:cmd_pipeline_yield:gather")
 @pytest.mark.gauntlet("an-effect-reachable-from-a-run-that-is-not-the-live-deploy", site="harness/status_page.py:_yield:gather")
+@pytest.mark.sqlite_store
 def test_the_gather_writes_nothing_and_starts_no_process(monkeypatch):
     import subprocess
     monkeypatch.setattr(subprocess, "Popen", lambda *a, **k: (_ for _ in ()).throw(AssertionError("started a process")))
