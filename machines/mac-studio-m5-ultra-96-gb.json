@@ -66,12 +66,12 @@
   }
  ],
  "export_version": 4,
- "generated_at": "2026-11-28T08:07:56Z",
+ "generated_at": "2026-11-28T11:23:00Z",
  "lanes": [
   {
    "adopted": true,
    "adopted_how": "by-hand",
-   "age_days": 0.91,
+   "age_days": 1.04,
    "comparison": [
     {
      "about": "",
@@ -472,7 +472,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 0.38,
+   "age_days": 0.52,
    "comparison": [
     {
      "about": "35B (3B active) params, Q4_K_M, by ornith-ai",
@@ -2904,15 +2904,15 @@
    "pass_rate": 0.844,
    "passed": 54,
    "real_use": {
-    "completion_tokens": 4316,
+    "completion_tokens": 4306,
     "error_rate": 0.0,
     "errors": 0,
     "gateway_error_rate": 0.0,
     "gateway_errors": 0,
     "invalid_calls": 0,
     "invalid_rate": null,
-    "prompt_tokens": 143933,
-    "requests": 1268,
+    "prompt_tokens": 143848,
+    "requests": 1263,
     "tool_calls": 0,
     "ttft_p50": 1.7163,
     "ttft_p95": 3.1062
@@ -2929,7 +2929,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 3.29,
+   "age_days": 3.42,
    "comparison": [
     {
      "about": "4B params, 4bit, by mlx-community",
@@ -3653,7 +3653,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 0.88,
+   "age_days": 1.01,
    "comparison": [
     {
      "about": "30B (3B active) params, 4bit, by mlx-community",
@@ -4445,7 +4445,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.59,
+   "age_days": 0.73,
    "comparison": [
     {
      "about": "",
@@ -4659,7 +4659,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 26.03,
+   "age_days": 26.16,
    "comparison": [
     {
      "about": "",
@@ -4802,35 +4802,132 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.47,
+   "age_days": 0.05,
    "comparison": [
     {
-     "about": "family Qwen/Qwen3.5-4B, 4B params, by sky7350",
-     "candidate": "sky7350/Mica-v0.5-4B",
-     "first_s": 0.574,
-     "median_s": 0.385,
+     "about": "9B params",
+     "candidate": "nimble/Bespoke-Nimble-9B-v2",
+     "first_s": 12.127,
+     "median_s": 3.604,
      "metrics": {
       "calibrated": 1.0,
-      "completion_tokens": 36.3419,
-      "decide_accuracy": 0.778,
-      "decide_brier": 0.3175,
-      "decide_ece": 0.0723,
-      "tokens_per_s": 92.8248
+      "decide_accuracy": 0.7423,
+      "decide_brier": 0.3174,
+      "decide_ece": 0.0516
      },
-     "model": "sky7350/Mica-v0.5-4B",
+     "model": "nimble/Bespoke-Nimble-9B-v2",
      "not_run": "",
-     "pass_rate": 0.386,
-     "passed": 255,
-     "peak_gb": 0.0,
+     "pass_rate": 0.371,
+     "passed": 49,
+     "peak_gb": 20.23,
      "reference": false,
      "served_as": "",
-     "source": "https://huggingface.co/sky7350/Mica-v0.5-4B",
-     "total": 661,
+     "source": "",
+     "total": 132,
      "ttft_median_s": null,
      "ttft_p95_s": null
     }
    ],
    "exams": [
+    {
+     "cases": 132,
+     "differs": [],
+     "first_run_at": "2026-11-02T05:32:12Z",
+     "repeat": 1,
+     "rows": [
+      {
+       "about": "4B params, Q8_0, by mindchain",
+       "candidate": "llamacpp:imajev-4b-Q8_0",
+       "first_s": 0.716,
+       "median_s": 0.475,
+       "metrics": {
+        "calibrated": 1.0,
+        "co_tenant": 1.0,
+        "completion_tokens": 36.8182,
+        "decide_accuracy": 0.7901,
+        "decide_brier": 0.3188,
+        "decide_ece": 0.0781,
+        "tokens_per_s": 74.8818
+       },
+       "model": "llamacpp:imajev-4b-Q8_0",
+       "not_run": "",
+       "pass_rate": 0.409,
+       "passed": 54,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-11-11T03:21:43Z",
+       "served_as": "",
+       "source": "https://huggingface.co/mindchain/imajev-4b-GGUF",
+       "total": 132,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "about": "9B params",
+       "candidate": "nimble/Bespoke-Nimble-9B-v2",
+       "first_s": 12.127,
+       "median_s": 3.604,
+       "metrics": {
+        "calibrated": 1.0,
+        "decide_accuracy": 0.7423,
+        "decide_brier": 0.3174,
+        "decide_ece": 0.0516
+       },
+       "model": "nimble/Bespoke-Nimble-9B-v2",
+       "not_run": "",
+       "pass_rate": 0.371,
+       "passed": 49,
+       "peak_gb": 20.23,
+       "reference": false,
+       "run_at": "2026-11-28T10:09:47Z",
+       "served_as": "",
+       "source": "",
+       "total": 132,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "about": "family Qwen/Qwen3.5-9B, 9B params, by bespokelabs",
+       "candidate": "bespokelabs/Bespoke-Nimble-9B",
+       "first_s": null,
+       "median_s": null,
+       "metrics": {},
+       "model": "bespokelabs/Bespoke-Nimble-9B",
+       "not_run": "harness_error",
+       "pass_rate": null,
+       "passed": null,
+       "peak_gb": null,
+       "reference": false,
+       "run_at": "2026-11-11T03:21:43Z",
+       "served_as": "",
+       "source": "https://huggingface.co/bespokelabs/Bespoke-Nimble-9B",
+       "total": 132,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "about": "4B params, Q8_0, by mindchain",
+       "candidate": "imajev-4b-Q8_0",
+       "first_s": null,
+       "median_s": null,
+       "metrics": {},
+       "model": "imajev-4b-Q8_0",
+       "not_run": "harness_error",
+       "pass_rate": null,
+       "passed": null,
+       "peak_gb": null,
+       "reference": false,
+       "run_at": "2026-11-10T06:07:12Z",
+       "served_as": "",
+       "source": "https://huggingface.co/mindchain/imajev-4b-GGUF",
+       "total": 132,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      }
+     ],
+     "run_at": "2026-11-28T10:09:47Z",
+     "runs": 5
+    },
     {
      "cases": 661,
      "differs": [
@@ -4966,105 +5063,6 @@
      ],
      "run_at": "2026-11-27T20:55:14Z",
      "runs": 9
-    },
-    {
-     "cases": 132,
-     "differs": [],
-     "first_run_at": "2026-11-02T05:32:12Z",
-     "repeat": 1,
-     "rows": [
-      {
-       "about": "4B params, Q8_0, by mindchain",
-       "candidate": "llamacpp:imajev-4b-Q8_0",
-       "first_s": 0.716,
-       "median_s": 0.475,
-       "metrics": {
-        "calibrated": 1.0,
-        "co_tenant": 1.0,
-        "completion_tokens": 36.8182,
-        "decide_accuracy": 0.7901,
-        "decide_brier": 0.3188,
-        "decide_ece": 0.0781,
-        "tokens_per_s": 74.8818
-       },
-       "model": "llamacpp:imajev-4b-Q8_0",
-       "not_run": "",
-       "pass_rate": 0.409,
-       "passed": 54,
-       "peak_gb": 0.0,
-       "reference": false,
-       "run_at": "2026-11-11T03:21:43Z",
-       "served_as": "",
-       "source": "https://huggingface.co/mindchain/imajev-4b-GGUF",
-       "total": 132,
-       "ttft_median_s": null,
-       "ttft_p95_s": null
-      },
-      {
-       "about": "9B params",
-       "candidate": "nimble/Bespoke-Nimble-9B-v2",
-       "first_s": 10.695,
-       "median_s": 4.253,
-       "metrics": {
-        "calibrated": 1.0,
-        "decide_accuracy": 0.7423,
-        "decide_brier": 0.3174,
-        "decide_ece": 0.0516
-       },
-       "model": "nimble/Bespoke-Nimble-9B-v2",
-       "not_run": "",
-       "pass_rate": 0.371,
-       "passed": 49,
-       "peak_gb": 20.22,
-       "reference": false,
-       "run_at": "2026-11-10T06:07:12Z",
-       "served_as": "",
-       "source": "",
-       "total": 132,
-       "ttft_median_s": null,
-       "ttft_p95_s": null
-      },
-      {
-       "about": "family Qwen/Qwen3.5-9B, 9B params, by bespokelabs",
-       "candidate": "bespokelabs/Bespoke-Nimble-9B",
-       "first_s": null,
-       "median_s": null,
-       "metrics": {},
-       "model": "bespokelabs/Bespoke-Nimble-9B",
-       "not_run": "harness_error",
-       "pass_rate": null,
-       "passed": null,
-       "peak_gb": null,
-       "reference": false,
-       "run_at": "2026-11-11T03:21:43Z",
-       "served_as": "",
-       "source": "https://huggingface.co/bespokelabs/Bespoke-Nimble-9B",
-       "total": 132,
-       "ttft_median_s": null,
-       "ttft_p95_s": null
-      },
-      {
-       "about": "4B params, Q8_0, by mindchain",
-       "candidate": "imajev-4b-Q8_0",
-       "first_s": null,
-       "median_s": null,
-       "metrics": {},
-       "model": "imajev-4b-Q8_0",
-       "not_run": "harness_error",
-       "pass_rate": null,
-       "passed": null,
-       "peak_gb": null,
-       "reference": false,
-       "run_at": "2026-11-10T06:07:12Z",
-       "served_as": "",
-       "source": "https://huggingface.co/mindchain/imajev-4b-GGUF",
-       "total": 132,
-       "ttft_median_s": null,
-       "ttft_p95_s": null
-      }
-     ],
-     "run_at": "2026-11-11T03:21:43Z",
-     "runs": 4
     },
     {
      "cases": 661,
@@ -5602,7 +5600,7 @@
     }
    ],
    "lane": "decide",
-   "last_run_at": "2026-11-27T20:55:14Z",
+   "last_run_at": "2026-11-28T10:09:47Z",
    "measured_at": "2026-11-25T15:45:42Z",
    "median_s": 0.082,
    "metrics": {
@@ -5618,15 +5616,15 @@
    "pass_rate": 0.0,
    "passed": 0,
    "real_use": {
-    "completion_tokens": 31632,
+    "completion_tokens": 31680,
     "error_rate": 0.0,
     "errors": 0,
     "gateway_error_rate": 0.0,
     "gateway_errors": 0,
     "invalid_calls": 0,
     "invalid_rate": null,
-    "prompt_tokens": 338520,
-    "requests": 2657,
+    "prompt_tokens": 338652,
+    "requests": 2661,
     "tool_calls": 0,
     "ttft_p50": 0.5816390514373779,
     "ttft_p95": 0.5816390514373779
@@ -5643,7 +5641,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 6.92,
+   "age_days": 7.06,
    "comparison": [
     {
      "about": "35B (3B active) params, Q4_K_M, by ornith-ai",
@@ -6119,22 +6117,22 @@
    "pass_rate": 0.933,
    "passed": 349,
    "real_use": {
-    "completion_tokens": 76,
+    "completion_tokens": 52,
     "error_rate": 0.0,
     "errors": 0,
     "gateway_error_rate": 0.0,
     "gateway_errors": 0,
     "invalid_calls": 0,
     "invalid_rate": null,
-    "prompt_tokens": 646,
-    "requests": 38,
+    "prompt_tokens": 442,
+    "requests": 26,
     "tool_calls": 0,
     "ttft_p50": null,
     "ttft_p95": null
    },
    "serves": "llamacpp:Ornith-1.5-35B-Q4_K_M",
    "serves_model": "llamacpp:Ornith-1.5-35B-Q4_K_M; 35B (3B active) params, Q4_K_M, by ornith-ai",
-   "stale": false,
+   "stale": true,
    "total": 374,
    "ttft_median_s": 0.282,
    "ttft_p95_s": 0.36,
@@ -6144,7 +6142,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 0.37,
+   "age_days": 0.5,
    "comparison": [
     {
      "about": "",
@@ -6411,7 +6409,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 7.89,
+   "age_days": 8.03,
    "comparison": [
     {
      "about": "",
@@ -6549,7 +6547,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 7.89,
+   "age_days": 8.03,
    "comparison": [
     {
      "about": "",
@@ -6771,7 +6769,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 2.68,
+   "age_days": 2.82,
    "comparison": [
     {
      "about": "7B params, Q4_K_M, by bartowski",
@@ -7120,15 +7118,15 @@
    "pass_rate": 0.003,
    "passed": 1,
    "real_use": {
-    "completion_tokens": 164805,
+    "completion_tokens": 165193,
     "error_rate": 0.0,
     "errors": 0,
     "gateway_error_rate": 0.0,
     "gateway_errors": 0,
     "invalid_calls": 0,
     "invalid_rate": null,
-    "prompt_tokens": 74790,
-    "requests": 1700,
+    "prompt_tokens": 74966,
+    "requests": 1704,
     "tool_calls": 0,
     "ttft_p50": null,
     "ttft_p95": null
@@ -7145,7 +7143,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 0.38,
+   "age_days": 0.51,
    "comparison": [
     {
      "about": "35B (3B active) params, Q4_K_M, by ornith-ai",
@@ -8776,49 +8774,49 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.0,
+   "age_days": 0.02,
    "comparison": [
     {
      "about": "family Qwen/Qwen3.8-27B, 27B params, by OBLITERATUS",
      "candidate": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
      "first_s": 1.39,
-     "median_s": 1.688,
+     "median_s": 1.662,
      "metrics": {
-      "completion_tokens": 63.5,
-      "tokens_per_s": 32.9813
+      "completion_tokens": 63.3377,
+      "tokens_per_s": 33.2024
      },
      "model": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
      "not_run": "",
-     "pass_rate": 0.875,
-     "passed": 14,
+     "pass_rate": 0.858,
+     "passed": 533,
      "peak_gb": 0.0,
      "reference": false,
      "served_as": "",
      "source": "https://huggingface.co/OBLITERATUS/Qwen3.8-27B-OBLITERATED",
-     "total": 16,
-     "ttft_median_s": 1.559,
-     "ttft_p95_s": 3.324
+     "total": 621,
+     "ttft_median_s": 1.534,
+     "ttft_p95_s": 3.215
     },
     {
      "about": "7B params, 4bit, by mlx-community",
      "candidate": "mlx-community/Qwen2.5-7B-Instruct-4bit",
      "first_s": 0.707,
-     "median_s": 0.38,
+     "median_s": 0.324,
      "metrics": {
-      "completion_tokens": 6.2222,
-      "tokens_per_s": 13.3667
+      "completion_tokens": 5.5584,
+      "tokens_per_s": 16.5699
      },
      "model": "mlx-community/Qwen2.5-7B-Instruct-4bit",
      "not_run": "",
-     "pass_rate": 0.7,
-     "passed": 7,
+     "pass_rate": 0.734,
+     "passed": 331,
      "peak_gb": 0.0,
      "reference": false,
      "served_as": "",
      "source": "https://huggingface.co/mlx-community/Qwen2.5-7B-Instruct-4bit",
-     "total": 10,
-     "ttft_median_s": 0.217,
-     "ttft_p95_s": 0.322
+     "total": 451,
+     "ttft_median_s": 0.168,
+     "ttft_p95_s": 0.29
     }
    ],
    "exams": [
@@ -8832,23 +8830,23 @@
        "about": "family Qwen/Qwen3.8-27B, 27B params, by OBLITERATUS",
        "candidate": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
        "first_s": 1.39,
-       "median_s": 1.688,
+       "median_s": 1.662,
        "metrics": {
-        "completion_tokens": 63.5,
-        "tokens_per_s": 32.9813
+        "completion_tokens": 63.3377,
+        "tokens_per_s": 33.2024
        },
        "model": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
        "not_run": "",
-       "pass_rate": 0.875,
-       "passed": 14,
+       "pass_rate": 0.858,
+       "passed": 533,
        "peak_gb": 0.0,
        "reference": false,
-       "run_at": "2026-11-28T08:06:01Z",
+       "run_at": "2026-11-28T11:00:15Z",
        "served_as": "",
        "source": "https://huggingface.co/OBLITERATUS/Qwen3.8-27B-OBLITERATED",
-       "total": 16,
-       "ttft_median_s": 1.559,
-       "ttft_p95_s": 3.324
+       "total": 621,
+       "ttft_median_s": 1.534,
+       "ttft_p95_s": 3.215
       },
       {
        "about": "family OBLITERATUS/Qwen3.8-27B-OBLITERATED, 27B params, 4bit, by mlx-community",
@@ -8876,27 +8874,49 @@
        "about": "7B params, 4bit, by mlx-community",
        "candidate": "mlx-community/Qwen2.5-7B-Instruct-4bit",
        "first_s": 0.707,
-       "median_s": 0.38,
+       "median_s": 0.324,
        "metrics": {
-        "completion_tokens": 6.2222,
-        "tokens_per_s": 13.3667
+        "completion_tokens": 5.5584,
+        "tokens_per_s": 16.5699
        },
        "model": "mlx-community/Qwen2.5-7B-Instruct-4bit",
        "not_run": "",
-       "pass_rate": 0.7,
-       "passed": 7,
+       "pass_rate": 0.734,
+       "passed": 331,
        "peak_gb": 0.0,
        "reference": false,
-       "run_at": "2026-11-28T08:06:01Z",
+       "run_at": "2026-11-28T11:00:15Z",
        "served_as": "",
        "source": "https://huggingface.co/mlx-community/Qwen2.5-7B-Instruct-4bit",
-       "total": 10,
-       "ttft_median_s": 0.217,
-       "ttft_p95_s": 0.322
+       "total": 451,
+       "ttft_median_s": 0.168,
+       "ttft_p95_s": 0.29
+      },
+      {
+       "about": "family Qwen/Qwen3.8-27B, 27B params, 4bit, by ddalcu",
+       "candidate": "ddalcu/Qwen3.8-27B-MLX-Serve-4bit",
+       "first_s": 2.804,
+       "median_s": 3.951,
+       "metrics": {
+        "completion_tokens": 179.935,
+        "tokens_per_s": 35.4875
+       },
+       "model": "ddalcu/Qwen3.8-27B-MLX-Serve-4bit",
+       "not_run": "",
+       "pass_rate": 0.686,
+       "passed": 142,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-11-28T09:58:21Z",
+       "served_as": "",
+       "source": "https://huggingface.co/ddalcu/Qwen3.8-27B-MLX-Serve-4bit",
+       "total": 207,
+       "ttft_median_s": 3.479,
+       "ttft_p95_s": 11.346
       }
      ],
-     "run_at": "2026-11-28T08:06:01Z",
-     "runs": 3
+     "run_at": "2026-11-28T11:00:15Z",
+     "runs": 4
     },
     {
      "cases": 699,
@@ -8949,6 +8969,28 @@
        "ttft_p95_s": 2.714
       },
       {
+       "about": "family Qwen/Qwen3.8-27B, 27B params, 4bit, by ddalcu",
+       "candidate": "ddalcu/Qwen3.8-27B-MLX-Serve-4bit",
+       "first_s": 4.037,
+       "median_s": 3.47,
+       "metrics": {
+        "completion_tokens": 155.402,
+        "tokens_per_s": 34.0089
+       },
+       "model": "ddalcu/Qwen3.8-27B-MLX-Serve-4bit",
+       "not_run": "",
+       "pass_rate": 0.897,
+       "passed": 627,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-11-28T09:27:45Z",
+       "served_as": "",
+       "source": "https://huggingface.co/ddalcu/Qwen3.8-27B-MLX-Serve-4bit",
+       "total": 699,
+       "ttft_median_s": 3.081,
+       "ttft_p95_s": 9.69
+      },
+      {
        "about": "family ornith-ai/Ornith-1.5-35B-A3B, 35B (3B active) params, Q4_K_M, by bartowski",
        "candidate": "llamacpp:Ornith-1.5-35B-A3B-Q4_K_M",
        "first_s": 0.912,
@@ -8991,31 +9033,9 @@
        "total": 547,
        "ttft_median_s": 0.176,
        "ttft_p95_s": 0.246
-      },
-      {
-       "about": "family Qwen/Qwen3.8-27B, 27B params, 4bit, by ddalcu",
-       "candidate": "ddalcu/Qwen3.8-27B-MLX-Serve-4bit",
-       "first_s": 4.037,
-       "median_s": 3.377,
-       "metrics": {
-        "completion_tokens": 210.4945,
-        "tokens_per_s": 38.7615
-       },
-       "model": "ddalcu/Qwen3.8-27B-MLX-Serve-4bit",
-       "not_run": "",
-       "pass_rate": 0.62,
-       "passed": 57,
-       "peak_gb": 0.0,
-       "reference": false,
-       "run_at": "2026-11-28T03:47:36Z",
-       "served_as": "",
-       "source": "https://huggingface.co/ddalcu/Qwen3.8-27B-MLX-Serve-4bit",
-       "total": 92,
-       "ttft_median_s": 3.033,
-       "ttft_p95_s": 17.641
       }
      ],
-     "run_at": "2026-11-28T03:47:36Z",
+     "run_at": "2026-11-28T09:27:45Z",
      "runs": 4
     },
     {
@@ -10839,88 +10859,161 @@
     }
    ],
    "lane": "extract",
-   "last_run_at": "2026-11-28T08:06:01Z",
-   "measured_at": "2026-11-28T08:06:01Z",
-   "median_s": 0.38,
+   "last_run_at": "2026-11-28T11:00:15Z",
+   "measured_at": "2026-11-28T11:00:15Z",
+   "median_s": 0.324,
    "metrics": {
-    "completion_tokens": 6.2222,
-    "tokens_per_s": 13.3667
+    "completion_tokens": 5.5584,
+    "tokens_per_s": 16.5699
    },
    "not_run": "",
    "parked": "",
    "parked_until": "",
-   "pass_rate": 0.7,
-   "passed": 7,
+   "pass_rate": 0.734,
+   "passed": 331,
    "real_use": {
-    "completion_tokens": 52427,
+    "completion_tokens": 52447,
     "error_rate": 0.0,
     "errors": 0,
     "gateway_error_rate": 0.0,
     "gateway_errors": 0,
     "invalid_calls": 0,
     "invalid_rate": null,
-    "prompt_tokens": 696031,
-    "requests": 2191,
+    "prompt_tokens": 705843,
+    "requests": 2201,
     "tool_calls": 0,
     "ttft_p50": 1.7548859119415283,
-    "ttft_p95": 12.436760902404785
+    "ttft_p95": 12.257301092147827
    },
    "serves": "mlx-community/Qwen2.5-7B-Instruct-4bit",
    "serves_model": "mlx-community/Qwen2.5-7B-Instruct-4bit; 7B params, 4bit, by mlx-community",
    "stale": false,
-   "total": 10,
-   "ttft_median_s": 0.217,
-   "ttft_p95_s": 0.322,
+   "total": 451,
+   "ttft_median_s": 0.168,
+   "ttft_p95_s": 0.29,
    "unverified": false,
    "wanted": false
   },
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 3.07,
+   "age_days": 0.0,
    "comparison": [
     {
      "about": "0.6B params",
      "candidate": "parakeet-tdt-0.6b-v2",
-     "first_s": 7.184,
-     "median_s": 0.106,
+     "first_s": 0.164,
+     "median_s": 0.089,
      "metrics": {
-      "wer": 0.0145
+      "wer": 0.0251
      },
      "model": "parakeet-tdt-0.6b-v2",
      "not_run": "",
-     "pass_rate": 0.985,
-     "passed": 473,
+     "pass_rate": 0.964,
+     "passed": 398,
      "peak_gb": 0.0,
      "reference": false,
      "served_as": "",
      "source": "",
-     "total": 480,
+     "total": 413,
      "ttft_median_s": null,
      "ttft_p95_s": null
     },
     {
-     "about": "7B params",
-     "candidate": "VibeVoice-ASR-Streaming-7B",
-     "first_s": 3.718,
-     "median_s": 1.069,
+     "about": "",
+     "candidate": "whisper-tiny",
+     "first_s": 3.946,
+     "median_s": 0.067,
      "metrics": {
-      "wer": 0.186
+      "wer": 0.1257
      },
-     "model": "VibeVoice-ASR-Streaming-7B",
+     "model": "whisper-tiny",
      "not_run": "",
-     "pass_rate": 0.571,
-     "passed": 274,
+     "pass_rate": 0.765,
+     "passed": 316,
      "peak_gb": 0.0,
      "reference": false,
      "served_as": "",
      "source": "",
-     "total": 480,
+     "total": 413,
      "ttft_median_s": null,
      "ttft_p95_s": null
     }
    ],
    "exams": [
+    {
+     "cases": 413,
+     "differs": [],
+     "first_run_at": "2026-11-28T11:19:42Z",
+     "repeat": 1,
+     "rows": [
+      {
+       "about": "0.6B params",
+       "candidate": "parakeet-tdt-0.6b-v2",
+       "first_s": 0.164,
+       "median_s": 0.089,
+       "metrics": {
+        "wer": 0.0251
+       },
+       "model": "parakeet-tdt-0.6b-v2",
+       "not_run": "",
+       "pass_rate": 0.964,
+       "passed": 398,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-11-28T11:22:54Z",
+       "served_as": "",
+       "source": "",
+       "total": 413,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "about": "0.6B params, 8bit",
+       "candidate": "nemotron-3.5-asr-streaming-0.6b-8bit",
+       "first_s": 0.783,
+       "median_s": 0.159,
+       "metrics": {
+        "wer": 0.0421
+       },
+       "model": "nemotron-3.5-asr-streaming-0.6b-8bit",
+       "not_run": "",
+       "pass_rate": 0.925,
+       "passed": 382,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-11-28T11:19:42Z",
+       "served_as": "",
+       "source": "",
+       "total": 413,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "about": "",
+       "candidate": "whisper-tiny",
+       "first_s": 3.946,
+       "median_s": 0.067,
+       "metrics": {
+        "wer": 0.1257
+       },
+       "model": "whisper-tiny",
+       "not_run": "",
+       "pass_rate": 0.765,
+       "passed": 316,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-11-28T11:22:54Z",
+       "served_as": "",
+       "source": "",
+       "total": 413,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      }
+     ],
+     "run_at": "2026-11-28T11:22:54Z",
+     "runs": 2
+    },
     {
      "cases": 480,
      "differs": [
@@ -11225,22 +11318,22 @@
     }
    ],
    "lane": "stt",
-   "last_run_at": "2026-11-25T06:23:48Z",
-   "measured_at": "2026-11-25T06:23:48Z",
-   "median_s": 0.106,
+   "last_run_at": "2026-11-28T11:22:54Z",
+   "measured_at": "2026-11-28T11:22:54Z",
+   "median_s": 0.089,
    "metrics": {
-    "wer": 0.0145
+    "wer": 0.0251
    },
    "not_run": "",
    "parked": "",
    "parked_until": "",
-   "pass_rate": 0.985,
-   "passed": 473,
+   "pass_rate": 0.964,
+   "passed": 398,
    "real_use": null,
    "serves": "mlx-community/parakeet-tdt-0.6b-v2",
    "serves_model": "mlx-community/parakeet-tdt-0.6b-v2; 0.6B params, by mlx-community",
    "stale": false,
-   "total": 480,
+   "total": 413,
    "ttft_median_s": null,
    "ttft_p95_s": null,
    "unverified": false,
@@ -11249,50 +11342,102 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 19.2,
+   "age_days": 0.04,
    "comparison": [
     {
      "about": "",
-     "candidate": "fish-audio-s2-pro",
-     "first_s": 3.918,
-     "median_s": 3.334,
+     "candidate": "MOSS-TTS-v1.5",
+     "first_s": 18.462,
+     "median_s": 2.553,
      "metrics": {
-      "wer": 0.1004
+      "wer": 0.1046
      },
-     "model": "fish-audio-s2-pro",
+     "model": "MOSS-TTS-v1.5",
      "not_run": "",
-     "pass_rate": 0.856,
-     "passed": 398,
+     "pass_rate": 0.829,
+     "passed": 92,
      "peak_gb": 0.0,
      "reference": false,
      "served_as": "",
      "source": "",
-     "total": 465,
+     "total": 111,
      "ttft_median_s": null,
      "ttft_p95_s": null
     },
     {
      "about": "82M params, bf16, by Kokoro-82M-bf16",
      "candidate": "Kokoro-82M-bf16/bm_george",
-     "first_s": 0.327,
-     "median_s": 0.162,
+     "first_s": 4.047,
+     "median_s": 0.16,
      "metrics": {
-      "wer": 0.0968
+      "wer": 0.1164
      },
      "model": "Kokoro-82M-bf16/bm_george",
      "not_run": "",
-     "pass_rate": 0.854,
-     "passed": 397,
+     "pass_rate": 0.784,
+     "passed": 87,
      "peak_gb": 0.0,
      "reference": false,
      "served_as": "",
      "source": "https://huggingface.co/Kokoro-82M-bf16/bm_george",
-     "total": 465,
+     "total": 111,
      "ttft_median_s": null,
      "ttft_p95_s": null
     }
    ],
    "exams": [
+    {
+     "cases": 243,
+     "differs": [],
+     "first_run_at": "2026-11-28T10:25:23Z",
+     "repeat": 1,
+     "rows": [
+      {
+       "about": "",
+       "candidate": "MOSS-TTS-v1.5",
+       "first_s": 18.462,
+       "median_s": 2.553,
+       "metrics": {
+        "wer": 0.1046
+       },
+       "model": "MOSS-TTS-v1.5",
+       "not_run": "",
+       "pass_rate": 0.829,
+       "passed": 92,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-11-28T10:25:23Z",
+       "served_as": "",
+       "source": "",
+       "total": 111,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "about": "82M params, bf16, by Kokoro-82M-bf16",
+       "candidate": "Kokoro-82M-bf16/bm_george",
+       "first_s": 4.047,
+       "median_s": 0.16,
+       "metrics": {
+        "wer": 0.1164
+       },
+       "model": "Kokoro-82M-bf16/bm_george",
+       "not_run": "",
+       "pass_rate": 0.784,
+       "passed": 87,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-11-28T10:25:23Z",
+       "served_as": "",
+       "source": "https://huggingface.co/Kokoro-82M-bf16/bm_george",
+       "total": 111,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      }
+     ],
+     "run_at": "2026-11-28T10:25:23Z",
+     "runs": 1
+    },
     {
      "cases": 470,
      "differs": [],
@@ -11461,22 +11606,22 @@
     }
    ],
    "lane": "tts",
-   "last_run_at": "2026-11-09T03:24:51Z",
-   "measured_at": "2026-11-09T03:24:51Z",
-   "median_s": 0.162,
+   "last_run_at": "2026-11-28T10:25:23Z",
+   "measured_at": "2026-11-28T10:25:23Z",
+   "median_s": 0.16,
    "metrics": {
-    "wer": 0.0968
+    "wer": 0.1164
    },
    "not_run": "",
    "parked": "",
    "parked_until": "",
-   "pass_rate": 0.854,
-   "passed": 397,
+   "pass_rate": 0.784,
+   "passed": 87,
    "real_use": null,
    "serves": "mlx-community/Kokoro-82M-bf16",
    "serves_model": "mlx-community/Kokoro-82M-bf16; family yl4579/StyleTTS2-LJSpeech, 82M params, bf16, by mlx-community",
-   "stale": true,
-   "total": 465,
+   "stale": false,
+   "total": 111,
    "ttft_median_s": null,
    "ttft_p95_s": null,
    "unverified": false,
@@ -11490,7 +11635,7 @@
   "first_seen": "2026-10-05T19:28:52Z",
   "hw_model": "Mac17,15",
   "label": "Mac Studio M5 Ultra 96 GB",
-  "last_seen": "2026-11-28T08:06:04Z",
+  "last_seen": "2026-11-28T11:22:57Z",
   "memory_gb": 96.0,
   "os": "macOS 27.2",
   "runtimes": [
@@ -11791,7 +11936,7 @@
       "2026-11-25": 44048.0,
       "2026-11-26": 325124.0,
       "2026-11-27": 643324.0,
-      "2026-11-28": 73860.0
+      "2026-11-28": 126897.0
      },
      "Edit": {
       "2026-09-03": 159.0,
@@ -11923,7 +12068,7 @@
       "2026-11-24": 22395.0,
       "2026-11-26": 81495.0,
       "2026-11-27": 173214.0,
-      "2026-11-28": 3588.0
+      "2026-11-28": 6678.0
      },
      "WebFetch": {
       "2026-09-07": 831.0,
@@ -12082,7 +12227,7 @@
       "2026-11-25": 4838.0,
       "2026-11-26": 10111.0,
       "2026-11-27": 23874.0,
-      "2026-11-28": 5292.0
+      "2026-11-28": 8991.0
      },
      "mcm-engine search": {
       "2026-09-03": 6017.0,
@@ -12162,7 +12307,7 @@
       "2026-11-25": 6361.0,
       "2026-11-26": 126688.0,
       "2026-11-27": 163062.0,
-      "2026-11-28": 19185.0
+      "2026-11-28": 38568.0
      },
      "other": {
       "2026-09-03": 1399.0,
@@ -12242,7 +12387,7 @@
       "2026-11-25": 3228.0,
       "2026-11-26": 15461.0,
       "2026-11-27": 29262.0,
-      "2026-11-28": 1053.0
+      "2026-11-28": 3648.0
      }
     },
     "title": "Tool-result tokens into Claude's context",
@@ -12275,7 +12420,7 @@
       "2026-11-22": "11 accepted, 7 rejected, 10 unknown, 0 pending",
       "2026-11-26": "4 accepted, 1 rejected, 33 unknown, 0 pending",
       "2026-11-27": "18 accepted, 12 rejected, 0 unknown, 123 pending",
-      "2026-11-28": "1 accepted, 0 rejected, 0 unknown, 7 pending"
+      "2026-11-28": "5 accepted, 0 rejected, 0 unknown, 9 pending"
      }
     },
     "note": "Share of closed outcomes, reported or inferred from the caller's transcript, that were accepted rather than rejected.",
