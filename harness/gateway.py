@@ -37,12 +37,13 @@ def config_path(config=None) -> Path:
     return Path(config or os.environ.get(ENV_VAR) or DEFAULT)
 
 
-def load(config=None) -> dict:
+def load(config=None, share: bool = False) -> dict:
     """The config's parsed contents, or {} when it cannot be read.
 
     Fails OPEN by design: a missing or malformed config means "this machine
     serves nothing through a gateway", which is true of a fresh clone, and
     raising here would take down every tier that asks what is served.
+    `share` hands back the cached parse itself, for a caller that only reads. #2191.
     """
     try:
         import yaml
@@ -56,7 +57,7 @@ def load(config=None) -> dict:
         if len(_PARSED) >= 64:
             _PARSED.clear()
         _PARSED[text] = yaml.load(text, Loader=getattr(yaml, "CSafeLoader", yaml.SafeLoader)) or {}
-    return copy.deepcopy(_PARSED[text])
+    return _PARSED[text] if share else copy.deepcopy(_PARSED[text])
 
 
 #: Parsed configs keyed by their text: callers resolve aliases hundreds of times per command. #720.

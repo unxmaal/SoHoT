@@ -468,6 +468,7 @@ capabilities:
       - harness/commands/baseline.py
       - evals/workload_baseline.py
       - harness/token_flow.py
+      - harness/file_index.py
 
   - name: reports-publish
     summary: The morning report, the harness report, lane feeds and the public site built from each machine's export.

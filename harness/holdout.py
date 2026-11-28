@@ -7,8 +7,10 @@ unchanged case keeps its side and an edited one is drawn again.
 """
 from __future__ import annotations
 
+import contextlib
 import functools
 import hashlib
+from threading import local as _Local
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -147,8 +149,10 @@ def assign(lane: str, cases) -> Split:
 @functools.lru_cache(maxsize=8)
 def _cases(root: str, private: bool, stamp: tuple) -> tuple:
     # Per root, so a new local root does not reload every shipped case. #720.
+    from evals import core
     from evals.core import load_cases
-    return tuple(load_cases(root, private=True) if private else load_cases(root))
+    with core.case_index(root):
+        return tuple(load_cases(root, private=True) if private else load_cases(root))
 
 
 def _stamp(root: Path) -> tuple:
@@ -165,7 +169,32 @@ def _splits(roots: tuple) -> dict:
     return {lane: assign(lane, cases) for lane, cases in by.items()}
 
 
+_pin = _Local()
+
+
+@contextlib.contextmanager
+def pinned():
+    """Read the case roots' stamps once in this block: a status build asks for the splits dozens of times, each a stat of every case file. #2191."""
+    if getattr(_pin, "roots", None) is not None:
+        yield
+        return
+    _pin.roots = ()
+    try:
+        yield
+    finally:
+        _pin.roots = None
+
+
 def _roots(root=None) -> tuple:
+    if root is None and getattr(_pin, "roots", None):
+        return _pin.roots
+    got = _stamped(root)
+    if root is None and getattr(_pin, "roots", None) == ():
+        _pin.roots = got
+    return got
+
+
+def _stamped(root=None) -> tuple:
     from evals.core import local_root
     roots = [(Path(root) if root is not None else
               Path(__file__).resolve().parent.parent / "evals" / "cases", False)]
