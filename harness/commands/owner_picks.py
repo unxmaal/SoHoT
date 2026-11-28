@@ -11,7 +11,7 @@ def add_parser(sub) -> None:
     one = sp.add_parser("pick", help="record a choice on one pair; the last pair adopts or declines the challenger")
     one.add_argument("item", type=int)
     one.add_argument("pair", type=int, help="the pair's number from 0")
-    one.add_argument("choice", choices=("left", "right", "none"))
+    one.add_argument("choice", help="left, right or none")
     one.set_defaults(func=cmd_pick)
 
 

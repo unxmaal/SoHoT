@@ -35,10 +35,9 @@ def _names(conn, verdict, spec: str) -> dict[str, str]:
     """Each name a results row may carry for the incumbent and the challenger -> 'inc' or 'chal'."""
     from harness import candidates
     names = {verdict.incumbent: "inc", verdict.challenger: "chal"}
-    try:
-        names.setdefault(candidates.key_for(conn, spec), "chal")
-    except Exception:  # noqa: BLE001 - a spec with no key falls back to the verdict's own names
-        pass
+    row = candidates.get(conn, spec) if spec else None
+    if row:
+        names.setdefault(row["receipt_key"], "chal")
     return {k: v for k, v in names.items() if k}
 
 
@@ -54,6 +53,10 @@ def pairs_for(conn, runs: list, names: dict[str, str], n: int, rng: random.Rando
         if side and kind_of(path) and Path(path).is_file():
             have.setdefault(r["case_id"], {}).setdefault(side, path)
     cases = sorted(c for c, sides in have.items() if len(sides) == 2)
+    if len(cases) > n:
+        from harness import cuts
+        cuts.cut("owner_picks_pairs", f"{len(cases)} cases have both outputs; {n} blind pairs are shown", value=n,
+                 kept=n, dropped=len(cases) - n, conn=conn)
     out = []
     for case in rng.sample(cases, min(n, len(cases))):
         flip = rng.random() < 0.5
@@ -179,8 +182,13 @@ def resolve(conn, it: dict) -> str:
     else:
         out = replace(verdict, adopt=False, failure_class=reasons.OWNER_DECLINED, evidence=evidence,
                       why=f"won the gate, but {said}")
+    if not won and t["chal"] > t["inc"]:
+        from harness import cuts
+        cuts.cut("owner_picks_needed", f"{it['spec']}: {t['chal']} blind pairs for it of {len(it['pairs'])}, short of {summary['needed']}",
+                 value=summary["needed"], kept=0, dropped=1, conn=conn)
     adopt.record(conn, out, spec=it["spec"], run_id=it["run_id"])
-    conn.execute("UPDATE owner_picks SET state = ?, decided_at = ? WHERE id = ?", (ADOPTED if won else DECLINED, time.time(), it["id"]))
+    conn.execute("UPDATE owner_picks SET state = ?, decided_at = ? WHERE id = ? AND state = ?",
+                 (ADOPTED if won else DECLINED, time.time(), it["id"], WAITING))
     conn.commit()
     if not won:
         test_weights.release(it["proposal"])

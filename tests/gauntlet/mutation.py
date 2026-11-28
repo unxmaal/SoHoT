@@ -125,7 +125,7 @@ LEFT_OUT = {
         "test_confirm_resume_1357.py", "test_store_errors_1432.py", "test_canary_stt_1531.py",
         "test_mflux_second_repo_1546.py", "test_incumbent_silent_1656.py", "test_adoption_state_1735.py",
         "test_ca_inventory_1776.py", "test_download_event_1878.py", "test_detail_prefix_1998.py"),
-    "harness/adopt.py": ("test_lane_gate_2164.py", "test_lane_holdouts_2182.py", "test_code_extract_cases_603.py", "test_retrieval_agent_cases_2182.py", "test_incumbent_down_2157.py", "test_gateway_degraded_2132.py", "test_adapter_measure_2086.py", "test_idle_window_2087.py", "test_test_weights_2015.py", 
+    "harness/adopt.py": ("test_owner_picks_2183.py", "test_lane_gate_2164.py", "test_lane_holdouts_2182.py", "test_code_extract_cases_603.py", "test_retrieval_agent_cases_2182.py", "test_incumbent_down_2157.py", "test_gateway_degraded_2132.py", "test_adapter_measure_2086.py", "test_idle_window_2087.py", "test_test_weights_2015.py", 
         "test_detail_prefix_1998.py", "test_measure_gateway_1660.py","test_canary_stt_1531.py", "test_technique_triage_993.py", "test_harness_paired.py", "test_reverify_case_sets_1496.py", "test_reverify_power_1504.py", "test_harness_report.py", "test_loop_circuit.py", "test_measure_budget.py",
         "test_over_budget_796.py", "test_planted_919.py", "test_projection_696.py", "test_rank_893.py", "test_router_unload.py",
         "test_store_state.py", "test_stt_screen_power_1007.py", "test_sweep_ceiling_806.py", "test_loop_revisit_1055.py",
