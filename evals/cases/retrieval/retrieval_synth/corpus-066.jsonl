@@ -1,0 +1,30 @@
+{"id": "n00", "text": "The primary datacenter of Tern-2 is Cairo; failover is handled by operations. Nothing about this has been disputed so far."}
+{"id": "n01", "text": "The yearly budget for Dunlin-5 is $685k, covering licences and hosting. The page was last reviewed in the spring."}
+{"id": "n02", "text": "Unlike Ibis-7, whose budget is handled elsewhere, the budget of Plover-2 is $1595k. Nobody should assume the budget of Plover-2 applies to Ibis-7, the budget differs. The page was last reviewed in the spring."}
+{"id": "n03", "text": "Unlike Godwit-8, whose pager rotation is handled elsewhere, the pager rotation of Teal-2 is Bruno Kowalczyk. Nobody should assume the pager rotation of Teal-2 applies to Godwit-8, the pager rotation differs."}
+{"id": "n04", "text": "Unlike Ibis-7, whose pager rotation is handled elsewhere, the pager rotation of Tern-2 is Mateo Zielinski. Nobody should assume the pager rotation of Tern-2 applies to Ibis-7, the pager rotation differs. The page was last reviewed in the spring."}
+{"id": "n05", "text": "The owner of Ibis-7 is the Sprocket team, and every change to Ibis-7 goes through their review. The page was last reviewed in the spring."}
+{"id": "n06", "text": "Unlike Dunlin-5, whose language is handled elsewhere, the language of Tern-2 is OCaml. Nobody should assume the language of Tern-2 applies to Dunlin-5, the language differs."}
+{"id": "n07", "text": "For Godwit-8 the port is 5349. Changing the port needs a change ticket."}
+{"id": "n08", "text": "Unlike Godwit-8, whose budget is handled elsewhere, the budget of Tern-2 is $2640k. Nobody should assume the budget of Tern-2 applies to Godwit-8, the budget differs. The entry was reformatted last quarter."}
+{"id": "n09", "text": "The retirement date for Godwit-8 is August 6, 2028; after that day it stops serving. The page was last reviewed in the spring."}
+{"id": "n10", "text": "Pages from Dunlin-5 land on the pager rotation of Priya Ekwueme before anyone else."}
+{"id": "n11", "text": "Plover-2 has one owner, the Harbor team, which approves each release and keeps the runbook current."}
+{"id": "n12", "text": "The service Ibis-7 takes traffic on port 9486, and the port is fixed across every environment."}
+{"id": "n13", "text": "Unlike Teal-2, whose pager rotation is handled elsewhere, the pager rotation of Plover-2 is Soren Valdivia. Nobody should assume the pager rotation of Plover-2 applies to Teal-2, the pager rotation differs."}
+{"id": "n14", "text": "Dunlin-5 listens on port 6853; anyone who cannot reach that port should check the firewall rules."}
+{"id": "n15", "text": "Unlike Plover-2, whose language is handled elsewhere, the language of Dunlin-5 is Kotlin. Nobody should assume the language of Dunlin-5 applies to Plover-2, the language differs. The entry was reformatted last quarter."}
+{"id": "n16", "text": "For Plover-2 the port is 3698. Changing the port needs a change ticket. An older draft of this note was archived."}
+{"id": "n17", "text": "Unlike Godwit-8, whose retirement date is handled elsewhere, the retirement date of Tern-2 is November 20, 2028. Nobody should assume the retirement date of Tern-2 applies to Godwit-8, the retirement date differs."}
+{"id": "n18", "text": "Unlike Ibis-7, whose owner is handled elsewhere, the owner of Dunlin-5 is the Tessera team. Nobody should assume the owner of Dunlin-5 applies to Ibis-7, the owner differs."}
+{"id": "n19", "text": "Teal-2 enforces a rate limit of 3850 requests per minute per caller. The entry was reformatted last quarter."}
+{"id": "n20", "text": "The primary datacenter of Teal-2 is Perth; failover is handled by operations."}
+{"id": "n21", "text": "Unlike Plover-2, whose port is handled elsewhere, the port of Teal-2 is 9405. Nobody should assume the port of Teal-2 applies to Plover-2, the port differs. An older draft of this note was archived."}
+{"id": "n22", "text": "Source for Plover-2 is written in Zig; no other language is allowed in its repository."}
+{"id": "n23", "text": "Unlike Teal-2, whose datacenter is handled elsewhere, the datacenter of Godwit-8 is the Tallinn datacenter. Nobody should assume the datacenter of Godwit-8 applies to Teal-2, the datacenter differs. Nothing about this has been disputed so far."}
+{"id": "n24", "text": "Unlike Dunlin-5, whose pager rotation is handled elsewhere, the pager rotation of Godwit-8 is Kenji Whitlock. Nobody should assume the pager rotation of Godwit-8 applies to Dunlin-5, the pager rotation differs."}
+{"id": "n25", "text": "Expect throttling at the rate limit for Ibis-7, which is 1900 requests per minute."}
+{"id": "n26", "text": "Unlike Dunlin-5, whose pager rotation is handled elsewhere, the pager rotation of Ibis-7 is Elena Quintero. Nobody should assume the pager rotation of Ibis-7 applies to Dunlin-5, the pager rotation differs."}
+{"id": "n27", "text": "The yearly budget for Godwit-8 is $3235k, covering licences and hosting."}
+{"id": "n28", "text": "Unlike Tern-2, whose budget is handled elsewhere, the budget of Teal-2 is $2765k. Nobody should assume the budget of Teal-2 applies to Tern-2, the budget differs."}
+{"id": "n29", "text": "Finance fixed the budget of Ibis-7 at $115k, reviewed every quarter."}

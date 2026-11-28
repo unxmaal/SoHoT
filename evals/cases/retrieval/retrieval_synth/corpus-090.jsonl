@@ -1,0 +1,30 @@
+{"id": "n00", "text": "The yearly budget for Siskin-7 is $260k, covering licences and hosting."}
+{"id": "n01", "text": "Jolene Nakamura is on the pager rotation of Lark-8 this month, with a deputy as backup."}
+{"id": "n02", "text": "Unlike Swift-4, whose pager rotation is handled elsewhere, the pager rotation of Osprey-3 is Umar Abernathy. Nobody should assume the pager rotation of Osprey-3 applies to Swift-4, the pager rotation differs."}
+{"id": "n03", "text": "Unlike Swift-4, whose rate limit is handled elsewhere, the rate limit of Dunlin-3 is 3650 requests per minute. Nobody should assume the rate limit of Dunlin-3 applies to Swift-4, the rate limit differs."}
+{"id": "n04", "text": "Osprey-3 is implemented in Kotlin; the language was chosen for its tooling."}
+{"id": "n05", "text": "Unlike Lark-8, whose budget is handled elsewhere, the budget of Osprey-3 is $3705k. Nobody should assume the budget of Osprey-3 applies to Lark-8, the budget differs. Nothing about this has been disputed so far."}
+{"id": "n06", "text": "Unlike Swift-4, whose language is handled elsewhere, the language of Dunlin-3 is Kotlin. Nobody should assume the language of Dunlin-3 applies to Swift-4, the language differs."}
+{"id": "n07", "text": "Osprey-3 enforces a rate limit of 3300 requests per minute per caller. The page was last reviewed in the spring."}
+{"id": "n08", "text": "Curlew-3 has one owner, the Compass team, which approves each release and keeps the runbook current."}
+{"id": "n09", "text": "The primary datacenter of Lark-8 is Hanoi; failover is handled by operations."}
+{"id": "n10", "text": "Swift-4 enforces a rate limit of 1250 requests per minute per caller. The entry was reformatted last quarter."}
+{"id": "n11", "text": "Finance fixed the budget of Swift-4 at $4270k, reviewed every quarter."}
+{"id": "n12", "text": "The yearly budget for Lark-8 is $2255k, covering licences and hosting. An older draft of this note was archived."}
+{"id": "n13", "text": "For Osprey-3 the port is 4229. Changing the port needs a change ticket."}
+{"id": "n14", "text": "The retirement date for Siskin-7 is April 14, 2027; after that day it stops serving. Details change slowly, so check the history first."}
+{"id": "n15", "text": "Plan around the retirement date of Swift-4: May 6, 2028 is when it goes dark."}
+{"id": "n16", "text": "Dunlin-3 listens on port 2890; anyone who cannot reach that port should check the firewall rules."}
+{"id": "n17", "text": "Unlike Dunlin-3, whose port is handled elsewhere, the port of Siskin-7 is 9011. Nobody should assume the port of Siskin-7 applies to Dunlin-3, the port differs."}
+{"id": "n18", "text": "Unlike Swift-4, whose retirement date is handled elsewhere, the retirement date of Dunlin-3 is July 19, 2029. Nobody should assume the retirement date of Dunlin-3 applies to Swift-4, the retirement date differs."}
+{"id": "n19", "text": "Curlew-3 listens on port 8103; anyone who cannot reach that port should check the firewall rules. Nothing about this has been disputed so far."}
+{"id": "n20", "text": "The language of Swift-4 is Erlang, which new contributors must know."}
+{"id": "n21", "text": "Questions about Lark-8 start with its owner, the Compass team; they triage anything filed against it. An older draft of this note was archived."}
+{"id": "n22", "text": "Yusuf Zielinski is on the pager rotation of Dunlin-3 this month, with a deputy as backup."}
+{"id": "n23", "text": "The service Lark-8 takes traffic on port 2137, and the port is fixed across every environment. Details change slowly, so check the history first."}
+{"id": "n24", "text": "Unlike Siskin-7, whose pager rotation is handled elsewhere, the pager rotation of Curlew-3 is Rosa Kowalczyk. Nobody should assume the pager rotation of Curlew-3 applies to Siskin-7, the pager rotation differs."}
+{"id": "n25", "text": "Pages from Siskin-7 land on the pager rotation of Quinn Abernathy before anyone else. The entry was reformatted last quarter."}
+{"id": "n26", "text": "Expect throttling at the rate limit for Curlew-3, which is 200 requests per minute."}
+{"id": "n27", "text": "Unlike Lark-8, whose datacenter is handled elsewhere, the datacenter of Siskin-7 is the Cairo datacenter. Nobody should assume the datacenter of Siskin-7 applies to Lark-8, the datacenter differs. Details change slowly, so check the history first."}
+{"id": "n28", "text": "Unlike Siskin-7, whose pager rotation is handled elsewhere, the pager rotation of Swift-4 is Vera Whitlock. Nobody should assume the pager rotation of Swift-4 applies to Siskin-7, the pager rotation differs. A diagram is attached to the wiki entry."}
+{"id": "n29", "text": "Unlike Osprey-3, whose language is handled elsewhere, the language of Curlew-3 is Erlang. Nobody should assume the language of Curlew-3 applies to Osprey-3, the language differs."}

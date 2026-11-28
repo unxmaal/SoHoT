@@ -1,0 +1,124 @@
+[
+ {
+  "name": "merge_sail",
+  "days": 4,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "split_rope",
+  "days": 9,
+  "after": [
+   "merge_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_keel",
+  "days": 8,
+  "after": [
+   "merge_sail",
+   "split_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_anchor",
+  "days": 6,
+  "after": [
+   "load_keel"
+  ],
+  "done": true
+ },
+ {
+  "name": "reconcile_ferry",
+  "days": 1,
+  "after": [
+   "merge_sail",
+   "load_keel",
+   "split_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_lantern",
+  "days": 3,
+  "after": [
+   "load_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_tide",
+  "days": 2,
+  "after": [
+   "split_rope",
+   "merge_lantern",
+   "merge_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_harbor",
+  "days": 6,
+  "after": [
+   "split_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_pallet",
+  "days": 5,
+  "after": [
+   "merge_lantern",
+   "merge_sail",
+   "load_keel"
+  ],
+  "done": true
+ },
+ {
+  "name": "parse_deck",
+  "days": 8,
+  "after": [
+   "merge_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_sail",
+  "days": 5,
+  "after": [
+   "parse_deck",
+   "load_pallet",
+   "load_anchor"
+  ],
+  "done": true
+ },
+ {
+  "name": "resolve_lantern",
+  "days": 3,
+  "after": [
+   "merge_lantern",
+   "split_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_cargo",
+  "days": 6,
+  "after": [
+   "load_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_rope",
+  "days": 9,
+  "after": [
+   "reconcile_ferry",
+   "load_sail",
+   "flush_cargo"
+  ],
+  "done": false
+ }
+]

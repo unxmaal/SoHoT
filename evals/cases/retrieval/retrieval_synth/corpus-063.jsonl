@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Tern-8 is implemented in OCaml; the language was chosen for its tooling."}
+{"id": "n01", "text": "For Pipit-7 the port is 5031. Changing the port needs a change ticket."}
+{"id": "n02", "text": "Unlike Pipit-7, whose retirement date is handled elsewhere, the retirement date of Merlin-9 is October 17, 2029. Nobody should assume the retirement date of Merlin-9 applies to Pipit-7, the retirement date differs."}
+{"id": "n03", "text": "The rate limit of Curlew-2 is 4300 requests per minute; callers over it get a 429."}
+{"id": "n04", "text": "Unlike Curlew-2, whose rate limit is handled elsewhere, the rate limit of Egret-8 is 3650 requests per minute. Nobody should assume the rate limit of Egret-8 applies to Curlew-2, the rate limit differs. The entry was reformatted last quarter."}
+{"id": "n05", "text": "The rate limit of Merlin-9 is 3500 requests per minute; callers over it get a 429."}
+{"id": "n06", "text": "Merlin-9 was granted a budget of $3730k this year; an unspent budget does not roll over."}
+{"id": "n07", "text": "Questions about Pipit-7 start with its owner, the Anvil team; they triage anything filed against it. The page was last reviewed in the spring."}
+{"id": "n08", "text": "Bittern-9 is implemented in Elixir; the language was chosen for its tooling."}
+{"id": "n09", "text": "The primary datacenter of Egret-8 is Tallinn; failover is handled by operations."}
+{"id": "n10", "text": "Curlew-2 runs in the Oslo datacenter, next to its database."}
+{"id": "n11", "text": "The yearly budget for Curlew-2 is $415k, covering licences and hosting."}
+{"id": "n12", "text": "Bittern-9 enforces a rate limit of 3050 requests per minute per caller."}
+{"id": "n13", "text": "Questions about Egret-8 start with its owner, the Compass team; they triage anything filed against it."}
+{"id": "n14", "text": "All instances of Bittern-9 live in the datacenter at Osaka. A diagram is attached to the wiki entry."}
+{"id": "n15", "text": "Unlike Curlew-2, whose budget is handled elsewhere, the budget of Pipit-7 is $2405k. Nobody should assume the budget of Pipit-7 applies to Curlew-2, the budget differs."}
+{"id": "n16", "text": "Plan around the retirement date of Pipit-7: August 2, 2027 is when it goes dark. Nothing about this has been disputed so far."}
+{"id": "n17", "text": "Unlike Pipit-7, whose port is handled elsewhere, the port of Merlin-9 is 8133. Nobody should assume the port of Merlin-9 applies to Pipit-7, the port differs. The entry was reformatted last quarter."}
+{"id": "n18", "text": "Unlike Egret-8, whose budget is handled elsewhere, the budget of Bittern-9 is $2345k. Nobody should assume the budget of Bittern-9 applies to Egret-8, the budget differs. The entry was reformatted last quarter."}
+{"id": "n19", "text": "Unlike Merlin-9, whose port is handled elsewhere, the port of Tern-8 is 3481. Nobody should assume the port of Tern-8 applies to Merlin-9, the port differs."}
+{"id": "n20", "text": "Source for Merlin-9 is written in Erlang; no other language is allowed in its repository."}
+{"id": "n21", "text": "Unlike Curlew-2, whose budget is handled elsewhere, the budget of Egret-8 is $4300k. Nobody should assume the budget of Egret-8 applies to Curlew-2, the budget differs."}
+{"id": "n22", "text": "Unlike Merlin-9, whose port is handled elsewhere, the port of Curlew-2 is 9086. Nobody should assume the port of Curlew-2 applies to Merlin-9, the port differs."}
+{"id": "n23", "text": "Dmitri Okonkwo is on the pager rotation of Curlew-2 this month, with a deputy as backup."}
+{"id": "n24", "text": "Questions about Tern-8 start with its owner, the Trellis team; they triage anything filed against it."}
+{"id": "n25", "text": "Unlike Merlin-9, whose budget is handled elsewhere, the budget of Tern-8 is $1940k. Nobody should assume the budget of Tern-8 applies to Merlin-9, the budget differs. Nothing about this has been disputed so far."}
+{"id": "n26", "text": "The language of Egret-8 is Erlang, which new contributors must know."}
+{"id": "n27", "text": "Pages from Bittern-9 land on the pager rotation of Elena Lindqvist before anyone else."}
+{"id": "n28", "text": "Unlike Curlew-2, whose rate limit is handled elsewhere, the rate limit of Pipit-7 is 4200 requests per minute. Nobody should assume the rate limit of Pipit-7 applies to Curlew-2, the rate limit differs."}
+{"id": "n29", "text": "Tern-8 runs in the Dublin datacenter, next to its database. The entry was reformatted last quarter."}

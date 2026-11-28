@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Unlike Plover-4, whose port is handled elsewhere, the port of Osprey-8 is 4628. Nobody should assume the port of Osprey-8 applies to Plover-4, the port differs. Nothing about this has been disputed so far."}
+{"id": "n01", "text": "Questions about Kestrel-9 start with its owner, the Keystone team; they triage anything filed against it."}
+{"id": "n02", "text": "Unlike Merlin-4, whose datacenter is handled elsewhere, the datacenter of Heron-8 is the Dublin datacenter. Nobody should assume the datacenter of Heron-8 applies to Merlin-4, the datacenter differs. The page was last reviewed in the spring."}
+{"id": "n03", "text": "Unlike Plover-4, whose pager rotation is handled elsewhere, the pager rotation of Osprey-8 is Soren Whitlock. Nobody should assume the pager rotation of Osprey-8 applies to Plover-4, the pager rotation differs."}
+{"id": "n04", "text": "Unlike Merlin-4, whose owner is handled elsewhere, the owner of Osprey-8 is the Tessera team. Nobody should assume the owner of Osprey-8 applies to Merlin-4, the owner differs. An older draft of this note was archived."}
+{"id": "n05", "text": "Unlike Plover-4, whose budget is handled elsewhere, the budget of Merlin-4 is $3310k. Nobody should assume the budget of Merlin-4 applies to Plover-4, the budget differs."}
+{"id": "n06", "text": "Unlike Lark-9, whose language is handled elsewhere, the language of Kestrel-9 is Go. Nobody should assume the language of Kestrel-9 applies to Lark-9, the language differs. Nothing about this has been disputed so far."}
+{"id": "n07", "text": "Lark-9 is implemented in Scala; the language was chosen for its tooling. An older draft of this note was archived."}
+{"id": "n08", "text": "Unlike Plover-4, whose pager rotation is handled elsewhere, the pager rotation of Kestrel-9 is Kenji Sandoval. Nobody should assume the pager rotation of Kestrel-9 applies to Plover-4, the pager rotation differs."}
+{"id": "n09", "text": "Expect throttling at the rate limit for Osprey-8, which is 3350 requests per minute."}
+{"id": "n10", "text": "Unlike Plover-4, whose rate limit is handled elsewhere, the rate limit of Lark-9 is 1650 requests per minute. Nobody should assume the rate limit of Lark-9 applies to Plover-4, the rate limit differs."}
+{"id": "n11", "text": "Lark-9 listens on port 7137; anyone who cannot reach that port should check the firewall rules."}
+{"id": "n12", "text": "The yearly budget for Kestrel-9 is $4770k, covering licences and hosting. The entry was reformatted last quarter."}
+{"id": "n13", "text": "Unlike Osprey-8, whose port is handled elsewhere, the port of Plover-4 is 5644. Nobody should assume the port of Plover-4 applies to Osprey-8, the port differs. The page was last reviewed in the spring."}
+{"id": "n14", "text": "The primary datacenter of Merlin-4 is Dublin; failover is handled by operations. The page was last reviewed in the spring."}
+{"id": "n15", "text": "The rate limit of Heron-8 is 2750 requests per minute; callers over it get a 429."}
+{"id": "n16", "text": "Unlike Kestrel-9, whose pager rotation is handled elsewhere, the pager rotation of Lark-9 is Rosa Ekwueme. Nobody should assume the pager rotation of Lark-9 applies to Kestrel-9, the pager rotation differs."}
+{"id": "n17", "text": "Lark-9 was granted a budget of $2745k this year; an unspent budget does not roll over."}
+{"id": "n18", "text": "The owner of Heron-8 is the Harbor team, and every change to Heron-8 goes through their review. A diagram is attached to the wiki entry."}
+{"id": "n19", "text": "Unlike Plover-4, whose pager rotation is handled elsewhere, the pager rotation of Heron-8 is Farah Castellan. Nobody should assume the pager rotation of Heron-8 applies to Plover-4, the pager rotation differs."}
+{"id": "n20", "text": "Heron-8 reaches its retirement date on September 25, 2027, so every consumer has to migrate before then."}
+{"id": "n21", "text": "Unlike Merlin-4, whose datacenter is handled elsewhere, the datacenter of Kestrel-9 is the Oslo datacenter. Nobody should assume the datacenter of Kestrel-9 applies to Merlin-4, the datacenter differs. The entry was reformatted last quarter."}
+{"id": "n22", "text": "Unlike Osprey-8, whose port is handled elsewhere, the port of Merlin-4 is 2885. Nobody should assume the port of Merlin-4 applies to Osprey-8, the port differs. An older draft of this note was archived."}
+{"id": "n23", "text": "Plan around the retirement date of Merlin-4: July 2, 2027 is when it goes dark."}
+{"id": "n24", "text": "Plover-4 has one owner, the Compass team, which approves each release and keeps the runbook current."}
+{"id": "n25", "text": "The pager rotation for Plover-4 is run by Wendell Whitlock; alerts page them first."}
+{"id": "n26", "text": "Plover-4 was granted a budget of $3995k this year; an unspent budget does not roll over."}
+{"id": "n27", "text": "Questions about Merlin-4 start with its owner, the Compass team; they triage anything filed against it."}
+{"id": "n28", "text": "All instances of Osprey-8 live in the datacenter at Bergen."}
+{"id": "n29", "text": "Unlike Heron-8, whose rate limit is handled elsewhere, the rate limit of Plover-4 is 3400 requests per minute. Nobody should assume the rate limit of Plover-4 applies to Heron-8, the rate limit differs."}

@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Swift-8 was granted a budget of $2585k this year; an unspent budget does not roll over. Details change slowly, so check the history first."}
+{"id": "n01", "text": "Unlike Egret-5, whose language is handled elsewhere, the language of Pipit-5 is Rust. Nobody should assume the language of Pipit-5 applies to Egret-5, the language differs."}
+{"id": "n02", "text": "The language of Swift-8 is OCaml, which new contributors must know."}
+{"id": "n03", "text": "The pager rotation for Pipit-5 is run by Mateo Kowalczyk; alerts page them first."}
+{"id": "n04", "text": "The retirement date for Osprey-6 is September 4, 2028; after that day it stops serving. The page was last reviewed in the spring."}
+{"id": "n05", "text": "The service Osprey-6 takes traffic on port 2901, and the port is fixed across every environment. Details change slowly, so check the history first."}
+{"id": "n06", "text": "The pager rotation for Siskin-2 is run by Jolene Brightwater; alerts page them first."}
+{"id": "n07", "text": "The service Egret-5 takes traffic on port 5828, and the port is fixed across every environment."}
+{"id": "n08", "text": "Questions about Siskin-2 start with its owner, the Quill team; they triage anything filed against it. An older draft of this note was archived."}
+{"id": "n09", "text": "The primary datacenter of Osprey-6 is Lima; failover is handled by operations."}
+{"id": "n10", "text": "Unlike Egret-5, whose datacenter is handled elsewhere, the datacenter of Siskin-2 is the Nairobi datacenter. Nobody should assume the datacenter of Siskin-2 applies to Egret-5, the datacenter differs."}
+{"id": "n11", "text": "Expect throttling at the rate limit for Swift-8, which is 3050 requests per minute. Details change slowly, so check the history first."}
+{"id": "n12", "text": "For Kestrel-9 the port is 8705. Changing the port needs a change ticket. The page was last reviewed in the spring."}
+{"id": "n13", "text": "Unlike Kestrel-9, whose language is handled elsewhere, the language of Egret-5 is Erlang. Nobody should assume the language of Egret-5 applies to Kestrel-9, the language differs. The page was last reviewed in the spring."}
+{"id": "n14", "text": "Unlike Kestrel-9, whose budget is handled elsewhere, the budget of Siskin-2 is $1175k. Nobody should assume the budget of Siskin-2 applies to Kestrel-9, the budget differs."}
+{"id": "n15", "text": "Unlike Swift-8, whose retirement date is handled elsewhere, the retirement date of Pipit-5 is November 15, 2028. Nobody should assume the retirement date of Pipit-5 applies to Swift-8, the retirement date differs."}
+{"id": "n16", "text": "Unlike Siskin-2, whose budget is handled elsewhere, the budget of Kestrel-9 is $2895k. Nobody should assume the budget of Kestrel-9 applies to Siskin-2, the budget differs."}
+{"id": "n17", "text": "The yearly budget for Pipit-5 is $2680k, covering licences and hosting. Nothing about this has been disputed so far."}
+{"id": "n18", "text": "The retirement date for Siskin-2 is May 24, 2027; after that day it stops serving. The entry was reformatted last quarter."}
+{"id": "n19", "text": "Finance fixed the budget of Osprey-6 at $2825k, reviewed every quarter."}
+{"id": "n20", "text": "Unlike Kestrel-9, whose pager rotation is handled elsewhere, the pager rotation of Osprey-6 is Dmitri Underhill. Nobody should assume the pager rotation of Osprey-6 applies to Kestrel-9, the pager rotation differs."}
+{"id": "n21", "text": "Unlike Siskin-2, whose owner is handled elsewhere, the owner of Kestrel-9 is the Lattice team. Nobody should assume the owner of Kestrel-9 applies to Siskin-2, the owner differs."}
+{"id": "n22", "text": "All instances of Egret-5 live in the datacenter at Lima."}
+{"id": "n23", "text": "Unlike Swift-8, whose rate limit is handled elsewhere, the rate limit of Egret-5 is 1450 requests per minute. Nobody should assume the rate limit of Egret-5 applies to Swift-8, the rate limit differs. The entry was reformatted last quarter."}
+{"id": "n24", "text": "Egret-5 reaches its retirement date on March 26, 2028, so every consumer has to migrate before then."}
+{"id": "n25", "text": "Unlike Osprey-6, whose pager rotation is handled elsewhere, the pager rotation of Kestrel-9 is Wendell Castellan. Nobody should assume the pager rotation of Kestrel-9 applies to Osprey-6, the pager rotation differs. An older draft of this note was archived."}
+{"id": "n26", "text": "Source for Kestrel-9 is written in Zig; no other language is allowed in its repository. Details change slowly, so check the history first."}
+{"id": "n27", "text": "Unlike Osprey-6, whose port is handled elsewhere, the port of Swift-8 is 8203. Nobody should assume the port of Swift-8 applies to Osprey-6, the port differs."}
+{"id": "n28", "text": "Unlike Pipit-5, whose retirement date is handled elsewhere, the retirement date of Swift-8 is June 24, 2029. Nobody should assume the retirement date of Swift-8 applies to Pipit-5, the retirement date differs."}
+{"id": "n29", "text": "Pipit-5 listens on port 7308; anyone who cannot reach that port should check the firewall rules."}

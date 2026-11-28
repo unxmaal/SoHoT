@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Osprey-8 has one owner, the Quill team, which approves each release and keeps the runbook current."}
+{"id": "n01", "text": "Merlin-9 was granted a budget of $1370k this year; an unspent budget does not roll over."}
+{"id": "n02", "text": "For Teal-2 the port is 9249. Changing the port needs a change ticket. Details change slowly, so check the history first."}
+{"id": "n03", "text": "Tern-4 enforces a rate limit of 1750 requests per minute per caller. A diagram is attached to the wiki entry."}
+{"id": "n04", "text": "The yearly budget for Tern-4 is $4185k, covering licences and hosting. The page was last reviewed in the spring."}
+{"id": "n05", "text": "Unlike Merlin-9, whose datacenter is handled elsewhere, the datacenter of Heron-9 is the Lima datacenter. Nobody should assume the datacenter of Heron-9 applies to Merlin-9, the datacenter differs."}
+{"id": "n06", "text": "The retirement date for Tern-4 is December 17, 2028; after that day it stops serving. A diagram is attached to the wiki entry."}
+{"id": "n07", "text": "Unlike Siskin-9, whose owner is handled elsewhere, the owner of Tern-4 is the Anvil team. Nobody should assume the owner of Tern-4 applies to Siskin-9, the owner differs."}
+{"id": "n08", "text": "Unlike Osprey-8, whose datacenter is handled elsewhere, the datacenter of Merlin-9 is the Dublin datacenter. Nobody should assume the datacenter of Merlin-9 applies to Osprey-8, the datacenter differs."}
+{"id": "n09", "text": "Unlike Teal-2, whose owner is handled elsewhere, the owner of Siskin-9 is the Lattice team. Nobody should assume the owner of Siskin-9 applies to Teal-2, the owner differs."}
+{"id": "n10", "text": "Unlike Merlin-9, whose pager rotation is handled elsewhere, the pager rotation of Teal-2 is Gideon Dunmore. Nobody should assume the pager rotation of Teal-2 applies to Merlin-9, the pager rotation differs."}
+{"id": "n11", "text": "Unlike Teal-2, whose rate limit is handled elsewhere, the rate limit of Heron-9 is 2250 requests per minute. Nobody should assume the rate limit of Heron-9 applies to Teal-2, the rate limit differs."}
+{"id": "n12", "text": "Unlike Merlin-9, whose pager rotation is handled elsewhere, the pager rotation of Osprey-8 is Wendell Kowalczyk. Nobody should assume the pager rotation of Osprey-8 applies to Merlin-9, the pager rotation differs. Details change slowly, so check the history first."}
+{"id": "n13", "text": "Plan around the retirement date of Heron-9: November 8, 2027 is when it goes dark."}
+{"id": "n14", "text": "Unlike Heron-9, whose datacenter is handled elsewhere, the datacenter of Osprey-8 is the Hanoi datacenter. Nobody should assume the datacenter of Osprey-8 applies to Heron-9, the datacenter differs. Nothing about this has been disputed so far."}
+{"id": "n15", "text": "For Osprey-8 the port is 5812. Changing the port needs a change ticket."}
+{"id": "n16", "text": "Plan around the retirement date of Merlin-9: January 16, 2029 is when it goes dark."}
+{"id": "n17", "text": "Siskin-9 is implemented in OCaml; the language was chosen for its tooling."}
+{"id": "n18", "text": "Unlike Tern-4, whose rate limit is handled elsewhere, the rate limit of Teal-2 is 750 requests per minute. Nobody should assume the rate limit of Teal-2 applies to Tern-4, the rate limit differs."}
+{"id": "n19", "text": "Siskin-9 reaches its retirement date on May 27, 2027, so every consumer has to migrate before then."}
+{"id": "n20", "text": "The service Merlin-9 takes traffic on port 2778, and the port is fixed across every environment."}
+{"id": "n21", "text": "Pages from Merlin-9 land on the pager rotation of Bruno Okonkwo before anyone else."}
+{"id": "n22", "text": "Teal-2 reaches its retirement date on April 1, 2029, so every consumer has to migrate before then."}
+{"id": "n23", "text": "Finance fixed the budget of Siskin-9 at $4080k, reviewed every quarter."}
+{"id": "n24", "text": "Heron-9 was granted a budget of $2430k this year; an unspent budget does not roll over. Nothing about this has been disputed so far."}
+{"id": "n25", "text": "Unlike Tern-4, whose pager rotation is handled elsewhere, the pager rotation of Heron-9 is Lucia Halvorsen. Nobody should assume the pager rotation of Heron-9 applies to Tern-4, the pager rotation differs."}
+{"id": "n26", "text": "Unlike Merlin-9, whose retirement date is handled elsewhere, the retirement date of Osprey-8 is September 20, 2027. Nobody should assume the retirement date of Osprey-8 applies to Merlin-9, the retirement date differs."}
+{"id": "n27", "text": "Questions about Teal-2 start with its owner, the Trellis team; they triage anything filed against it. A diagram is attached to the wiki entry."}
+{"id": "n28", "text": "Siskin-9 runs in the Quito datacenter, next to its database."}
+{"id": "n29", "text": "Pages from Tern-4 land on the pager rotation of Yusuf Dunmore before anyone else."}

@@ -1,0 +1,102 @@
+[
+ {
+  "name": "split_buoy",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "merge_dock",
+  "days": 5,
+  "after": [
+   "split_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_lantern",
+  "days": 9,
+  "after": [
+   "split_buoy",
+   "merge_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_buoy",
+  "days": 4,
+  "after": [
+   "resolve_lantern",
+   "merge_dock",
+   "split_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_rope",
+  "days": 2,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "render_pallet",
+  "days": 1,
+  "after": [
+   "merge_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_mooring",
+  "days": 8,
+  "after": [
+   "split_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_sail",
+  "days": 8,
+  "after": [
+   "parse_rope",
+   "split_buoy",
+   "stage_mooring"
+  ],
+  "done": true
+ },
+ {
+  "name": "validate_rope",
+  "days": 3,
+  "after": [
+   "split_buoy",
+   "stage_mooring",
+   "parse_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_lantern",
+  "days": 7,
+  "after": [
+   "merge_dock",
+   "validate_rope",
+   "stage_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_harbor",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "merge_lantern",
+  "days": 7,
+  "after": [
+   "parse_rope",
+   "stage_harbor"
+  ],
+  "done": false
+ }
+]

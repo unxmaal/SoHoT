@@ -1,0 +1,169 @@
+[
+ {
+  "name": "split_barge",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "render_crate",
+  "days": 2,
+  "after": [
+   "split_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_quay",
+  "days": 6,
+  "after": [
+   "render_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_crate",
+  "days": 5,
+  "after": [
+   "render_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_barge",
+  "days": 4,
+  "after": [
+   "render_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_dock",
+  "days": 7,
+  "after": [
+   "split_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_lantern",
+  "days": 1,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "flush_quay",
+  "days": 1,
+  "after": [
+   "merge_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_tide",
+  "days": 3,
+  "after": [
+   "merge_crate"
+  ],
+  "done": true
+ },
+ {
+  "name": "stage_lantern",
+  "days": 8,
+  "after": [
+   "merge_crate",
+   "flush_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_deck",
+  "days": 6,
+  "after": [
+   "merge_crate",
+   "normalize_barge",
+   "stage_lantern"
+  ],
+  "done": true
+ },
+ {
+  "name": "apply_barge",
+  "days": 6,
+  "after": [
+   "stage_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_deck",
+  "days": 6,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "load_berth",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "render_barge",
+  "days": 8,
+  "after": [
+   "resolve_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_anchor",
+  "days": 8,
+  "after": [
+   "merge_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_pallet",
+  "days": 6,
+  "after": [
+   "normalize_barge",
+   "split_anchor",
+   "apply_barge"
+  ],
+  "done": true
+ },
+ {
+  "name": "flush_crate",
+  "days": 2,
+  "after": [
+   "load_berth",
+   "resolve_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_barge",
+  "days": 1,
+  "after": [
+   "render_barge",
+   "apply_barge",
+   "render_crate"
+  ],
+  "done": true
+ },
+ {
+  "name": "normalize_anchor",
+  "days": 6,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "render_quay",
+  "days": 6,
+  "after": [
+   "load_dock",
+   "normalize_anchor"
+  ],
+  "done": false
+ }
+]

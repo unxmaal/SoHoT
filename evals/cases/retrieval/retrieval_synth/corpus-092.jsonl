@@ -1,0 +1,30 @@
+{"id": "n00", "text": "The rate limit of Siskin-4 is 1900 requests per minute; callers over it get a 429."}
+{"id": "n01", "text": "Unlike Bittern-8, whose datacenter is handled elsewhere, the datacenter of Tern-4 is the Osaka datacenter. Nobody should assume the datacenter of Tern-4 applies to Bittern-8, the datacenter differs. Details change slowly, so check the history first."}
+{"id": "n02", "text": "Lark-5 was granted a budget of $1305k this year; an unspent budget does not roll over. The page was last reviewed in the spring."}
+{"id": "n03", "text": "Bittern-8 listens on port 8422; anyone who cannot reach that port should check the firewall rules."}
+{"id": "n04", "text": "Unlike Tern-4, whose retirement date is handled elsewhere, the retirement date of Heron-6 is July 26, 2028. Nobody should assume the retirement date of Heron-6 applies to Tern-4, the retirement date differs."}
+{"id": "n05", "text": "Lark-5 has one owner, the Prism team, which approves each release and keeps the runbook current."}
+{"id": "n06", "text": "Questions about Heron-6 start with its owner, the Trellis team; they triage anything filed against it. Nothing about this has been disputed so far."}
+{"id": "n07", "text": "Osprey-4 enforces a rate limit of 1750 requests per minute per caller."}
+{"id": "n08", "text": "Unlike Heron-6, whose retirement date is handled elsewhere, the retirement date of Osprey-4 is August 5, 2028. Nobody should assume the retirement date of Osprey-4 applies to Heron-6, the retirement date differs. An older draft of this note was archived."}
+{"id": "n09", "text": "Heron-6 was granted a budget of $3255k this year; an unspent budget does not roll over."}
+{"id": "n10", "text": "Unlike Siskin-4, whose language is handled elsewhere, the language of Tern-4 is Rust. Nobody should assume the language of Tern-4 applies to Siskin-4, the language differs."}
+{"id": "n11", "text": "Unlike Tern-4, whose datacenter is handled elsewhere, the datacenter of Osprey-4 is the Tallinn datacenter. Nobody should assume the datacenter of Osprey-4 applies to Tern-4, the datacenter differs. Nothing about this has been disputed so far."}
+{"id": "n12", "text": "Avery Lindqvist is on the pager rotation of Lark-5 this month, with a deputy as backup. The entry was reformatted last quarter."}
+{"id": "n13", "text": "Questions about Siskin-4 start with its owner, the Harbor team; they triage anything filed against it."}
+{"id": "n14", "text": "Questions about Tern-4 start with its owner, the Prism team; they triage anything filed against it."}
+{"id": "n15", "text": "For Lark-5 the port is 9582. Changing the port needs a change ticket. Details change slowly, so check the history first."}
+{"id": "n16", "text": "Siskin-4 is implemented in Elixir; the language was chosen for its tooling. A diagram is attached to the wiki entry."}
+{"id": "n17", "text": "Siskin-4 runs in the Perth datacenter, next to its database. The page was last reviewed in the spring."}
+{"id": "n18", "text": "Unlike Siskin-4, whose rate limit is handled elsewhere, the rate limit of Heron-6 is 1550 requests per minute. Nobody should assume the rate limit of Heron-6 applies to Siskin-4, the rate limit differs."}
+{"id": "n19", "text": "Unlike Tern-4, whose owner is handled elsewhere, the owner of Osprey-4 is the Lattice team. Nobody should assume the owner of Osprey-4 applies to Tern-4, the owner differs. Details change slowly, so check the history first."}
+{"id": "n20", "text": "Pages from Osprey-4 land on the pager rotation of Dmitri Castellan before anyone else. Nothing about this has been disputed so far."}
+{"id": "n21", "text": "Bittern-8 was granted a budget of $210k this year; an unspent budget does not roll over. The entry was reformatted last quarter."}
+{"id": "n22", "text": "Lucia Quintero is on the pager rotation of Tern-4 this month, with a deputy as backup."}
+{"id": "n23", "text": "The primary datacenter of Heron-6 is Lima; failover is handled by operations."}
+{"id": "n24", "text": "Unlike Tern-4, whose pager rotation is handled elsewhere, the pager rotation of Bittern-8 is Avery Underhill. Nobody should assume the pager rotation of Bittern-8 applies to Tern-4, the pager rotation differs."}
+{"id": "n25", "text": "The retirement date for Tern-4 is August 26, 2028; after that day it stops serving. Details change slowly, so check the history first."}
+{"id": "n26", "text": "Lark-5 is implemented in OCaml; the language was chosen for its tooling. Nothing about this has been disputed so far."}
+{"id": "n27", "text": "Plan around the retirement date of Bittern-8: April 27, 2028 is when it goes dark. A diagram is attached to the wiki entry."}
+{"id": "n28", "text": "All instances of Bittern-8 live in the datacenter at Lisbon."}
+{"id": "n29", "text": "Plan around the retirement date of Siskin-4: May 20, 2027 is when it goes dark."}

@@ -1,0 +1,170 @@
+[
+ {
+  "name": "lookup_deck",
+  "days": 6,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "normalize_sail",
+  "days": 1,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "split_anchor",
+  "days": 2,
+  "after": [
+   "normalize_sail",
+   "lookup_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_lantern",
+  "days": 3,
+  "after": [
+   "normalize_sail",
+   "lookup_deck",
+   "split_anchor"
+  ],
+  "done": true
+ },
+ {
+  "name": "merge_barge",
+  "days": 6,
+  "after": [
+   "stage_lantern",
+   "split_anchor"
+  ],
+  "done": true
+ },
+ {
+  "name": "stage_keel",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "reconcile_mooring",
+  "days": 1,
+  "after": [
+   "lookup_deck",
+   "stage_lantern",
+   "stage_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_quay",
+  "days": 3,
+  "after": [
+   "lookup_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_quay",
+  "days": 5,
+  "after": [
+   "lookup_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_mooring",
+  "days": 4,
+  "after": [
+   "lookup_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_rope",
+  "days": 3,
+  "after": [
+   "allocate_quay",
+   "reconcile_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_berth",
+  "days": 9,
+  "after": [
+   "load_quay",
+   "lookup_deck",
+   "stage_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_cargo",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "estimate_crate",
+  "days": 8,
+  "after": [
+   "stage_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_deck",
+  "days": 9,
+  "after": [
+   "normalize_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_cargo",
+  "days": 6,
+  "after": [
+   "stage_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_anchor",
+  "days": 7,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "normalize_deck",
+  "days": 1,
+  "after": [
+   "estimate_crate",
+   "split_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_anchor",
+  "days": 6,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "split_mooring",
+  "days": 7,
+  "after": [
+   "stage_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_pallet",
+  "days": 8,
+  "after": [
+   "split_deck",
+   "merge_barge",
+   "split_mooring"
+  ],
+  "done": false
+ }
+]

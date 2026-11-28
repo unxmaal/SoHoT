@@ -1,0 +1,93 @@
+[
+ {
+  "name": "normalize_quay",
+  "days": 1,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "estimate_quay",
+  "days": 8,
+  "after": [
+   "normalize_quay"
+  ],
+  "done": true
+ },
+ {
+  "name": "merge_crate",
+  "days": 2,
+  "after": [
+   "normalize_quay"
+  ],
+  "done": true
+ },
+ {
+  "name": "stage_buoy",
+  "days": 4,
+  "after": [
+   "estimate_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_quay",
+  "days": 1,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "lookup_keel",
+  "days": 4,
+  "after": [
+   "merge_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_barge",
+  "days": 1,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "merge_cargo",
+  "days": 1,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "render_harbor",
+  "days": 8,
+  "after": [
+   "normalize_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_sail",
+  "days": 3,
+  "after": [
+   "merge_crate"
+  ],
+  "done": true
+ },
+ {
+  "name": "merge_rope",
+  "days": 4,
+  "after": [
+   "split_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_ferry",
+  "days": 4,
+  "after": [
+   "normalize_barge",
+   "estimate_quay",
+   "lookup_keel",
+   "merge_rope"
+  ],
+  "done": false
+ }
+]

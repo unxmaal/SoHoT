@@ -1,0 +1,81 @@
+[
+ {
+  "name": "stage_harbor",
+  "days": 6,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "stage_berth",
+  "days": 7,
+  "after": [
+   "stage_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_hull",
+  "days": 7,
+  "after": [
+   "stage_berth",
+   "stage_harbor"
+  ],
+  "done": true
+ },
+ {
+  "name": "reconcile_buoy",
+  "days": 1,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "estimate_berth",
+  "days": 2,
+  "after": [
+   "stage_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_quay",
+  "days": 6,
+  "after": [
+   "split_hull",
+   "reconcile_buoy",
+   "stage_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_anchor",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "parse_hull",
+  "days": 2,
+  "after": [
+   "estimate_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_cargo",
+  "days": 5,
+  "after": [
+   "estimate_berth",
+   "split_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_hull",
+  "days": 3,
+  "after": [
+   "parse_hull",
+   "reconcile_cargo"
+  ],
+  "done": false
+ }
+]

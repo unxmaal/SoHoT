@@ -1,0 +1,94 @@
+[
+ {
+  "name": "allocate_buoy",
+  "days": 1,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "rank_dock",
+  "days": 3,
+  "after": [
+   "allocate_buoy"
+  ],
+  "done": true
+ },
+ {
+  "name": "allocate_anchor",
+  "days": 3,
+  "after": [
+   "allocate_buoy",
+   "rank_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_mooring",
+  "days": 9,
+  "after": [
+   "allocate_anchor",
+   "rank_dock",
+   "allocate_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_keel",
+  "days": 8,
+  "after": [
+   "allocate_buoy",
+   "allocate_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_keel",
+  "days": 7,
+  "after": [
+   "allocate_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_quay",
+  "days": 8,
+  "after": [
+   "split_keel",
+   "allocate_buoy",
+   "parse_mooring"
+  ],
+  "done": true
+ },
+ {
+  "name": "flush_harbor",
+  "days": 4,
+  "after": [
+   "allocate_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_mooring",
+  "days": 4,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "resolve_lantern",
+  "days": 5,
+  "after": [
+   "parse_quay"
+  ],
+  "done": true
+ },
+ {
+  "name": "allocate_cargo",
+  "days": 4,
+  "after": [
+   "flush_harbor",
+   "rank_dock",
+   "resolve_lantern"
+  ],
+  "done": false
+ }
+]

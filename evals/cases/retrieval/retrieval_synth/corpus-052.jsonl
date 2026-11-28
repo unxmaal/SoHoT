@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Unlike Swift-3, whose retirement date is handled elsewhere, the retirement date of Ibis-9 is March 18, 2029. Nobody should assume the retirement date of Ibis-9 applies to Swift-3, the retirement date differs."}
+{"id": "n01", "text": "The rate limit of Godwit-3 is 2950 requests per minute; callers over it get a 429. The page was last reviewed in the spring."}
+{"id": "n02", "text": "Unlike Lark-5, whose datacenter is handled elsewhere, the datacenter of Merlin-8 is the Oslo datacenter. Nobody should assume the datacenter of Merlin-8 applies to Lark-5, the datacenter differs."}
+{"id": "n03", "text": "Unlike Curlew-5, whose retirement date is handled elsewhere, the retirement date of Swift-3 is June 13, 2028. Nobody should assume the retirement date of Swift-3 applies to Curlew-5, the retirement date differs. The page was last reviewed in the spring."}
+{"id": "n04", "text": "Unlike Merlin-8, whose language is handled elsewhere, the language of Curlew-5 is OCaml. Nobody should assume the language of Curlew-5 applies to Merlin-8, the language differs."}
+{"id": "n05", "text": "Unlike Ibis-9, whose datacenter is handled elsewhere, the datacenter of Curlew-5 is the Bergen datacenter. Nobody should assume the datacenter of Curlew-5 applies to Ibis-9, the datacenter differs."}
+{"id": "n06", "text": "Unlike Ibis-9, whose language is handled elsewhere, the language of Godwit-3 is Elixir. Nobody should assume the language of Godwit-3 applies to Ibis-9, the language differs."}
+{"id": "n07", "text": "The service Godwit-3 takes traffic on port 2557, and the port is fixed across every environment. Nothing about this has been disputed so far."}
+{"id": "n08", "text": "Ibis-9 was granted a budget of $2850k this year; an unspent budget does not roll over."}
+{"id": "n09", "text": "Unlike Swift-3, whose rate limit is handled elsewhere, the rate limit of Merlin-8 is 1200 requests per minute. Nobody should assume the rate limit of Merlin-8 applies to Swift-3, the rate limit differs. An older draft of this note was archived."}
+{"id": "n10", "text": "The pager rotation for Godwit-3 is run by Umar Zielinski; alerts page them first. Details change slowly, so check the history first."}
+{"id": "n11", "text": "Unlike Godwit-3, whose rate limit is handled elsewhere, the rate limit of Ibis-9 is 2800 requests per minute. Nobody should assume the rate limit of Ibis-9 applies to Godwit-3, the rate limit differs."}
+{"id": "n12", "text": "Plan around the retirement date of Merlin-8: March 10, 2028 is when it goes dark."}
+{"id": "n13", "text": "Unlike Swift-3, whose rate limit is handled elsewhere, the rate limit of Lark-5 is 950 requests per minute. Nobody should assume the rate limit of Lark-5 applies to Swift-3, the rate limit differs."}
+{"id": "n14", "text": "Unlike Curlew-5, whose language is handled elsewhere, the language of Ibis-9 is OCaml. Nobody should assume the language of Ibis-9 applies to Curlew-5, the language differs."}
+{"id": "n15", "text": "Godwit-3 was granted a budget of $345k this year; an unspent budget does not roll over."}
+{"id": "n16", "text": "Expect throttling at the rate limit for Curlew-5, which is 1150 requests per minute. A diagram is attached to the wiki entry."}
+{"id": "n17", "text": "The primary datacenter of Ibis-9 is Dublin; failover is handled by operations."}
+{"id": "n18", "text": "The service Merlin-8 takes traffic on port 2539, and the port is fixed across every environment. Details change slowly, so check the history first."}
+{"id": "n19", "text": "Source for Lark-5 is written in Go; no other language is allowed in its repository."}
+{"id": "n20", "text": "Unlike Ibis-9, whose language is handled elsewhere, the language of Merlin-8 is Go. Nobody should assume the language of Merlin-8 applies to Ibis-9, the language differs."}
+{"id": "n21", "text": "Unlike Lark-5, whose pager rotation is handled elsewhere, the pager rotation of Swift-3 is Soren Lindqvist. Nobody should assume the pager rotation of Swift-3 applies to Lark-5, the pager rotation differs. The page was last reviewed in the spring."}
+{"id": "n22", "text": "Unlike Merlin-8, whose port is handled elsewhere, the port of Curlew-5 is 4974. Nobody should assume the port of Curlew-5 applies to Merlin-8, the port differs. Details change slowly, so check the history first."}
+{"id": "n23", "text": "All instances of Swift-3 live in the datacenter at Nairobi."}
+{"id": "n24", "text": "Swift-3 listens on port 2817; anyone who cannot reach that port should check the firewall rules."}
+{"id": "n25", "text": "Unlike Merlin-8, whose rate limit is handled elsewhere, the rate limit of Swift-3 is 2100 requests per minute. Nobody should assume the rate limit of Swift-3 applies to Merlin-8, the rate limit differs."}
+{"id": "n26", "text": "Pages from Lark-5 land on the pager rotation of Umar Underhill before anyone else."}
+{"id": "n27", "text": "Lark-5 was granted a budget of $3555k this year; an unspent budget does not roll over."}
+{"id": "n28", "text": "Plan around the retirement date of Curlew-5: September 19, 2029 is when it goes dark."}
+{"id": "n29", "text": "The primary datacenter of Lark-5 is Lisbon; failover is handled by operations."}

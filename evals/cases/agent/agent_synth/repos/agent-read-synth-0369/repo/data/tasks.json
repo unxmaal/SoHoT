@@ -1,0 +1,91 @@
+[
+ {
+  "name": "allocate_cargo",
+  "days": 1,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "split_cargo",
+  "days": 8,
+  "after": [
+   "allocate_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_buoy",
+  "days": 5,
+  "after": [
+   "allocate_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_ferry",
+  "days": 6,
+  "after": [
+   "split_cargo"
+  ],
+  "done": true
+ },
+ {
+  "name": "render_tide",
+  "days": 2,
+  "after": [
+   "split_cargo",
+   "lookup_buoy",
+   "render_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_rope",
+  "days": 1,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "load_hull",
+  "days": 7,
+  "after": [
+   "render_tide",
+   "stage_rope",
+   "allocate_cargo"
+  ],
+  "done": true
+ },
+ {
+  "name": "merge_hull",
+  "days": 9,
+  "after": [
+   "split_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_mast",
+  "days": 7,
+  "after": [
+   "stage_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_mooring",
+  "days": 9,
+  "after": [
+   "render_tide",
+   "merge_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_barge",
+  "days": 9,
+  "after": [
+   "split_mooring"
+  ],
+  "done": false
+ }
+]

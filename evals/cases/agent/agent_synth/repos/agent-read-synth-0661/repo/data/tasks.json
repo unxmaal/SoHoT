@@ -1,0 +1,149 @@
+[
+ {
+  "name": "merge_cargo",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "parse_dock",
+  "days": 6,
+  "after": [
+   "merge_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_lantern",
+  "days": 5,
+  "after": [
+   "parse_dock",
+   "merge_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_rope",
+  "days": 2,
+  "after": [
+   "estimate_lantern",
+   "merge_cargo",
+   "parse_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_sail",
+  "days": 1,
+  "after": [
+   "parse_dock",
+   "estimate_lantern",
+   "merge_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_berth",
+  "days": 7,
+  "after": [
+   "normalize_sail"
+  ],
+  "done": true
+ },
+ {
+  "name": "merge_berth",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "rank_pallet",
+  "days": 3,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "load_cargo",
+  "days": 1,
+  "after": [
+   "parse_dock"
+  ],
+  "done": true
+ },
+ {
+  "name": "normalize_barge",
+  "days": 4,
+  "after": [
+   "parse_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_buoy",
+  "days": 2,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "load_hull",
+  "days": 5,
+  "after": [
+   "split_rope",
+   "load_cargo",
+   "allocate_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_dock",
+  "days": 1,
+  "after": [
+   "normalize_berth",
+   "normalize_barge",
+   "load_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_cargo",
+  "days": 4,
+  "after": [
+   "load_cargo",
+   "normalize_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_cargo",
+  "days": 7,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "reconcile_keel",
+  "days": 7,
+  "after": [
+   "normalize_barge",
+   "allocate_buoy",
+   "normalize_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_deck",
+  "days": 2,
+  "after": [
+   "parse_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_hull",
+  "days": 2,
+  "after": [
+   "load_hull",
+   "flush_deck"
+  ],
+  "done": false
+ }
+]

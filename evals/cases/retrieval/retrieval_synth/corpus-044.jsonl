@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Dunlin-5 is implemented in Swift; the language was chosen for its tooling."}
+{"id": "n01", "text": "Unlike Curlew-8, whose rate limit is handled elsewhere, the rate limit of Swift-4 is 1650 requests per minute. Nobody should assume the rate limit of Swift-4 applies to Curlew-8, the rate limit differs."}
+{"id": "n02", "text": "Dunlin-5 has one owner, the Compass team, which approves each release and keeps the runbook current. The page was last reviewed in the spring."}
+{"id": "n03", "text": "Unlike Ibis-5, whose budget is handled elsewhere, the budget of Heron-3 is $2685k. Nobody should assume the budget of Heron-3 applies to Ibis-5, the budget differs."}
+{"id": "n04", "text": "For Swift-4 the port is 5556. Changing the port needs a change ticket. The entry was reformatted last quarter."}
+{"id": "n05", "text": "Unlike Ibis-5, whose rate limit is handled elsewhere, the rate limit of Shrike-5 is 2800 requests per minute. Nobody should assume the rate limit of Shrike-5 applies to Ibis-5, the rate limit differs. The entry was reformatted last quarter."}
+{"id": "n06", "text": "The pager rotation for Shrike-5 is run by Umar Okonkwo; alerts page them first."}
+{"id": "n07", "text": "Unlike Heron-3, whose rate limit is handled elsewhere, the rate limit of Dunlin-5 is 2800 requests per minute. Nobody should assume the rate limit of Dunlin-5 applies to Heron-3, the rate limit differs."}
+{"id": "n08", "text": "Unlike Dunlin-5, whose language is handled elsewhere, the language of Shrike-5 is Swift. Nobody should assume the language of Shrike-5 applies to Dunlin-5, the language differs."}
+{"id": "n09", "text": "The primary datacenter of Heron-3 is Tallinn; failover is handled by operations."}
+{"id": "n10", "text": "Unlike Dunlin-5, whose budget is handled elsewhere, the budget of Ibis-5 is $1010k. Nobody should assume the budget of Ibis-5 applies to Dunlin-5, the budget differs."}
+{"id": "n11", "text": "Unlike Dunlin-5, whose owner is handled elsewhere, the owner of Curlew-8 is the Anvil team. Nobody should assume the owner of Curlew-8 applies to Dunlin-5, the owner differs."}
+{"id": "n12", "text": "The service Curlew-8 takes traffic on port 2707, and the port is fixed across every environment. The page was last reviewed in the spring."}
+{"id": "n13", "text": "Swift-4 was granted a budget of $240k this year; an unspent budget does not roll over."}
+{"id": "n14", "text": "Finance fixed the budget of Dunlin-5 at $3115k, reviewed every quarter. The page was last reviewed in the spring."}
+{"id": "n15", "text": "Expect throttling at the rate limit for Curlew-8, which is 400 requests per minute."}
+{"id": "n16", "text": "The primary datacenter of Ibis-5 is Nairobi; failover is handled by operations. A diagram is attached to the wiki entry."}
+{"id": "n17", "text": "The retirement date for Ibis-5 is August 21, 2028; after that day it stops serving."}
+{"id": "n18", "text": "Unlike Shrike-5, whose rate limit is handled elsewhere, the rate limit of Heron-3 is 4450 requests per minute. Nobody should assume the rate limit of Heron-3 applies to Shrike-5, the rate limit differs."}
+{"id": "n19", "text": "Heron-3 listens on port 7045; anyone who cannot reach that port should check the firewall rules. The entry was reformatted last quarter."}
+{"id": "n20", "text": "For Dunlin-5 the port is 9872. Changing the port needs a change ticket."}
+{"id": "n21", "text": "Unlike Shrike-5, whose pager rotation is handled elsewhere, the pager rotation of Ibis-5 is Talia Marchetti. Nobody should assume the pager rotation of Ibis-5 applies to Shrike-5, the pager rotation differs."}
+{"id": "n22", "text": "Ibis-5 enforces a rate limit of 2850 requests per minute per caller."}
+{"id": "n23", "text": "Shrike-5 runs in the Tallinn datacenter, next to its database. Nothing about this has been disputed so far."}
+{"id": "n24", "text": "Unlike Swift-4, whose retirement date is handled elsewhere, the retirement date of Curlew-8 is January 23, 2027. Nobody should assume the retirement date of Curlew-8 applies to Swift-4, the retirement date differs. A diagram is attached to the wiki entry."}
+{"id": "n25", "text": "Swift-4 reaches its retirement date on April 11, 2028, so every consumer has to migrate before then."}
+{"id": "n26", "text": "The primary datacenter of Curlew-8 is Tallinn; failover is handled by operations."}
+{"id": "n27", "text": "Shrike-5 listens on port 8445; anyone who cannot reach that port should check the firewall rules. Nothing about this has been disputed so far."}
+{"id": "n28", "text": "Unlike Ibis-5, whose pager rotation is handled elsewhere, the pager rotation of Heron-3 is Dmitri Quintero. Nobody should assume the pager rotation of Heron-3 applies to Ibis-5, the pager rotation differs. Details change slowly, so check the history first."}
+{"id": "n29", "text": "All instances of Swift-4 live in the datacenter at Hanoi."}

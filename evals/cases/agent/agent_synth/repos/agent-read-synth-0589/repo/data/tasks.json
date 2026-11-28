@@ -1,0 +1,76 @@
+[
+ {
+  "name": "apply_tide",
+  "days": 1,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "reconcile_cargo",
+  "days": 1,
+  "after": [
+   "apply_tide"
+  ],
+  "done": true
+ },
+ {
+  "name": "apply_cargo",
+  "days": 7,
+  "after": [
+   "apply_tide"
+  ],
+  "done": true
+ },
+ {
+  "name": "resolve_deck",
+  "days": 7,
+  "after": [
+   "reconcile_cargo",
+   "apply_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_sail",
+  "days": 6,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "rank_buoy",
+  "days": 4,
+  "after": [
+   "apply_tide",
+   "resolve_deck",
+   "parse_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_mast",
+  "days": 4,
+  "after": [
+   "rank_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_sail",
+  "days": 9,
+  "after": [
+   "resolve_deck",
+   "rank_buoy",
+   "apply_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_quay",
+  "days": 9,
+  "after": [
+   "apply_tide",
+   "rank_sail"
+  ],
+  "done": false
+ }
+]

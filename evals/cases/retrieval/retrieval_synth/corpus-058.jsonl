@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Kestrel-9 enforces a rate limit of 2400 requests per minute per caller. Nothing about this has been disputed so far."}
+{"id": "n01", "text": "The owner of Egret-2 is the Tessera team, and every change to Egret-2 goes through their review."}
+{"id": "n02", "text": "For Lark-5 the port is 2344. Changing the port needs a change ticket. The page was last reviewed in the spring."}
+{"id": "n03", "text": "Unlike Bittern-6, whose budget is handled elsewhere, the budget of Lark-5 is $1015k. Nobody should assume the budget of Lark-5 applies to Bittern-6, the budget differs."}
+{"id": "n04", "text": "The rate limit of Lark-5 is 2000 requests per minute; callers over it get a 429."}
+{"id": "n05", "text": "Unlike Bittern-6, whose retirement date is handled elsewhere, the retirement date of Merlin-8 is November 17, 2028. Nobody should assume the retirement date of Merlin-8 applies to Bittern-6, the retirement date differs."}
+{"id": "n06", "text": "Unlike Egret-2, whose language is handled elsewhere, the language of Bittern-6 is Rust. Nobody should assume the language of Bittern-6 applies to Egret-2, the language differs."}
+{"id": "n07", "text": "Unlike Curlew-7, whose pager rotation is handled elsewhere, the pager rotation of Merlin-8 is Farah Castellan. Nobody should assume the pager rotation of Merlin-8 applies to Curlew-7, the pager rotation differs."}
+{"id": "n08", "text": "Questions about Curlew-7 start with its owner, the Keystone team; they triage anything filed against it."}
+{"id": "n09", "text": "Bittern-6 enforces a rate limit of 1450 requests per minute per caller."}
+{"id": "n10", "text": "Kestrel-9 has one owner, the Compass team, which approves each release and keeps the runbook current. Nothing about this has been disputed so far."}
+{"id": "n11", "text": "Pages from Curlew-7 land on the pager rotation of Bruno Marchetti before anyone else."}
+{"id": "n12", "text": "Unlike Kestrel-9, whose language is handled elsewhere, the language of Egret-2 is Zig. Nobody should assume the language of Egret-2 applies to Kestrel-9, the language differs."}
+{"id": "n13", "text": "Expect throttling at the rate limit for Egret-2, which is 2800 requests per minute. A diagram is attached to the wiki entry."}
+{"id": "n14", "text": "The retirement date for Kestrel-9 is February 20, 2028; after that day it stops serving."}
+{"id": "n15", "text": "Unlike Lark-5, whose port is handled elsewhere, the port of Curlew-7 is 5547. Nobody should assume the port of Curlew-7 applies to Lark-5, the port differs."}
+{"id": "n16", "text": "Vera Ekwueme is on the pager rotation of Kestrel-9 this month, with a deputy as backup. The page was last reviewed in the spring."}
+{"id": "n17", "text": "Unlike Bittern-6, whose rate limit is handled elsewhere, the rate limit of Merlin-8 is 3250 requests per minute. Nobody should assume the rate limit of Merlin-8 applies to Bittern-6, the rate limit differs."}
+{"id": "n18", "text": "Plan around the retirement date of Lark-5: November 14, 2028 is when it goes dark."}
+{"id": "n19", "text": "Unlike Bittern-6, whose port is handled elsewhere, the port of Egret-2 is 9749. Nobody should assume the port of Egret-2 applies to Bittern-6, the port differs. A diagram is attached to the wiki entry."}
+{"id": "n20", "text": "Unlike Kestrel-9, whose pager rotation is handled elsewhere, the pager rotation of Lark-5 is Kenji Underhill. Nobody should assume the pager rotation of Lark-5 applies to Kestrel-9, the pager rotation differs."}
+{"id": "n21", "text": "Unlike Bittern-6, whose retirement date is handled elsewhere, the retirement date of Egret-2 is February 7, 2027. Nobody should assume the retirement date of Egret-2 applies to Bittern-6, the retirement date differs."}
+{"id": "n22", "text": "Finance fixed the budget of Bittern-6 at $2635k, reviewed every quarter."}
+{"id": "n23", "text": "The retirement date for Bittern-6 is March 19, 2027; after that day it stops serving."}
+{"id": "n24", "text": "The language of Kestrel-9 is Go, which new contributors must know."}
+{"id": "n25", "text": "Unlike Kestrel-9, whose language is handled elsewhere, the language of Merlin-8 is Scala. Nobody should assume the language of Merlin-8 applies to Kestrel-9, the language differs."}
+{"id": "n26", "text": "Expect throttling at the rate limit for Curlew-7, which is 2400 requests per minute."}
+{"id": "n27", "text": "Unlike Lark-5, whose retirement date is handled elsewhere, the retirement date of Curlew-7 is October 13, 2027. Nobody should assume the retirement date of Curlew-7 applies to Lark-5, the retirement date differs. Details change slowly, so check the history first."}
+{"id": "n28", "text": "Unlike Egret-2, whose port is handled elsewhere, the port of Bittern-6 is 8748. Nobody should assume the port of Bittern-6 applies to Egret-2, the port differs."}
+{"id": "n29", "text": "Unlike Egret-2, whose port is handled elsewhere, the port of Merlin-8 is 8751. Nobody should assume the port of Merlin-8 applies to Egret-2, the port differs."}

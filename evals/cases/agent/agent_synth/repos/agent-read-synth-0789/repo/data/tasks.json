@@ -1,0 +1,72 @@
+[
+ {
+  "name": "merge_barge",
+  "days": 3,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "split_crate",
+  "days": 3,
+  "after": [
+   "merge_barge"
+  ],
+  "done": true
+ },
+ {
+  "name": "estimate_deck",
+  "days": 6,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "load_crate",
+  "days": 3,
+  "after": [
+   "split_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_sail",
+  "days": 5,
+  "after": [
+   "load_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_quay",
+  "days": 6,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "resolve_crate",
+  "days": 3,
+  "after": [
+   "allocate_sail",
+   "estimate_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_ferry",
+  "days": 2,
+  "after": [
+   "resolve_quay",
+   "split_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_pallet",
+  "days": 8,
+  "after": [
+   "estimate_deck",
+   "resolve_quay",
+   "render_ferry"
+  ],
+  "done": false
+ }
+]

@@ -1,0 +1,83 @@
+[
+ {
+  "name": "load_crate",
+  "days": 2,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "apply_dock",
+  "days": 3,
+  "after": [
+   "load_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_mooring",
+  "days": 7,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "resolve_hull",
+  "days": 7,
+  "after": [
+   "apply_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_berth",
+  "days": 4,
+  "after": [
+   "resolve_hull",
+   "merge_mooring",
+   "load_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_mooring",
+  "days": 5,
+  "after": [
+   "apply_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_ferry",
+  "days": 8,
+  "after": [
+   "apply_dock",
+   "resolve_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_berth",
+  "days": 2,
+  "after": [
+   "load_ferry"
+  ],
+  "done": true
+ },
+ {
+  "name": "merge_barge",
+  "days": 3,
+  "after": [
+   "apply_dock",
+   "load_ferry",
+   "resolve_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_anchor",
+  "days": 1,
+  "after": [
+   "merge_barge"
+  ],
+  "done": false
+ }
+]

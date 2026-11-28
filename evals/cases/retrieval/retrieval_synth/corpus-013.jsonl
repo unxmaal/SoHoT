@@ -1,0 +1,30 @@
+{"id": "n00", "text": "The rate limit of Teal-4 is 1600 requests per minute; callers over it get a 429."}
+{"id": "n01", "text": "Unlike Pipit-7, whose pager rotation is handled elsewhere, the pager rotation of Siskin-6 is Kenji Sandoval. Nobody should assume the pager rotation of Siskin-6 applies to Pipit-7, the pager rotation differs."}
+{"id": "n02", "text": "Unlike Swift-8, whose datacenter is handled elsewhere, the datacenter of Curlew-2 is the Lima datacenter. Nobody should assume the datacenter of Curlew-2 applies to Swift-8, the datacenter differs."}
+{"id": "n03", "text": "The service Pipit-7 takes traffic on port 2751, and the port is fixed across every environment."}
+{"id": "n04", "text": "Unlike Pipit-7, whose pager rotation is handled elsewhere, the pager rotation of Plover-5 is Vera Dunmore. Nobody should assume the pager rotation of Plover-5 applies to Pipit-7, the pager rotation differs."}
+{"id": "n05", "text": "Teal-4 has one owner, the Ember team, which approves each release and keeps the runbook current. The page was last reviewed in the spring."}
+{"id": "n06", "text": "Unlike Siskin-6, whose port is handled elsewhere, the port of Swift-8 is 6460. Nobody should assume the port of Swift-8 applies to Siskin-6, the port differs."}
+{"id": "n07", "text": "Unlike Siskin-6, whose owner is handled elsewhere, the owner of Pipit-7 is the Prism team. Nobody should assume the owner of Pipit-7 applies to Siskin-6, the owner differs. The page was last reviewed in the spring."}
+{"id": "n08", "text": "The rate limit of Pipit-7 is 1250 requests per minute; callers over it get a 429."}
+{"id": "n09", "text": "Unlike Plover-5, whose retirement date is handled elsewhere, the retirement date of Swift-8 is January 2, 2029. Nobody should assume the retirement date of Swift-8 applies to Plover-5, the retirement date differs. A diagram is attached to the wiki entry."}
+{"id": "n10", "text": "Unlike Teal-4, whose language is handled elsewhere, the language of Plover-5 is Kotlin. Nobody should assume the language of Plover-5 applies to Teal-4, the language differs."}
+{"id": "n11", "text": "The rate limit of Curlew-2 is 3750 requests per minute; callers over it get a 429. An older draft of this note was archived."}
+{"id": "n12", "text": "The primary datacenter of Swift-8 is Tallinn; failover is handled by operations."}
+{"id": "n13", "text": "Source for Siskin-6 is written in Go; no other language is allowed in its repository."}
+{"id": "n14", "text": "The pager rotation for Pipit-7 is run by Wendell Underhill; alerts page them first."}
+{"id": "n15", "text": "Expect throttling at the rate limit for Swift-8, which is 1950 requests per minute. The entry was reformatted last quarter."}
+{"id": "n16", "text": "Siskin-6 reaches its retirement date on January 17, 2027, so every consumer has to migrate before then. Details change slowly, so check the history first."}
+{"id": "n17", "text": "The retirement date for Pipit-7 is November 11, 2029; after that day it stops serving."}
+{"id": "n18", "text": "Teal-4 is implemented in Rust; the language was chosen for its tooling."}
+{"id": "n19", "text": "Unlike Swift-8, whose retirement date is handled elsewhere, the retirement date of Plover-5 is September 23, 2029. Nobody should assume the retirement date of Plover-5 applies to Swift-8, the retirement date differs."}
+{"id": "n20", "text": "The owner of Siskin-6 is the Ember team, and every change to Siskin-6 goes through their review."}
+{"id": "n21", "text": "Unlike Swift-8, whose datacenter is handled elsewhere, the datacenter of Plover-5 is the Dublin datacenter. Nobody should assume the datacenter of Plover-5 applies to Swift-8, the datacenter differs."}
+{"id": "n22", "text": "Siskin-6 listens on port 2911; anyone who cannot reach that port should check the firewall rules. The entry was reformatted last quarter."}
+{"id": "n23", "text": "Unlike Siskin-6, whose owner is handled elsewhere, the owner of Swift-8 is the Ledger team. Nobody should assume the owner of Swift-8 applies to Siskin-6, the owner differs. The entry was reformatted last quarter."}
+{"id": "n24", "text": "The rate limit of Plover-5 is 1500 requests per minute; callers over it get a 429."}
+{"id": "n25", "text": "The retirement date for Curlew-2 is November 10, 2028; after that day it stops serving. An older draft of this note was archived."}
+{"id": "n26", "text": "Unlike Swift-8, whose port is handled elsewhere, the port of Curlew-2 is 6881. Nobody should assume the port of Curlew-2 applies to Swift-8, the port differs."}
+{"id": "n27", "text": "Unlike Siskin-6, whose language is handled elsewhere, the language of Curlew-2 is Haskell. Nobody should assume the language of Curlew-2 applies to Siskin-6, the language differs."}
+{"id": "n28", "text": "All instances of Teal-4 live in the datacenter at Lisbon. Details change slowly, so check the history first."}
+{"id": "n29", "text": "Teal-4 reaches its retirement date on October 16, 2029, so every consumer has to migrate before then. An older draft of this note was archived."}

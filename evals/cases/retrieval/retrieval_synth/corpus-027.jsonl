@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Unlike Plover-3, whose pager rotation is handled elsewhere, the pager rotation of Wren-8 is Avery Galloway. Nobody should assume the pager rotation of Wren-8 applies to Plover-3, the pager rotation differs. Nothing about this has been disputed so far."}
+{"id": "n01", "text": "Unlike Swift-2, whose retirement date is handled elsewhere, the retirement date of Plover-3 is August 9, 2027. Nobody should assume the retirement date of Plover-3 applies to Swift-2, the retirement date differs. A diagram is attached to the wiki entry."}
+{"id": "n02", "text": "Oren Quintero is on the pager rotation of Plover-3 this month, with a deputy as backup."}
+{"id": "n03", "text": "The owner of Egret-2 is the Keystone team, and every change to Egret-2 goes through their review."}
+{"id": "n04", "text": "Unlike Curlew-9, whose owner is handled elsewhere, the owner of Swift-2 is the Keystone team. Nobody should assume the owner of Swift-2 applies to Curlew-9, the owner differs. The entry was reformatted last quarter."}
+{"id": "n05", "text": "Unlike Swift-2, whose port is handled elsewhere, the port of Egret-2 is 4476. Nobody should assume the port of Egret-2 applies to Swift-2, the port differs."}
+{"id": "n06", "text": "Unlike Siskin-5, whose language is handled elsewhere, the language of Egret-2 is Scala. Nobody should assume the language of Egret-2 applies to Siskin-5, the language differs."}
+{"id": "n07", "text": "Curlew-9 runs in the Nairobi datacenter, next to its database."}
+{"id": "n08", "text": "Unlike Plover-3, whose owner is handled elsewhere, the owner of Curlew-9 is the Compass team. Nobody should assume the owner of Curlew-9 applies to Plover-3, the owner differs. The page was last reviewed in the spring."}
+{"id": "n09", "text": "The retirement date for Wren-8 is March 12, 2028; after that day it stops serving. Nothing about this has been disputed so far."}
+{"id": "n10", "text": "Unlike Wren-8, whose rate limit is handled elsewhere, the rate limit of Swift-2 is 3300 requests per minute. Nobody should assume the rate limit of Swift-2 applies to Wren-8, the rate limit differs. Nothing about this has been disputed so far."}
+{"id": "n11", "text": "All instances of Wren-8 live in the datacenter at Quito. A diagram is attached to the wiki entry."}
+{"id": "n12", "text": "Unlike Curlew-9, whose budget is handled elsewhere, the budget of Plover-3 is $3055k. Nobody should assume the budget of Plover-3 applies to Curlew-9, the budget differs."}
+{"id": "n13", "text": "The rate limit of Wren-8 is 600 requests per minute; callers over it get a 429."}
+{"id": "n14", "text": "The retirement date for Siskin-5 is November 23, 2027; after that day it stops serving."}
+{"id": "n15", "text": "Plan around the retirement date of Swift-2: July 8, 2028 is when it goes dark."}
+{"id": "n16", "text": "Plan around the retirement date of Curlew-9: March 23, 2027 is when it goes dark."}
+{"id": "n17", "text": "Unlike Curlew-9, whose port is handled elsewhere, the port of Swift-2 is 4067. Nobody should assume the port of Swift-2 applies to Curlew-9, the port differs."}
+{"id": "n18", "text": "The yearly budget for Curlew-9 is $1115k, covering licences and hosting."}
+{"id": "n19", "text": "Unlike Egret-2, whose owner is handled elsewhere, the owner of Plover-3 is the Keystone team. Nobody should assume the owner of Plover-3 applies to Egret-2, the owner differs."}
+{"id": "n20", "text": "Unlike Wren-8, whose rate limit is handled elsewhere, the rate limit of Siskin-5 is 1500 requests per minute. Nobody should assume the rate limit of Siskin-5 applies to Wren-8, the rate limit differs."}
+{"id": "n21", "text": "Pages from Egret-2 land on the pager rotation of Farah Fairbanks before anyone else."}
+{"id": "n22", "text": "Siskin-5 has one owner, the Quill team, which approves each release and keeps the runbook current."}
+{"id": "n23", "text": "Unlike Siskin-5, whose language is handled elsewhere, the language of Wren-8 is Rust. Nobody should assume the language of Wren-8 applies to Siskin-5, the language differs."}
+{"id": "n24", "text": "Unlike Swift-2, whose port is handled elsewhere, the port of Curlew-9 is 5256. Nobody should assume the port of Curlew-9 applies to Swift-2, the port differs."}
+{"id": "n25", "text": "Siskin-5 is implemented in Zig; the language was chosen for its tooling."}
+{"id": "n26", "text": "Unlike Swift-2, whose rate limit is handled elsewhere, the rate limit of Plover-3 is 3600 requests per minute. Nobody should assume the rate limit of Plover-3 applies to Swift-2, the rate limit differs."}
+{"id": "n27", "text": "Egret-2 reaches its retirement date on November 7, 2029, so every consumer has to migrate before then. Nothing about this has been disputed so far."}
+{"id": "n28", "text": "Siskin-5 runs in the Cairo datacenter, next to its database."}
+{"id": "n29", "text": "All instances of Swift-2 live in the datacenter at Hanoi."}

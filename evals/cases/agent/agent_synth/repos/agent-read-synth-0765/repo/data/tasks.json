@@ -1,0 +1,198 @@
+[
+ {
+  "name": "merge_barge",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "parse_buoy",
+  "days": 1,
+  "after": [
+   "merge_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_pallet",
+  "days": 4,
+  "after": [
+   "merge_barge",
+   "parse_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_pallet",
+  "days": 2,
+  "after": [
+   "load_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_cargo",
+  "days": 8,
+  "after": [
+   "parse_buoy",
+   "apply_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_tide",
+  "days": 7,
+  "after": [
+   "parse_buoy",
+   "load_pallet",
+   "apply_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_anchor",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "validate_anchor",
+  "days": 1,
+  "after": [
+   "merge_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_dock",
+  "days": 3,
+  "after": [
+   "merge_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_tide",
+  "days": 7,
+  "after": [
+   "apply_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_quay",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "rank_ferry",
+  "days": 6,
+  "after": [
+   "load_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_harbor",
+  "days": 2,
+  "after": [
+   "stage_tide",
+   "apply_pallet",
+   "parse_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_ferry",
+  "days": 9,
+  "after": [
+   "split_dock",
+   "allocate_tide",
+   "validate_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_sail",
+  "days": 6,
+  "after": [
+   "split_dock",
+   "allocate_tide",
+   "apply_pallet"
+  ],
+  "done": true
+ },
+ {
+  "name": "validate_berth",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "allocate_lantern",
+  "days": 7,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "stage_dock",
+  "days": 1,
+  "after": [
+   "resolve_anchor"
+  ],
+  "done": true
+ },
+ {
+  "name": "stage_barge",
+  "days": 1,
+  "after": [
+   "estimate_quay",
+   "rank_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_barge",
+  "days": 5,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "merge_mast",
+  "days": 4,
+  "after": [
+   "apply_pallet",
+   "stage_dock",
+   "stage_tide"
+  ],
+  "done": true
+ },
+ {
+  "name": "reconcile_lantern",
+  "days": 8,
+  "after": [
+   "stage_sail",
+   "merge_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_crate",
+  "days": 9,
+  "after": [
+   "merge_cargo",
+   "rank_ferry"
+  ],
+  "done": true
+ },
+ {
+  "name": "validate_cargo",
+  "days": 2,
+  "after": [
+   "merge_barge",
+   "load_crate"
+  ],
+  "done": false
+ }
+]

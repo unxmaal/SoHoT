@@ -1,0 +1,181 @@
+[
+ {
+  "name": "render_dock",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "flush_anchor",
+  "days": 2,
+  "after": [
+   "render_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_rope",
+  "days": 3,
+  "after": [
+   "flush_anchor",
+   "render_dock"
+  ],
+  "done": true
+ },
+ {
+  "name": "allocate_keel",
+  "days": 4,
+  "after": [
+   "flush_anchor"
+  ],
+  "done": true
+ },
+ {
+  "name": "split_lantern",
+  "days": 6,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "rank_deck",
+  "days": 5,
+  "after": [
+   "flush_anchor",
+   "render_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_mooring",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "estimate_harbor",
+  "days": 7,
+  "after": [
+   "flush_mooring"
+  ],
+  "done": true
+ },
+ {
+  "name": "validate_hull",
+  "days": 2,
+  "after": [
+   "flush_mooring"
+  ],
+  "done": true
+ },
+ {
+  "name": "stage_sail",
+  "days": 5,
+  "after": [
+   "allocate_keel",
+   "flush_mooring",
+   "split_lantern"
+  ],
+  "done": true
+ },
+ {
+  "name": "merge_tide",
+  "days": 8,
+  "after": [
+   "render_dock",
+   "allocate_keel",
+   "estimate_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_quay",
+  "days": 9,
+  "after": [
+   "allocate_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_barge",
+  "days": 4,
+  "after": [
+   "validate_hull",
+   "render_quay",
+   "render_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_sail",
+  "days": 5,
+  "after": [
+   "load_barge",
+   "render_dock",
+   "split_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_rope",
+  "days": 2,
+  "after": [
+   "render_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_anchor",
+  "days": 4,
+  "after": [
+   "normalize_sail"
+  ],
+  "done": true
+ },
+ {
+  "name": "split_rope",
+  "days": 1,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "resolve_deck",
+  "days": 7,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "estimate_deck",
+  "days": 9,
+  "after": [
+   "validate_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_buoy",
+  "days": 1,
+  "after": [
+   "estimate_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_keel",
+  "days": 7,
+  "after": [
+   "render_rope"
+  ],
+  "done": true
+ },
+ {
+  "name": "validate_rope",
+  "days": 7,
+  "after": [
+   "merge_tide",
+   "estimate_rope",
+   "render_rope",
+   "normalize_keel"
+  ],
+  "done": false
+ }
+]

@@ -1,0 +1,146 @@
+[
+ {
+  "name": "split_mooring",
+  "days": 9,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "flush_hull",
+  "days": 1,
+  "after": [
+   "split_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_pallet",
+  "days": 4,
+  "after": [
+   "split_mooring",
+   "flush_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_pallet",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "render_berth",
+  "days": 9,
+  "after": [
+   "flush_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_dock",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "lookup_sail",
+  "days": 7,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "merge_barge",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "rank_cargo",
+  "days": 5,
+  "after": [
+   "rank_pallet",
+   "merge_dock",
+   "split_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_barge",
+  "days": 7,
+  "after": [
+   "flush_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_mooring",
+  "days": 8,
+  "after": [
+   "split_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_crate",
+  "days": 6,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "merge_anchor",
+  "days": 1,
+  "after": [
+   "merge_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_berth",
+  "days": 4,
+  "after": [
+   "rank_cargo",
+   "flush_hull"
+  ],
+  "done": true
+ },
+ {
+  "name": "estimate_barge",
+  "days": 5,
+  "after": [
+   "rank_cargo",
+   "split_mooring"
+  ],
+  "done": true
+ },
+ {
+  "name": "apply_quay",
+  "days": 2,
+  "after": [
+   "merge_barge"
+  ],
+  "done": true
+ },
+ {
+  "name": "estimate_hull",
+  "days": 2,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "normalize_dock",
+  "days": 4,
+  "after": [
+   "rank_cargo",
+   "estimate_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_quay",
+  "days": 3,
+  "after": [
+   "normalize_dock"
+  ],
+  "done": false
+ }
+]

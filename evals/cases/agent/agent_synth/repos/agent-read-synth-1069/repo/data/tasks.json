@@ -1,0 +1,170 @@
+[
+ {
+  "name": "estimate_hull",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "stage_mast",
+  "days": 2,
+  "after": [
+   "estimate_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_harbor",
+  "days": 2,
+  "after": [
+   "stage_mast",
+   "estimate_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_crate",
+  "days": 1,
+  "after": [
+   "estimate_harbor"
+  ],
+  "done": true
+ },
+ {
+  "name": "render_deck",
+  "days": 4,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "validate_crate",
+  "days": 3,
+  "after": [
+   "estimate_hull",
+   "stage_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_harbor",
+  "days": 7,
+  "after": [
+   "validate_crate",
+   "allocate_crate",
+   "estimate_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_pallet",
+  "days": 3,
+  "after": [
+   "render_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_pallet",
+  "days": 2,
+  "after": [
+   "stage_mast",
+   "estimate_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_mooring",
+  "days": 2,
+  "after": [
+   "apply_pallet",
+   "render_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_dock",
+  "days": 9,
+  "after": [
+   "render_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_rope",
+  "days": 4,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "rank_sail",
+  "days": 1,
+  "after": [
+   "stage_harbor",
+   "render_deck",
+   "estimate_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_quay",
+  "days": 1,
+  "after": [
+   "apply_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_harbor",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "apply_crate",
+  "days": 2,
+  "after": [
+   "resolve_harbor",
+   "apply_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_barge",
+  "days": 9,
+  "after": [
+   "rank_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_berth",
+  "days": 5,
+  "after": [
+   "render_deck",
+   "apply_rope",
+   "estimate_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_deck",
+  "days": 1,
+  "after": [
+   "apply_rope",
+   "reconcile_quay",
+   "stage_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_berth",
+  "days": 9,
+  "after": [
+   "apply_crate",
+   "estimate_harbor",
+   "validate_crate",
+   "validate_deck"
+  ],
+  "done": false
+ }
+]

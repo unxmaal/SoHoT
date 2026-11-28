@@ -1,0 +1,30 @@
+{"id": "n00", "text": "All instances of Kestrel-9 live in the datacenter at Lima."}
+{"id": "n01", "text": "Unlike Tern-3, whose rate limit is handled elsewhere, the rate limit of Swift-7 is 2400 requests per minute. Nobody should assume the rate limit of Swift-7 applies to Tern-3, the rate limit differs. An older draft of this note was archived."}
+{"id": "n02", "text": "Kestrel-9 enforces a rate limit of 1850 requests per minute per caller. A diagram is attached to the wiki entry."}
+{"id": "n03", "text": "Kestrel-9 is implemented in Zig; the language was chosen for its tooling. A diagram is attached to the wiki entry."}
+{"id": "n04", "text": "The owner of Bittern-7 is the Prism team, and every change to Bittern-7 goes through their review. The entry was reformatted last quarter."}
+{"id": "n05", "text": "Unlike Lark-4, whose retirement date is handled elsewhere, the retirement date of Kestrel-9 is July 27, 2029. Nobody should assume the retirement date of Kestrel-9 applies to Lark-4, the retirement date differs. Nothing about this has been disputed so far."}
+{"id": "n06", "text": "Unlike Bittern-7, whose language is handled elsewhere, the language of Lark-4 is Rust. Nobody should assume the language of Lark-4 applies to Bittern-7, the language differs. Details change slowly, so check the history first."}
+{"id": "n07", "text": "All instances of Tern-3 live in the datacenter at Cairo."}
+{"id": "n08", "text": "Unlike Lark-4, whose language is handled elsewhere, the language of Bittern-7 is Elixir. Nobody should assume the language of Bittern-7 applies to Lark-4, the language differs."}
+{"id": "n09", "text": "Finance fixed the budget of Lark-4 at $2285k, reviewed every quarter."}
+{"id": "n10", "text": "Unlike Swift-7, whose budget is handled elsewhere, the budget of Bittern-7 is $3235k. Nobody should assume the budget of Bittern-7 applies to Swift-7, the budget differs."}
+{"id": "n11", "text": "Lark-4 reaches its retirement date on June 14, 2029, so every consumer has to migrate before then."}
+{"id": "n12", "text": "Swift-7 is implemented in Scala; the language was chosen for its tooling. A diagram is attached to the wiki entry."}
+{"id": "n13", "text": "Unlike Godwit-7, whose budget is handled elsewhere, the budget of Swift-7 is $975k. Nobody should assume the budget of Swift-7 applies to Godwit-7, the budget differs."}
+{"id": "n14", "text": "Avery Thorne is on the pager rotation of Swift-7 this month, with a deputy as backup."}
+{"id": "n15", "text": "Unlike Bittern-7, whose port is handled elsewhere, the port of Tern-3 is 4213. Nobody should assume the port of Tern-3 applies to Bittern-7, the port differs. The entry was reformatted last quarter."}
+{"id": "n16", "text": "The owner of Lark-4 is the Ledger team, and every change to Lark-4 goes through their review."}
+{"id": "n17", "text": "Godwit-7 has one owner, the Compass team, which approves each release and keeps the runbook current."}
+{"id": "n18", "text": "Expect throttling at the rate limit for Godwit-7, which is 1050 requests per minute."}
+{"id": "n19", "text": "The yearly budget for Godwit-7 is $2315k, covering licences and hosting."}
+{"id": "n20", "text": "Unlike Kestrel-9, whose owner is handled elsewhere, the owner of Tern-3 is the Trellis team. Nobody should assume the owner of Tern-3 applies to Kestrel-9, the owner differs."}
+{"id": "n21", "text": "The owner of Kestrel-9 is the Ledger team, and every change to Kestrel-9 goes through their review."}
+{"id": "n22", "text": "Unlike Tern-3, whose port is handled elsewhere, the port of Bittern-7 is 9297. Nobody should assume the port of Bittern-7 applies to Tern-3, the port differs."}
+{"id": "n23", "text": "Unlike Bittern-7, whose pager rotation is handled elsewhere, the pager rotation of Godwit-7 is Jolene Underhill. Nobody should assume the pager rotation of Godwit-7 applies to Bittern-7, the pager rotation differs."}
+{"id": "n24", "text": "The language of Tern-3 is Scala, which new contributors must know. The page was last reviewed in the spring."}
+{"id": "n25", "text": "The primary datacenter of Swift-7 is Osaka; failover is handled by operations."}
+{"id": "n26", "text": "Expect throttling at the rate limit for Tern-3, which is 1950 requests per minute. The page was last reviewed in the spring."}
+{"id": "n27", "text": "Unlike Lark-4, whose retirement date is handled elsewhere, the retirement date of Godwit-7 is January 23, 2028. Nobody should assume the retirement date of Godwit-7 applies to Lark-4, the retirement date differs."}
+{"id": "n28", "text": "Unlike Swift-7, whose rate limit is handled elsewhere, the rate limit of Lark-4 is 1000 requests per minute. Nobody should assume the rate limit of Lark-4 applies to Swift-7, the rate limit differs."}
+{"id": "n29", "text": "Pages from Bittern-7 land on the pager rotation of Avery Zielinski before anyone else."}

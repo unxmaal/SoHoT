@@ -1,0 +1,87 @@
+[
+ {
+  "name": "flush_keel",
+  "days": 4,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "estimate_pallet",
+  "days": 6,
+  "after": [
+   "flush_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_rope",
+  "days": 4,
+  "after": [
+   "flush_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_mooring",
+  "days": 1,
+  "after": [
+   "flush_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_mast",
+  "days": 2,
+  "after": [
+   "flush_keel",
+   "parse_rope"
+  ],
+  "done": true
+ },
+ {
+  "name": "resolve_cargo",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "rank_deck",
+  "days": 3,
+  "after": [
+   "parse_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_anchor",
+  "days": 8,
+  "after": [
+   "flush_keel",
+   "estimate_pallet",
+   "normalize_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_pallet",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "flush_crate",
+  "days": 4,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "normalize_anchor",
+  "days": 8,
+  "after": [
+   "resolve_mooring",
+   "flush_pallet",
+   "flush_crate"
+  ],
+  "done": false
+ }
+]

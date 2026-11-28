@@ -1,0 +1,181 @@
+[
+ {
+  "name": "rank_rope",
+  "days": 9,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "render_harbor",
+  "days": 4,
+  "after": [
+   "rank_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_pallet",
+  "days": 8,
+  "after": [
+   "rank_rope"
+  ],
+  "done": true
+ },
+ {
+  "name": "lookup_quay",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "split_sail",
+  "days": 2,
+  "after": [
+   "rank_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_mooring",
+  "days": 5,
+  "after": [
+   "lookup_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_mooring",
+  "days": 7,
+  "after": [
+   "split_sail",
+   "resolve_pallet",
+   "lookup_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_dock",
+  "days": 1,
+  "after": [
+   "resolve_pallet",
+   "resolve_mooring",
+   "lookup_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_buoy",
+  "days": 3,
+  "after": [
+   "split_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_mast",
+  "days": 3,
+  "after": [
+   "lookup_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_mooring",
+  "days": 1,
+  "after": [
+   "resolve_pallet"
+  ],
+  "done": true
+ },
+ {
+  "name": "reconcile_berth",
+  "days": 3,
+  "after": [
+   "lookup_mooring",
+   "validate_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_barge",
+  "days": 5,
+  "after": [
+   "lookup_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_berth",
+  "days": 1,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "render_crate",
+  "days": 7,
+  "after": [
+   "reconcile_berth",
+   "render_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_pallet",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "render_sail",
+  "days": 8,
+  "after": [
+   "render_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_rope",
+  "days": 4,
+  "after": [
+   "render_crate",
+   "lookup_quay",
+   "render_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_mooring",
+  "days": 3,
+  "after": [
+   "resolve_mooring"
+  ],
+  "done": true
+ },
+ {
+  "name": "render_hull",
+  "days": 7,
+  "after": [
+   "allocate_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_pallet",
+  "days": 5,
+  "after": [
+   "split_buoy",
+   "render_crate",
+   "stage_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_lantern",
+  "days": 6,
+  "after": [
+   "render_mooring",
+   "stage_pallet"
+  ],
+  "done": false
+ }
+]

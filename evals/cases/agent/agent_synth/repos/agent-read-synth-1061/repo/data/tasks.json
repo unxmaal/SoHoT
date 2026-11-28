@@ -1,0 +1,83 @@
+[
+ {
+  "name": "reconcile_hull",
+  "days": 9,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "load_anchor",
+  "days": 4,
+  "after": [
+   "reconcile_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_mooring",
+  "days": 3,
+  "after": [
+   "reconcile_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_tide",
+  "days": 5,
+  "after": [
+   "validate_mooring",
+   "load_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_mooring",
+  "days": 4,
+  "after": [
+   "load_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_dock",
+  "days": 6,
+  "after": [
+   "validate_mooring",
+   "load_anchor"
+  ],
+  "done": true
+ },
+ {
+  "name": "reconcile_mooring",
+  "days": 7,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "normalize_pallet",
+  "days": 1,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "parse_barge",
+  "days": 4,
+  "after": [
+   "reconcile_mooring",
+   "estimate_dock",
+   "load_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_anchor",
+  "days": 2,
+  "after": [
+   "load_anchor",
+   "normalize_pallet",
+   "reconcile_hull",
+   "parse_barge"
+  ],
+  "done": false
+ }
+]

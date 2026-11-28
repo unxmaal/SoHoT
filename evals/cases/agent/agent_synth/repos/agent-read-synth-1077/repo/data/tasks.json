@@ -1,0 +1,199 @@
+[
+ {
+  "name": "rank_pallet",
+  "days": 1,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "resolve_mast",
+  "days": 3,
+  "after": [
+   "rank_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_mast",
+  "days": 7,
+  "after": [
+   "resolve_mast",
+   "rank_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_rope",
+  "days": 6,
+  "after": [
+   "rank_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_tide",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "load_crate",
+  "days": 5,
+  "after": [
+   "rank_pallet",
+   "resolve_mast",
+   "validate_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_buoy",
+  "days": 5,
+  "after": [
+   "merge_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_sail",
+  "days": 1,
+  "after": [
+   "merge_tide"
+  ],
+  "done": true
+ },
+ {
+  "name": "merge_buoy",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "rank_harbor",
+  "days": 3,
+  "after": [
+   "load_crate",
+   "flush_buoy"
+  ],
+  "done": true
+ },
+ {
+  "name": "estimate_quay",
+  "days": 8,
+  "after": [
+   "validate_rope",
+   "rank_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_ferry",
+  "days": 4,
+  "after": [
+   "rank_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_mast",
+  "days": 1,
+  "after": [
+   "rank_pallet"
+  ],
+  "done": true
+ },
+ {
+  "name": "flush_crate",
+  "days": 5,
+  "after": [
+   "rank_pallet",
+   "validate_rope",
+   "merge_tide"
+  ],
+  "done": true
+ },
+ {
+  "name": "parse_sail",
+  "days": 1,
+  "after": [
+   "resolve_mast",
+   "flush_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_hull",
+  "days": 5,
+  "after": [
+   "merge_sail"
+  ],
+  "done": true
+ },
+ {
+  "name": "render_quay",
+  "days": 3,
+  "after": [
+   "flush_buoy",
+   "merge_tide",
+   "lookup_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_dock",
+  "days": 3,
+  "after": [
+   "rank_harbor",
+   "parse_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_hull",
+  "days": 3,
+  "after": [
+   "resolve_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_mooring",
+  "days": 9,
+  "after": [
+   "flush_crate"
+  ],
+  "done": true
+ },
+ {
+  "name": "merge_anchor",
+  "days": 1,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "rank_mast",
+  "days": 7,
+  "after": [
+   "load_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_ferry",
+  "days": 4,
+  "after": [
+   "rank_dock"
+  ],
+  "done": true
+ },
+ {
+  "name": "estimate_deck",
+  "days": 9,
+  "after": [
+   "flush_crate",
+   "merge_tide",
+   "render_ferry"
+  ],
+  "done": false
+ }
+]

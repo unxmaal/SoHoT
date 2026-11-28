@@ -1,0 +1,164 @@
+[
+ {
+  "name": "apply_dock",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "merge_crate",
+  "days": 7,
+  "after": [
+   "apply_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_mast",
+  "days": 3,
+  "after": [
+   "apply_dock",
+   "merge_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_quay",
+  "days": 9,
+  "after": [
+   "apply_mast",
+   "apply_dock",
+   "merge_crate"
+  ],
+  "done": true
+ },
+ {
+  "name": "rank_dock",
+  "days": 6,
+  "after": [
+   "apply_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_sail",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "validate_harbor",
+  "days": 6,
+  "after": [
+   "rank_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_keel",
+  "days": 7,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "merge_lantern",
+  "days": 8,
+  "after": [
+   "apply_mast",
+   "rank_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_quay",
+  "days": 9,
+  "after": [
+   "merge_crate",
+   "merge_lantern"
+  ],
+  "done": true
+ },
+ {
+  "name": "parse_keel",
+  "days": 9,
+  "after": [
+   "rank_sail",
+   "allocate_quay"
+  ],
+  "done": true
+ },
+ {
+  "name": "normalize_anchor",
+  "days": 7,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "validate_crate",
+  "days": 1,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "allocate_dock",
+  "days": 4,
+  "after": [
+   "rank_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_ferry",
+  "days": 6,
+  "after": [
+   "split_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_hull",
+  "days": 4,
+  "after": [
+   "merge_crate",
+   "merge_lantern"
+  ],
+  "done": true
+ },
+ {
+  "name": "load_keel",
+  "days": 2,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "validate_barge",
+  "days": 4,
+  "after": [
+   "normalize_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_mooring",
+  "days": 8,
+  "after": [
+   "flush_quay",
+   "validate_barge"
+  ],
+  "done": true
+ },
+ {
+  "name": "render_tide",
+  "days": 2,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "estimate_keel",
+  "days": 7,
+  "after": [
+   "render_tide"
+  ],
+  "done": false
+ }
+]

@@ -1,0 +1,111 @@
+[
+ {
+  "name": "flush_rope",
+  "days": 5,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "stage_ferry",
+  "days": 9,
+  "after": [
+   "flush_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_mast",
+  "days": 7,
+  "after": [
+   "stage_ferry",
+   "flush_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_dock",
+  "days": 2,
+  "after": [
+   "flush_rope",
+   "stage_ferry",
+   "apply_mast"
+  ],
+  "done": true
+ },
+ {
+  "name": "rank_dock",
+  "days": 8,
+  "after": [
+   "stage_ferry",
+   "flush_rope",
+   "apply_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_anchor",
+  "days": 3,
+  "after": [
+   "apply_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_mast",
+  "days": 5,
+  "after": [
+   "apply_mast",
+   "flush_dock",
+   "flush_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_deck",
+  "days": 6,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "resolve_anchor",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "allocate_crate",
+  "days": 7,
+  "after": [
+   "lookup_mast",
+   "flush_dock",
+   "render_anchor"
+  ],
+  "done": true
+ },
+ {
+  "name": "normalize_anchor",
+  "days": 8,
+  "after": [
+   "apply_mast"
+  ],
+  "done": true
+ },
+ {
+  "name": "apply_sail",
+  "days": 1,
+  "after": [
+   "apply_mast",
+   "rank_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_harbor",
+  "days": 8,
+  "after": [
+   "rank_dock",
+   "apply_sail"
+  ],
+  "done": false
+ }
+]

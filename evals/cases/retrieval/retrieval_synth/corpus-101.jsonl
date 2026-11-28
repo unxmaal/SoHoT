@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Unlike Godwit-7, whose language is handled elsewhere, the language of Bittern-8 is Elixir. Nobody should assume the language of Bittern-8 applies to Godwit-7, the language differs. An older draft of this note was archived."}
+{"id": "n01", "text": "All instances of Shrike-8 live in the datacenter at Quito."}
+{"id": "n02", "text": "Unlike Tern-4, whose budget is handled elsewhere, the budget of Shrike-8 is $1125k. Nobody should assume the budget of Shrike-8 applies to Tern-4, the budget differs."}
+{"id": "n03", "text": "Unlike Dunlin-6, whose rate limit is handled elsewhere, the rate limit of Plover-4 is 4150 requests per minute. Nobody should assume the rate limit of Plover-4 applies to Dunlin-6, the rate limit differs."}
+{"id": "n04", "text": "Dunlin-6 is implemented in Haskell; the language was chosen for its tooling."}
+{"id": "n05", "text": "Unlike Plover-4, whose budget is handled elsewhere, the budget of Tern-4 is $4440k. Nobody should assume the budget of Tern-4 applies to Plover-4, the budget differs. A diagram is attached to the wiki entry."}
+{"id": "n06", "text": "Unlike Plover-4, whose retirement date is handled elsewhere, the retirement date of Bittern-8 is February 20, 2029. Nobody should assume the retirement date of Bittern-8 applies to Plover-4, the retirement date differs. An older draft of this note was archived."}
+{"id": "n07", "text": "Unlike Dunlin-6, whose datacenter is handled elsewhere, the datacenter of Bittern-8 is the Osaka datacenter. Nobody should assume the datacenter of Bittern-8 applies to Dunlin-6, the datacenter differs."}
+{"id": "n08", "text": "Unlike Godwit-7, whose owner is handled elsewhere, the owner of Dunlin-6 is the Tessera team. Nobody should assume the owner of Dunlin-6 applies to Godwit-7, the owner differs. A diagram is attached to the wiki entry."}
+{"id": "n09", "text": "Unlike Bittern-8, whose retirement date is handled elsewhere, the retirement date of Tern-4 is February 8, 2028. Nobody should assume the retirement date of Tern-4 applies to Bittern-8, the retirement date differs."}
+{"id": "n10", "text": "Unlike Bittern-8, whose retirement date is handled elsewhere, the retirement date of Plover-4 is December 25, 2029. Nobody should assume the retirement date of Plover-4 applies to Bittern-8, the retirement date differs."}
+{"id": "n11", "text": "Questions about Godwit-7 start with its owner, the Anvil team; they triage anything filed against it. Nothing about this has been disputed so far."}
+{"id": "n12", "text": "For Plover-4 the port is 2577. Changing the port needs a change ticket. Nothing about this has been disputed so far."}
+{"id": "n13", "text": "Shrike-8 is implemented in Scala; the language was chosen for its tooling."}
+{"id": "n14", "text": "Dunlin-6 enforces a rate limit of 400 requests per minute per caller."}
+{"id": "n15", "text": "Unlike Tern-4, whose pager rotation is handled elsewhere, the pager rotation of Godwit-7 is Gideon Jaramillo. Nobody should assume the pager rotation of Godwit-7 applies to Tern-4, the pager rotation differs."}
+{"id": "n16", "text": "The primary datacenter of Dunlin-6 is Quito; failover is handled by operations. The entry was reformatted last quarter."}
+{"id": "n17", "text": "Questions about Tern-4 start with its owner, the Sprocket team; they triage anything filed against it. A diagram is attached to the wiki entry."}
+{"id": "n18", "text": "Unlike Plover-4, whose port is handled elsewhere, the port of Bittern-8 is 7981. Nobody should assume the port of Bittern-8 applies to Plover-4, the port differs. An older draft of this note was archived."}
+{"id": "n19", "text": "Unlike Dunlin-6, whose datacenter is handled elsewhere, the datacenter of Tern-4 is the Dublin datacenter. Nobody should assume the datacenter of Tern-4 applies to Dunlin-6, the datacenter differs. An older draft of this note was archived."}
+{"id": "n20", "text": "Unlike Tern-4, whose pager rotation is handled elsewhere, the pager rotation of Bittern-8 is Ivo Sandoval. Nobody should assume the pager rotation of Bittern-8 applies to Tern-4, the pager rotation differs."}
+{"id": "n21", "text": "Finance fixed the budget of Plover-4 at $1285k, reviewed every quarter."}
+{"id": "n22", "text": "Unlike Tern-4, whose owner is handled elsewhere, the owner of Plover-4 is the Prism team. Nobody should assume the owner of Plover-4 applies to Tern-4, the owner differs. The page was last reviewed in the spring."}
+{"id": "n23", "text": "Pages from Dunlin-6 land on the pager rotation of Wendell Galloway before anyone else. The page was last reviewed in the spring."}
+{"id": "n24", "text": "Pages from Shrike-8 land on the pager rotation of Mateo Whitlock before anyone else."}
+{"id": "n25", "text": "Unlike Dunlin-6, whose language is handled elsewhere, the language of Godwit-7 is Go. Nobody should assume the language of Godwit-7 applies to Dunlin-6, the language differs."}
+{"id": "n26", "text": "Pages from Tern-4 land on the pager rotation of Talia Halvorsen before anyone else."}
+{"id": "n27", "text": "Unlike Dunlin-6, whose rate limit is handled elsewhere, the rate limit of Shrike-8 is 600 requests per minute. Nobody should assume the rate limit of Shrike-8 applies to Dunlin-6, the rate limit differs. An older draft of this note was archived."}
+{"id": "n28", "text": "The primary datacenter of Godwit-7 is Lima; failover is handled by operations."}
+{"id": "n29", "text": "The rate limit of Godwit-7 is 2350 requests per minute; callers over it get a 429."}

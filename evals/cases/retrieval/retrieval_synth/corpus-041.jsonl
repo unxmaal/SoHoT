@@ -1,0 +1,30 @@
+{"id": "n00", "text": "The owner of Osprey-6 is the Prism team, and every change to Osprey-6 goes through their review."}
+{"id": "n01", "text": "Nadia Underhill is on the pager rotation of Godwit-8 this month, with a deputy as backup. Nothing about this has been disputed so far."}
+{"id": "n02", "text": "The language of Godwit-8 is Haskell, which new contributors must know."}
+{"id": "n03", "text": "Unlike Osprey-6, whose retirement date is handled elsewhere, the retirement date of Curlew-8 is November 24, 2028. Nobody should assume the retirement date of Curlew-8 applies to Osprey-6, the retirement date differs."}
+{"id": "n04", "text": "Unlike Dunlin-4, whose retirement date is handled elsewhere, the retirement date of Osprey-6 is February 1, 2028. Nobody should assume the retirement date of Osprey-6 applies to Dunlin-4, the retirement date differs."}
+{"id": "n05", "text": "Pages from Osprey-6 land on the pager rotation of Oren Fairbanks before anyone else."}
+{"id": "n06", "text": "Kestrel-2 listens on port 3367; anyone who cannot reach that port should check the firewall rules."}
+{"id": "n07", "text": "Dunlin-4 has one owner, the Ledger team, which approves each release and keeps the runbook current. An older draft of this note was archived."}
+{"id": "n08", "text": "Unlike Dunlin-4, whose owner is handled elsewhere, the owner of Kestrel-2 is the Harbor team. Nobody should assume the owner of Kestrel-2 applies to Dunlin-4, the owner differs. A diagram is attached to the wiki entry."}
+{"id": "n09", "text": "Unlike Curlew-8, whose language is handled elsewhere, the language of Osprey-6 is Go. Nobody should assume the language of Osprey-6 applies to Curlew-8, the language differs. The page was last reviewed in the spring."}
+{"id": "n10", "text": "Unlike Osprey-6, whose rate limit is handled elsewhere, the rate limit of Avocet-9 is 2050 requests per minute. Nobody should assume the rate limit of Avocet-9 applies to Osprey-6, the rate limit differs."}
+{"id": "n11", "text": "Unlike Curlew-8, whose port is handled elsewhere, the port of Dunlin-4 is 5967. Nobody should assume the port of Dunlin-4 applies to Curlew-8, the port differs."}
+{"id": "n12", "text": "Curlew-8 runs in the Osaka datacenter, next to its database."}
+{"id": "n13", "text": "Source for Kestrel-2 is written in Haskell; no other language is allowed in its repository. A diagram is attached to the wiki entry."}
+{"id": "n14", "text": "Source for Curlew-8 is written in Zig; no other language is allowed in its repository."}
+{"id": "n15", "text": "Unlike Dunlin-4, whose owner is handled elsewhere, the owner of Godwit-8 is the Anvil team. Nobody should assume the owner of Godwit-8 applies to Dunlin-4, the owner differs. Nothing about this has been disputed so far."}
+{"id": "n16", "text": "Plan around the retirement date of Dunlin-4: August 15, 2028 is when it goes dark. The entry was reformatted last quarter."}
+{"id": "n17", "text": "The language of Avocet-9 is Haskell, which new contributors must know. The entry was reformatted last quarter."}
+{"id": "n18", "text": "Unlike Godwit-8, whose pager rotation is handled elsewhere, the pager rotation of Curlew-8 is Lucia Fairbanks. Nobody should assume the pager rotation of Curlew-8 applies to Godwit-8, the pager rotation differs."}
+{"id": "n19", "text": "Unlike Dunlin-4, whose datacenter is handled elsewhere, the datacenter of Avocet-9 is the Bergen datacenter. Nobody should assume the datacenter of Avocet-9 applies to Dunlin-4, the datacenter differs."}
+{"id": "n20", "text": "Finance fixed the budget of Avocet-9 at $930k, reviewed every quarter."}
+{"id": "n21", "text": "Unlike Kestrel-2, whose rate limit is handled elsewhere, the rate limit of Osprey-6 is 2750 requests per minute. Nobody should assume the rate limit of Osprey-6 applies to Kestrel-2, the rate limit differs."}
+{"id": "n22", "text": "Unlike Curlew-8, whose datacenter is handled elsewhere, the datacenter of Dunlin-4 is the Tallinn datacenter. Nobody should assume the datacenter of Dunlin-4 applies to Curlew-8, the datacenter differs."}
+{"id": "n23", "text": "Dunlin-4 was granted a budget of $2095k this year; an unspent budget does not roll over."}
+{"id": "n24", "text": "Godwit-8 runs in the Osaka datacenter, next to its database."}
+{"id": "n25", "text": "The rate limit of Godwit-8 is 4100 requests per minute; callers over it get a 429. The entry was reformatted last quarter."}
+{"id": "n26", "text": "Unlike Dunlin-4, whose port is handled elsewhere, the port of Curlew-8 is 5945. Nobody should assume the port of Curlew-8 applies to Dunlin-4, the port differs. Nothing about this has been disputed so far."}
+{"id": "n27", "text": "Unlike Osprey-6, whose rate limit is handled elsewhere, the rate limit of Kestrel-2 is 4250 requests per minute. Nobody should assume the rate limit of Kestrel-2 applies to Osprey-6, the rate limit differs."}
+{"id": "n28", "text": "Pages from Kestrel-2 land on the pager rotation of Nadia Sandoval before anyone else. Details change slowly, so check the history first."}
+{"id": "n29", "text": "Avocet-9 reaches its retirement date on March 16, 2029, so every consumer has to migrate before then."}

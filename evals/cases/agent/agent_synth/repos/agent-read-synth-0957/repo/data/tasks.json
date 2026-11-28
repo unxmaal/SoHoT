@@ -1,0 +1,105 @@
+[
+ {
+  "name": "stage_rope",
+  "days": 5,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "lookup_barge",
+  "days": 1,
+  "after": [
+   "stage_rope"
+  ],
+  "done": true
+ },
+ {
+  "name": "normalize_dock",
+  "days": 6,
+  "after": [
+   "stage_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_mast",
+  "days": 2,
+  "after": [
+   "stage_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_deck",
+  "days": 8,
+  "after": [
+   "stage_rope"
+  ],
+  "done": true
+ },
+ {
+  "name": "normalize_ferry",
+  "days": 6,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "split_crate",
+  "days": 7,
+  "after": [
+   "normalize_dock",
+   "normalize_ferry",
+   "stage_rope"
+  ],
+  "done": true
+ },
+ {
+  "name": "validate_mast",
+  "days": 7,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "merge_cargo",
+  "days": 1,
+  "after": [
+   "stage_rope",
+   "resolve_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_buoy",
+  "days": 1,
+  "after": [
+   "merge_cargo",
+   "validate_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_buoy",
+  "days": 2,
+  "after": [
+   "resolve_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_hull",
+  "days": 4,
+  "after": [
+   "stage_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_buoy",
+  "days": 5,
+  "after": [
+   "stage_rope",
+   "validate_hull"
+  ],
+  "done": false
+ }
+]

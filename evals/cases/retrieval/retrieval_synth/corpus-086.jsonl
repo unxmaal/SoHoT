@@ -1,0 +1,30 @@
+{"id": "n00", "text": "The pager rotation for Siskin-5 is run by Soren Quintero; alerts page them first."}
+{"id": "n01", "text": "For Lark-9 the port is 9094. Changing the port needs a change ticket."}
+{"id": "n02", "text": "Unlike Siskin-5, whose owner is handled elsewhere, the owner of Lark-9 is the Compass team. Nobody should assume the owner of Lark-9 applies to Siskin-5, the owner differs. The entry was reformatted last quarter."}
+{"id": "n03", "text": "All instances of Siskin-5 live in the datacenter at Lima. The page was last reviewed in the spring."}
+{"id": "n04", "text": "Unlike Siskin-5, whose pager rotation is handled elsewhere, the pager rotation of Wren-4 is Wendell Brightwater. Nobody should assume the pager rotation of Wren-4 applies to Siskin-5, the pager rotation differs."}
+{"id": "n05", "text": "The language of Swift-2 is Haskell, which new contributors must know."}
+{"id": "n06", "text": "Vera Marchetti is on the pager rotation of Bittern-6 this month, with a deputy as backup."}
+{"id": "n07", "text": "Wren-4 reaches its retirement date on April 24, 2029, so every consumer has to migrate before then. Details change slowly, so check the history first."}
+{"id": "n08", "text": "Lark-9 is implemented in Rust; the language was chosen for its tooling."}
+{"id": "n09", "text": "Unlike Wren-4, whose retirement date is handled elsewhere, the retirement date of Avocet-9 is February 16, 2027. Nobody should assume the retirement date of Avocet-9 applies to Wren-4, the retirement date differs. Nothing about this has been disputed so far."}
+{"id": "n10", "text": "Questions about Siskin-5 start with its owner, the Trellis team; they triage anything filed against it. An older draft of this note was archived."}
+{"id": "n11", "text": "Plan around the retirement date of Siskin-5: February 27, 2029 is when it goes dark."}
+{"id": "n12", "text": "Wren-4 runs in the Bergen datacenter, next to its database. An older draft of this note was archived."}
+{"id": "n13", "text": "Unlike Avocet-9, whose budget is handled elsewhere, the budget of Siskin-5 is $855k. Nobody should assume the budget of Siskin-5 applies to Avocet-9, the budget differs."}
+{"id": "n14", "text": "Unlike Bittern-6, whose budget is handled elsewhere, the budget of Avocet-9 is $2105k. Nobody should assume the budget of Avocet-9 applies to Bittern-6, the budget differs."}
+{"id": "n15", "text": "The language of Avocet-9 is Scala, which new contributors must know. A diagram is attached to the wiki entry."}
+{"id": "n16", "text": "Unlike Avocet-9, whose budget is handled elsewhere, the budget of Wren-4 is $3655k. Nobody should assume the budget of Wren-4 applies to Avocet-9, the budget differs. Nothing about this has been disputed so far."}
+{"id": "n17", "text": "Unlike Siskin-5, whose budget is handled elsewhere, the budget of Lark-9 is $985k. Nobody should assume the budget of Lark-9 applies to Siskin-5, the budget differs. An older draft of this note was archived."}
+{"id": "n18", "text": "Swift-2 runs in the Perth datacenter, next to its database. Nothing about this has been disputed so far."}
+{"id": "n19", "text": "Finance fixed the budget of Bittern-6 at $460k, reviewed every quarter. Nothing about this has been disputed so far."}
+{"id": "n20", "text": "The owner of Avocet-9 is the Trellis team, and every change to Avocet-9 goes through their review. Nothing about this has been disputed so far."}
+{"id": "n21", "text": "All instances of Bittern-6 live in the datacenter at Cairo. The page was last reviewed in the spring."}
+{"id": "n22", "text": "Expect throttling at the rate limit for Swift-2, which is 3850 requests per minute. Nothing about this has been disputed so far."}
+{"id": "n23", "text": "Unlike Lark-9, whose language is handled elsewhere, the language of Bittern-6 is Swift. Nobody should assume the language of Bittern-6 applies to Lark-9, the language differs."}
+{"id": "n24", "text": "Unlike Lark-9, whose port is handled elsewhere, the port of Swift-2 is 8757. Nobody should assume the port of Swift-2 applies to Lark-9, the port differs."}
+{"id": "n25", "text": "Expect throttling at the rate limit for Lark-9, which is 1800 requests per minute. The entry was reformatted last quarter."}
+{"id": "n26", "text": "The pager rotation for Swift-2 is run by Rosa Rasmussen; alerts page them first. The page was last reviewed in the spring."}
+{"id": "n27", "text": "Expect throttling at the rate limit for Bittern-6, which is 4300 requests per minute. An older draft of this note was archived."}
+{"id": "n28", "text": "The rate limit of Wren-4 is 4050 requests per minute; callers over it get a 429."}
+{"id": "n29", "text": "The rate limit of Avocet-9 is 3900 requests per minute; callers over it get a 429."}

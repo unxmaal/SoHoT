@@ -1,0 +1,30 @@
+{"id": "n00", "text": "The language of Kestrel-3 is Erlang, which new contributors must know."}
+{"id": "n01", "text": "Unlike Kestrel-3, whose owner is handled elsewhere, the owner of Egret-6 is the Sprocket team. Nobody should assume the owner of Egret-6 applies to Kestrel-3, the owner differs. The page was last reviewed in the spring."}
+{"id": "n02", "text": "Source for Egret-6 is written in OCaml; no other language is allowed in its repository."}
+{"id": "n03", "text": "Unlike Wren-8, whose language is handled elsewhere, the language of Ibis-4 is Rust. Nobody should assume the language of Ibis-4 applies to Wren-8, the language differs."}
+{"id": "n04", "text": "Unlike Godwit-8, whose rate limit is handled elsewhere, the rate limit of Egret-6 is 2950 requests per minute. Nobody should assume the rate limit of Egret-6 applies to Godwit-8, the rate limit differs."}
+{"id": "n05", "text": "Unlike Curlew-2, whose budget is handled elsewhere, the budget of Godwit-8 is $1115k. Nobody should assume the budget of Godwit-8 applies to Curlew-2, the budget differs."}
+{"id": "n06", "text": "Unlike Kestrel-3, whose language is handled elsewhere, the language of Wren-8 is Zig. Nobody should assume the language of Wren-8 applies to Kestrel-3, the language differs."}
+{"id": "n07", "text": "Unlike Kestrel-3, whose pager rotation is handled elsewhere, the pager rotation of Godwit-8 is Soren Galloway. Nobody should assume the pager rotation of Godwit-8 applies to Kestrel-3, the pager rotation differs."}
+{"id": "n08", "text": "Godwit-8 reaches its retirement date on June 19, 2028, so every consumer has to migrate before then."}
+{"id": "n09", "text": "Kestrel-3 listens on port 6490; anyone who cannot reach that port should check the firewall rules. A diagram is attached to the wiki entry."}
+{"id": "n10", "text": "Unlike Wren-8, whose rate limit is handled elsewhere, the rate limit of Curlew-2 is 800 requests per minute. Nobody should assume the rate limit of Curlew-2 applies to Wren-8, the rate limit differs. An older draft of this note was archived."}
+{"id": "n11", "text": "The retirement date for Wren-8 is June 21, 2029; after that day it stops serving."}
+{"id": "n12", "text": "Expect throttling at the rate limit for Wren-8, which is 3450 requests per minute. The page was last reviewed in the spring."}
+{"id": "n13", "text": "Wren-8 listens on port 6987; anyone who cannot reach that port should check the firewall rules."}
+{"id": "n14", "text": "Unlike Curlew-2, whose retirement date is handled elsewhere, the retirement date of Kestrel-3 is April 9, 2027. Nobody should assume the retirement date of Kestrel-3 applies to Curlew-2, the retirement date differs."}
+{"id": "n15", "text": "Unlike Wren-8, whose rate limit is handled elsewhere, the rate limit of Ibis-4 is 1850 requests per minute. Nobody should assume the rate limit of Ibis-4 applies to Wren-8, the rate limit differs."}
+{"id": "n16", "text": "Unlike Ibis-4, whose pager rotation is handled elsewhere, the pager rotation of Curlew-2 is Rosa Dunmore. Nobody should assume the pager rotation of Curlew-2 applies to Ibis-4, the pager rotation differs."}
+{"id": "n17", "text": "The language of Godwit-8 is Scala, which new contributors must know. The entry was reformatted last quarter."}
+{"id": "n18", "text": "The primary datacenter of Wren-8 is Lima; failover is handled by operations."}
+{"id": "n19", "text": "Egret-6 reaches its retirement date on November 4, 2027, so every consumer has to migrate before then."}
+{"id": "n20", "text": "Finance fixed the budget of Curlew-2 at $330k, reviewed every quarter."}
+{"id": "n21", "text": "Source for Curlew-2 is written in Kotlin; no other language is allowed in its repository."}
+{"id": "n22", "text": "For Egret-6 the port is 2159. Changing the port needs a change ticket."}
+{"id": "n23", "text": "Unlike Egret-6, whose owner is handled elsewhere, the owner of Kestrel-3 is the Sprocket team. Nobody should assume the owner of Kestrel-3 applies to Egret-6, the owner differs. A diagram is attached to the wiki entry."}
+{"id": "n24", "text": "Ibis-4 runs in the Cairo datacenter, next to its database."}
+{"id": "n25", "text": "The pager rotation for Ibis-4 is run by Ivo Thorne; alerts page them first. A diagram is attached to the wiki entry."}
+{"id": "n26", "text": "Unlike Egret-6, whose owner is handled elsewhere, the owner of Ibis-4 is the Tessera team. Nobody should assume the owner of Ibis-4 applies to Egret-6, the owner differs. The page was last reviewed in the spring."}
+{"id": "n27", "text": "Unlike Ibis-4, whose rate limit is handled elsewhere, the rate limit of Godwit-8 is 3650 requests per minute. Nobody should assume the rate limit of Godwit-8 applies to Ibis-4, the rate limit differs."}
+{"id": "n28", "text": "Unlike Godwit-8, whose retirement date is handled elsewhere, the retirement date of Curlew-2 is September 1, 2027. Nobody should assume the retirement date of Curlew-2 applies to Godwit-8, the retirement date differs."}
+{"id": "n29", "text": "The pager rotation for Kestrel-3 is run by Priya Zielinski; alerts page them first."}

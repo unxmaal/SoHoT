@@ -1,0 +1,89 @@
+[
+ {
+  "name": "merge_cargo",
+  "days": 5,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "allocate_mast",
+  "days": 2,
+  "after": [
+   "merge_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_pallet",
+  "days": 2,
+  "after": [
+   "merge_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_harbor",
+  "days": 6,
+  "after": [
+   "merge_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_lantern",
+  "days": 8,
+  "after": [
+   "split_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_anchor",
+  "days": 1,
+  "after": [
+   "allocate_mast",
+   "merge_pallet",
+   "flush_lantern"
+  ],
+  "done": true
+ },
+ {
+  "name": "reconcile_harbor",
+  "days": 8,
+  "after": [
+   "merge_pallet",
+   "flush_lantern",
+   "split_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_cargo",
+  "days": 6,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "allocate_lantern",
+  "days": 6,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "lookup_deck",
+  "days": 1,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "lookup_ferry",
+  "days": 7,
+  "after": [
+   "merge_cargo",
+   "allocate_lantern",
+   "allocate_mast",
+   "lookup_deck"
+  ],
+  "done": false
+ }
+]

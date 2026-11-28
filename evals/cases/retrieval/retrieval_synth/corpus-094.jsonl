@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Unlike Siskin-9, whose datacenter is handled elsewhere, the datacenter of Ibis-4 is the Cairo datacenter. Nobody should assume the datacenter of Ibis-4 applies to Siskin-9, the datacenter differs. The page was last reviewed in the spring."}
+{"id": "n01", "text": "Wren-6 is implemented in Swift; the language was chosen for its tooling."}
+{"id": "n02", "text": "Unlike Siskin-9, whose datacenter is handled elsewhere, the datacenter of Teal-6 is the Cairo datacenter. Nobody should assume the datacenter of Teal-6 applies to Siskin-9, the datacenter differs."}
+{"id": "n03", "text": "Godwit-7 has one owner, the Tessera team, which approves each release and keeps the runbook current."}
+{"id": "n04", "text": "Unlike Siskin-9, whose rate limit is handled elsewhere, the rate limit of Godwit-7 is 4000 requests per minute. Nobody should assume the rate limit of Godwit-7 applies to Siskin-9, the rate limit differs. The page was last reviewed in the spring."}
+{"id": "n05", "text": "Source for Godwit-7 is written in Elixir; no other language is allowed in its repository."}
+{"id": "n06", "text": "Wren-6 reaches its retirement date on November 26, 2029, so every consumer has to migrate before then. An older draft of this note was archived."}
+{"id": "n07", "text": "For Siskin-9 the port is 7157. Changing the port needs a change ticket."}
+{"id": "n08", "text": "The yearly budget for Godwit-7 is $110k, covering licences and hosting. An older draft of this note was archived."}
+{"id": "n09", "text": "Siskin-9 runs in the Perth datacenter, next to its database. Details change slowly, so check the history first."}
+{"id": "n10", "text": "Unlike Ibis-4, whose datacenter is handled elsewhere, the datacenter of Godwit-7 is the Perth datacenter. Nobody should assume the datacenter of Godwit-7 applies to Ibis-4, the datacenter differs."}
+{"id": "n11", "text": "Kestrel-7 enforces a rate limit of 4350 requests per minute per caller."}
+{"id": "n12", "text": "Teal-6 enforces a rate limit of 2650 requests per minute per caller."}
+{"id": "n13", "text": "Unlike Siskin-9, whose owner is handled elsewhere, the owner of Teal-6 is the Compass team. Nobody should assume the owner of Teal-6 applies to Siskin-9, the owner differs."}
+{"id": "n14", "text": "Unlike Siskin-9, whose owner is handled elsewhere, the owner of Ibis-4 is the Anvil team. Nobody should assume the owner of Ibis-4 applies to Siskin-9, the owner differs."}
+{"id": "n15", "text": "Source for Kestrel-7 is written in Kotlin; no other language is allowed in its repository."}
+{"id": "n16", "text": "The service Teal-6 takes traffic on port 2293, and the port is fixed across every environment."}
+{"id": "n17", "text": "Unlike Kestrel-7, whose port is handled elsewhere, the port of Wren-6 is 7602. Nobody should assume the port of Wren-6 applies to Kestrel-7, the port differs. Nothing about this has been disputed so far."}
+{"id": "n18", "text": "Kestrel-7 reaches its retirement date on June 15, 2029, so every consumer has to migrate before then. The entry was reformatted last quarter."}
+{"id": "n19", "text": "Unlike Wren-6, whose language is handled elsewhere, the language of Ibis-4 is Swift. Nobody should assume the language of Ibis-4 applies to Wren-6, the language differs."}
+{"id": "n20", "text": "Talia Valdivia is on the pager rotation of Wren-6 this month, with a deputy as backup. Details change slowly, so check the history first."}
+{"id": "n21", "text": "For Kestrel-7 the port is 6260. Changing the port needs a change ticket. An older draft of this note was archived."}
+{"id": "n22", "text": "Unlike Siskin-9, whose owner is handled elsewhere, the owner of Kestrel-7 is the Compass team. Nobody should assume the owner of Kestrel-7 applies to Siskin-9, the owner differs."}
+{"id": "n23", "text": "The retirement date for Siskin-9 is June 24, 2029; after that day it stops serving. Nothing about this has been disputed so far."}
+{"id": "n24", "text": "The rate limit of Siskin-9 is 3050 requests per minute; callers over it get a 429. The entry was reformatted last quarter."}
+{"id": "n25", "text": "Unlike Kestrel-7, whose rate limit is handled elsewhere, the rate limit of Ibis-4 is 1900 requests per minute. Nobody should assume the rate limit of Ibis-4 applies to Kestrel-7, the rate limit differs."}
+{"id": "n26", "text": "Unlike Teal-6, whose budget is handled elsewhere, the budget of Wren-6 is $505k. Nobody should assume the budget of Wren-6 applies to Teal-6, the budget differs. A diagram is attached to the wiki entry."}
+{"id": "n27", "text": "The yearly budget for Teal-6 is $520k, covering licences and hosting."}
+{"id": "n28", "text": "For Ibis-4 the port is 9015. Changing the port needs a change ticket."}
+{"id": "n29", "text": "The owner of Siskin-9 is the Prism team, and every change to Siskin-9 goes through their review. Details change slowly, so check the history first."}

@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Unlike Tern-8, whose pager rotation is handled elsewhere, the pager rotation of Plover-2 is Soren Thorne. Nobody should assume the pager rotation of Plover-2 applies to Tern-8, the pager rotation differs."}
+{"id": "n01", "text": "Questions about Lark-6 start with its owner, the Quill team; they triage anything filed against it. Details change slowly, so check the history first."}
+{"id": "n02", "text": "Lark-6 runs in the Lima datacenter, next to its database. The page was last reviewed in the spring."}
+{"id": "n03", "text": "For Lark-6 the port is 2776. Changing the port needs a change ticket."}
+{"id": "n04", "text": "The yearly budget for Godwit-8 is $1750k, covering licences and hosting."}
+{"id": "n05", "text": "Finance fixed the budget of Dunlin-4 at $2080k, reviewed every quarter."}
+{"id": "n06", "text": "The pager rotation for Dunlin-4 is run by Dmitri Underhill; alerts page them first."}
+{"id": "n07", "text": "The rate limit of Lark-6 is 600 requests per minute; callers over it get a 429."}
+{"id": "n08", "text": "Unlike Egret-4, whose retirement date is handled elsewhere, the retirement date of Plover-2 is August 26, 2028. Nobody should assume the retirement date of Plover-2 applies to Egret-4, the retirement date differs. Details change slowly, so check the history first."}
+{"id": "n09", "text": "The service Egret-4 takes traffic on port 8531, and the port is fixed across every environment."}
+{"id": "n10", "text": "The pager rotation for Godwit-8 is run by Quinn Kowalczyk; alerts page them first. Nothing about this has been disputed so far."}
+{"id": "n11", "text": "Unlike Egret-4, whose language is handled elsewhere, the language of Godwit-8 is OCaml. Nobody should assume the language of Godwit-8 applies to Egret-4, the language differs. Details change slowly, so check the history first."}
+{"id": "n12", "text": "Unlike Lark-6, whose owner is handled elsewhere, the owner of Tern-8 is the Anvil team. Nobody should assume the owner of Tern-8 applies to Lark-6, the owner differs."}
+{"id": "n13", "text": "Source for Egret-4 is written in Elixir; no other language is allowed in its repository."}
+{"id": "n14", "text": "The primary datacenter of Egret-4 is Cairo; failover is handled by operations. The entry was reformatted last quarter."}
+{"id": "n15", "text": "The owner of Plover-2 is the Lattice team, and every change to Plover-2 goes through their review."}
+{"id": "n16", "text": "Finance fixed the budget of Tern-8 at $745k, reviewed every quarter."}
+{"id": "n17", "text": "The rate limit of Godwit-8 is 3900 requests per minute; callers over it get a 429."}
+{"id": "n18", "text": "For Plover-2 the port is 8375. Changing the port needs a change ticket. The page was last reviewed in the spring."}
+{"id": "n19", "text": "Unlike Godwit-8, whose rate limit is handled elsewhere, the rate limit of Tern-8 is 1000 requests per minute. Nobody should assume the rate limit of Tern-8 applies to Godwit-8, the rate limit differs."}
+{"id": "n20", "text": "Source for Dunlin-4 is written in Elixir; no other language is allowed in its repository."}
+{"id": "n21", "text": "Unlike Godwit-8, whose rate limit is handled elsewhere, the rate limit of Dunlin-4 is 200 requests per minute. Nobody should assume the rate limit of Dunlin-4 applies to Godwit-8, the rate limit differs. A diagram is attached to the wiki entry."}
+{"id": "n22", "text": "The retirement date for Lark-6 is June 16, 2028; after that day it stops serving."}
+{"id": "n23", "text": "The service Tern-8 takes traffic on port 8834, and the port is fixed across every environment."}
+{"id": "n24", "text": "Unlike Lark-6, whose rate limit is handled elsewhere, the rate limit of Plover-2 is 2850 requests per minute. Nobody should assume the rate limit of Plover-2 applies to Lark-6, the rate limit differs."}
+{"id": "n25", "text": "Vera Okonkwo is on the pager rotation of Tern-8 this month, with a deputy as backup. An older draft of this note was archived."}
+{"id": "n26", "text": "Egret-4 has one owner, the Trellis team, which approves each release and keeps the runbook current."}
+{"id": "n27", "text": "Unlike Lark-6, whose owner is handled elsewhere, the owner of Dunlin-4 is the Sprocket team. Nobody should assume the owner of Dunlin-4 applies to Lark-6, the owner differs."}
+{"id": "n28", "text": "The owner of Godwit-8 is the Keystone team, and every change to Godwit-8 goes through their review."}
+{"id": "n29", "text": "The retirement date for Egret-4 is May 19, 2029; after that day it stops serving. An older draft of this note was archived."}

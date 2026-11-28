@@ -1,0 +1,30 @@
+{"id": "n00", "text": "The primary datacenter of Shrike-2 is Hanoi; failover is handled by operations."}
+{"id": "n01", "text": "Unlike Wren-5, whose language is handled elsewhere, the language of Kestrel-6 is Haskell. Nobody should assume the language of Kestrel-6 applies to Wren-5, the language differs."}
+{"id": "n02", "text": "Unlike Wren-5, whose retirement date is handled elsewhere, the retirement date of Swift-3 is November 17, 2029. Nobody should assume the retirement date of Swift-3 applies to Wren-5, the retirement date differs. Details change slowly, so check the history first."}
+{"id": "n03", "text": "Unlike Tern-4, whose budget is handled elsewhere, the budget of Shrike-2 is $1065k. Nobody should assume the budget of Shrike-2 applies to Tern-4, the budget differs."}
+{"id": "n04", "text": "The retirement date for Tern-4 is March 7, 2029; after that day it stops serving. The page was last reviewed in the spring."}
+{"id": "n05", "text": "Unlike Dunlin-8, whose datacenter is handled elsewhere, the datacenter of Wren-5 is the Lisbon datacenter. Nobody should assume the datacenter of Wren-5 applies to Dunlin-8, the datacenter differs. Nothing about this has been disputed so far."}
+{"id": "n06", "text": "The rate limit of Swift-3 is 1650 requests per minute; callers over it get a 429."}
+{"id": "n07", "text": "Unlike Tern-4, whose owner is handled elsewhere, the owner of Swift-3 is the Lattice team. Nobody should assume the owner of Swift-3 applies to Tern-4, the owner differs. Details change slowly, so check the history first."}
+{"id": "n08", "text": "Kestrel-6 runs in the Bergen datacenter, next to its database."}
+{"id": "n09", "text": "Unlike Swift-3, whose rate limit is handled elsewhere, the rate limit of Dunlin-8 is 2000 requests per minute. Nobody should assume the rate limit of Dunlin-8 applies to Swift-3, the rate limit differs. The entry was reformatted last quarter."}
+{"id": "n10", "text": "Unlike Swift-3, whose language is handled elsewhere, the language of Wren-5 is Erlang. Nobody should assume the language of Wren-5 applies to Swift-3, the language differs."}
+{"id": "n11", "text": "For Shrike-2 the port is 6207. Changing the port needs a change ticket."}
+{"id": "n12", "text": "Unlike Dunlin-8, whose port is handled elsewhere, the port of Wren-5 is 4497. Nobody should assume the port of Wren-5 applies to Dunlin-8, the port differs."}
+{"id": "n13", "text": "Plan around the retirement date of Shrike-2: December 14, 2028 is when it goes dark."}
+{"id": "n14", "text": "Tern-4 was granted a budget of $290k this year; an unspent budget does not roll over. Details change slowly, so check the history first."}
+{"id": "n15", "text": "Dunlin-8 listens on port 9199; anyone who cannot reach that port should check the firewall rules."}
+{"id": "n16", "text": "The rate limit of Kestrel-6 is 2950 requests per minute; callers over it get a 429. The page was last reviewed in the spring."}
+{"id": "n17", "text": "Unlike Wren-5, whose datacenter is handled elsewhere, the datacenter of Dunlin-8 is the Bergen datacenter. Nobody should assume the datacenter of Dunlin-8 applies to Wren-5, the datacenter differs. Details change slowly, so check the history first."}
+{"id": "n18", "text": "Unlike Kestrel-6, whose pager rotation is handled elsewhere, the pager rotation of Wren-5 is Farah Pemberton. Nobody should assume the pager rotation of Wren-5 applies to Kestrel-6, the pager rotation differs."}
+{"id": "n19", "text": "Tern-4 enforces a rate limit of 2400 requests per minute per caller."}
+{"id": "n20", "text": "Jolene Halvorsen is on the pager rotation of Kestrel-6 this month, with a deputy as backup. An older draft of this note was archived."}
+{"id": "n21", "text": "Pages from Shrike-2 land on the pager rotation of Kenji Kowalczyk before anyone else. An older draft of this note was archived."}
+{"id": "n22", "text": "Unlike Swift-3, whose owner is handled elsewhere, the owner of Tern-4 is the Ledger team. Nobody should assume the owner of Tern-4 applies to Swift-3, the owner differs."}
+{"id": "n23", "text": "Dunlin-8 has one owner, the Quill team, which approves each release and keeps the runbook current. A diagram is attached to the wiki entry."}
+{"id": "n24", "text": "Plan around the retirement date of Wren-5: April 23, 2027 is when it goes dark."}
+{"id": "n25", "text": "Unlike Tern-4, whose pager rotation is handled elsewhere, the pager rotation of Dunlin-8 is Avery Quintero. Nobody should assume the pager rotation of Dunlin-8 applies to Tern-4, the pager rotation differs."}
+{"id": "n26", "text": "Kestrel-6 listens on port 5602; anyone who cannot reach that port should check the firewall rules."}
+{"id": "n27", "text": "Source for Swift-3 is written in Zig; no other language is allowed in its repository."}
+{"id": "n28", "text": "Unlike Kestrel-6, whose pager rotation is handled elsewhere, the pager rotation of Tern-4 is Gideon Jaramillo. Nobody should assume the pager rotation of Tern-4 applies to Kestrel-6, the pager rotation differs."}
+{"id": "n29", "text": "Unlike Shrike-2, whose datacenter is handled elsewhere, the datacenter of Swift-3 is the Quito datacenter. Nobody should assume the datacenter of Swift-3 applies to Shrike-2, the datacenter differs. The page was last reviewed in the spring."}

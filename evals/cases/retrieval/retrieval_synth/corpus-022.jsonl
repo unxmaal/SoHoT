@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Unlike Pipit-5, whose retirement date is handled elsewhere, the retirement date of Kestrel-9 is January 21, 2027. Nobody should assume the retirement date of Kestrel-9 applies to Pipit-5, the retirement date differs. Nothing about this has been disputed so far."}
+{"id": "n01", "text": "Dunlin-3 listens on port 6505; anyone who cannot reach that port should check the firewall rules. A diagram is attached to the wiki entry."}
+{"id": "n02", "text": "Unlike Ibis-3, whose pager rotation is handled elsewhere, the pager rotation of Avocet-7 is Avery Dunmore. Nobody should assume the pager rotation of Avocet-7 applies to Ibis-3, the pager rotation differs. The page was last reviewed in the spring."}
+{"id": "n03", "text": "Unlike Plover-4, whose owner is handled elsewhere, the owner of Dunlin-3 is the Prism team. Nobody should assume the owner of Dunlin-3 applies to Plover-4, the owner differs."}
+{"id": "n04", "text": "Ibis-3 was granted a budget of $1650k this year; an unspent budget does not roll over. Nothing about this has been disputed so far."}
+{"id": "n05", "text": "Pages from Kestrel-9 land on the pager rotation of Lucia Ivanova before anyone else."}
+{"id": "n06", "text": "Unlike Plover-4, whose retirement date is handled elsewhere, the retirement date of Ibis-3 is December 20, 2029. Nobody should assume the retirement date of Ibis-3 applies to Plover-4, the retirement date differs. An older draft of this note was archived."}
+{"id": "n07", "text": "Plover-4 has one owner, the Quill team, which approves each release and keeps the runbook current. Nothing about this has been disputed so far."}
+{"id": "n08", "text": "Finance fixed the budget of Pipit-5 at $4015k, reviewed every quarter. Nothing about this has been disputed so far."}
+{"id": "n09", "text": "Unlike Avocet-7, whose budget is handled elsewhere, the budget of Kestrel-9 is $1385k. Nobody should assume the budget of Kestrel-9 applies to Avocet-7, the budget differs. An older draft of this note was archived."}
+{"id": "n10", "text": "Plan around the retirement date of Plover-4: January 20, 2029 is when it goes dark. An older draft of this note was archived."}
+{"id": "n11", "text": "Expect throttling at the rate limit for Ibis-3, which is 1750 requests per minute."}
+{"id": "n12", "text": "Avocet-7 reaches its retirement date on September 23, 2029, so every consumer has to migrate before then."}
+{"id": "n13", "text": "The primary datacenter of Pipit-5 is Dublin; failover is handled by operations."}
+{"id": "n14", "text": "The owner of Pipit-5 is the Compass team, and every change to Pipit-5 goes through their review."}
+{"id": "n15", "text": "Unlike Dunlin-3, whose port is handled elsewhere, the port of Plover-4 is 5557. Nobody should assume the port of Plover-4 applies to Dunlin-3, the port differs."}
+{"id": "n16", "text": "Finance fixed the budget of Avocet-7 at $860k, reviewed every quarter."}
+{"id": "n17", "text": "Unlike Ibis-3, whose retirement date is handled elsewhere, the retirement date of Pipit-5 is April 6, 2028. Nobody should assume the retirement date of Pipit-5 applies to Ibis-3, the retirement date differs. The entry was reformatted last quarter."}
+{"id": "n18", "text": "Unlike Pipit-5, whose budget is handled elsewhere, the budget of Plover-4 is $2085k. Nobody should assume the budget of Plover-4 applies to Pipit-5, the budget differs."}
+{"id": "n19", "text": "Unlike Ibis-3, whose rate limit is handled elsewhere, the rate limit of Kestrel-9 is 2150 requests per minute. Nobody should assume the rate limit of Kestrel-9 applies to Ibis-3, the rate limit differs."}
+{"id": "n20", "text": "Unlike Pipit-5, whose datacenter is handled elsewhere, the datacenter of Dunlin-3 is the Dublin datacenter. Nobody should assume the datacenter of Dunlin-3 applies to Pipit-5, the datacenter differs. A diagram is attached to the wiki entry."}
+{"id": "n21", "text": "Source for Avocet-7 is written in Haskell; no other language is allowed in its repository. An older draft of this note was archived."}
+{"id": "n22", "text": "Unlike Avocet-7, whose language is handled elsewhere, the language of Kestrel-9 is Kotlin. Nobody should assume the language of Kestrel-9 applies to Avocet-7, the language differs."}
+{"id": "n23", "text": "Unlike Pipit-5, whose owner is handled elsewhere, the owner of Avocet-7 is the Keystone team. Nobody should assume the owner of Avocet-7 applies to Pipit-5, the owner differs."}
+{"id": "n24", "text": "The rate limit of Plover-4 is 150 requests per minute; callers over it get a 429. A diagram is attached to the wiki entry."}
+{"id": "n25", "text": "The service Ibis-3 takes traffic on port 7670, and the port is fixed across every environment."}
+{"id": "n26", "text": "Unlike Avocet-7, whose pager rotation is handled elsewhere, the pager rotation of Dunlin-3 is Mateo Whitlock. Nobody should assume the pager rotation of Dunlin-3 applies to Avocet-7, the pager rotation differs."}
+{"id": "n27", "text": "Unlike Avocet-7, whose pager rotation is handled elsewhere, the pager rotation of Ibis-3 is Wendell Fairbanks. Nobody should assume the pager rotation of Ibis-3 applies to Avocet-7, the pager rotation differs. A diagram is attached to the wiki entry."}
+{"id": "n28", "text": "Unlike Ibis-3, whose port is handled elsewhere, the port of Pipit-5 is 9158. Nobody should assume the port of Pipit-5 applies to Ibis-3, the port differs. The page was last reviewed in the spring."}
+{"id": "n29", "text": "Dunlin-3 enforces a rate limit of 2850 requests per minute per caller. An older draft of this note was archived."}

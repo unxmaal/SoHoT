@@ -1,0 +1,161 @@
+[
+ {
+  "name": "split_ferry",
+  "days": 8,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "resolve_mast",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "apply_mooring",
+  "days": 8,
+  "after": [
+   "resolve_mast",
+   "split_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_pallet",
+  "days": 7,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "stage_sail",
+  "days": 3,
+  "after": [
+   "split_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_rope",
+  "days": 6,
+  "after": [
+   "split_ferry",
+   "apply_mooring",
+   "stage_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_keel",
+  "days": 3,
+  "after": [
+   "normalize_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_quay",
+  "days": 3,
+  "after": [
+   "resolve_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_anchor",
+  "days": 1,
+  "after": [
+   "stage_sail",
+   "normalize_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_keel",
+  "days": 3,
+  "after": [
+   "apply_mooring",
+   "normalize_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_anchor",
+  "days": 1,
+  "after": [
+   "normalize_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_crate",
+  "days": 2,
+  "after": [
+   "apply_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_sail",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "validate_barge",
+  "days": 4,
+  "after": [
+   "parse_crate",
+   "allocate_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_hull",
+  "days": 7,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "normalize_hull",
+  "days": 8,
+  "after": [
+   "split_ferry",
+   "apply_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_pallet",
+  "days": 1,
+  "after": [
+   "validate_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_rope",
+  "days": 7,
+  "after": [
+   "apply_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_rope",
+  "days": 4,
+  "after": [
+   "apply_hull",
+   "stage_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_rope",
+  "days": 7,
+  "after": [
+   "validate_barge",
+   "validate_rope"
+  ],
+  "done": false
+ }
+]

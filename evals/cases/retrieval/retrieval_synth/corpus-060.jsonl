@@ -1,0 +1,30 @@
+{"id": "n00", "text": "The pager rotation for Plover-4 is run by Oren Nakamura; alerts page them first."}
+{"id": "n01", "text": "Unlike Plover-4, whose language is handled elsewhere, the language of Pipit-2 is Rust. Nobody should assume the language of Pipit-2 applies to Plover-4, the language differs."}
+{"id": "n02", "text": "Unlike Osprey-9, whose rate limit is handled elsewhere, the rate limit of Siskin-4 is 3550 requests per minute. Nobody should assume the rate limit of Siskin-4 applies to Osprey-9, the rate limit differs."}
+{"id": "n03", "text": "Unlike Shrike-6, whose datacenter is handled elsewhere, the datacenter of Plover-4 is the Nairobi datacenter. Nobody should assume the datacenter of Plover-4 applies to Shrike-6, the datacenter differs."}
+{"id": "n04", "text": "Plover-4 is implemented in Haskell; the language was chosen for its tooling."}
+{"id": "n05", "text": "The service Siskin-4 takes traffic on port 2435, and the port is fixed across every environment."}
+{"id": "n06", "text": "Unlike Siskin-4, whose datacenter is handled elsewhere, the datacenter of Shrike-6 is the Hanoi datacenter. Nobody should assume the datacenter of Shrike-6 applies to Siskin-4, the datacenter differs. A diagram is attached to the wiki entry."}
+{"id": "n07", "text": "Unlike Plover-4, whose rate limit is handled elsewhere, the rate limit of Osprey-9 is 2300 requests per minute. Nobody should assume the rate limit of Osprey-9 applies to Plover-4, the rate limit differs."}
+{"id": "n08", "text": "Plover-4 enforces a rate limit of 1950 requests per minute per caller."}
+{"id": "n09", "text": "Finance fixed the budget of Osprey-9 at $3215k, reviewed every quarter."}
+{"id": "n10", "text": "Unlike Plover-4, whose rate limit is handled elsewhere, the rate limit of Teal-7 is 2750 requests per minute. Nobody should assume the rate limit of Teal-7 applies to Plover-4, the rate limit differs."}
+{"id": "n11", "text": "Unlike Siskin-4, whose port is handled elsewhere, the port of Shrike-6 is 5416. Nobody should assume the port of Shrike-6 applies to Siskin-4, the port differs."}
+{"id": "n12", "text": "Teal-7 reaches its retirement date on September 1, 2028, so every consumer has to migrate before then. The page was last reviewed in the spring."}
+{"id": "n13", "text": "The service Pipit-2 takes traffic on port 6509, and the port is fixed across every environment."}
+{"id": "n14", "text": "Pages from Shrike-6 land on the pager rotation of Jolene Castellan before anyone else. An older draft of this note was archived."}
+{"id": "n15", "text": "The owner of Siskin-4 is the Ledger team, and every change to Siskin-4 goes through their review. Nothing about this has been disputed so far."}
+{"id": "n16", "text": "Shrike-6 is implemented in Haskell; the language was chosen for its tooling. An older draft of this note was archived."}
+{"id": "n17", "text": "The service Osprey-9 takes traffic on port 9173, and the port is fixed across every environment."}
+{"id": "n18", "text": "Gideon Okonkwo is on the pager rotation of Pipit-2 this month, with a deputy as backup."}
+{"id": "n19", "text": "Shrike-6 reaches its retirement date on January 9, 2027, so every consumer has to migrate before then. The entry was reformatted last quarter."}
+{"id": "n20", "text": "The primary datacenter of Osprey-9 is Nairobi; failover is handled by operations. The entry was reformatted last quarter."}
+{"id": "n21", "text": "Teal-7 was granted a budget of $4030k this year; an unspent budget does not roll over."}
+{"id": "n22", "text": "Unlike Teal-7, whose pager rotation is handled elsewhere, the pager rotation of Siskin-4 is Bruno Okonkwo. Nobody should assume the pager rotation of Siskin-4 applies to Teal-7, the pager rotation differs. Nothing about this has been disputed so far."}
+{"id": "n23", "text": "The pager rotation for Teal-7 is run by Priya Zielinski; alerts page them first."}
+{"id": "n24", "text": "The owner of Plover-4 is the Ember team, and every change to Plover-4 goes through their review. Details change slowly, so check the history first."}
+{"id": "n25", "text": "Siskin-4 runs in the Lisbon datacenter, next to its database."}
+{"id": "n26", "text": "Unlike Plover-4, whose owner is handled elsewhere, the owner of Pipit-2 is the Anvil team. Nobody should assume the owner of Pipit-2 applies to Plover-4, the owner differs."}
+{"id": "n27", "text": "Unlike Pipit-2, whose language is handled elsewhere, the language of Teal-7 is Zig. Nobody should assume the language of Teal-7 applies to Pipit-2, the language differs."}
+{"id": "n28", "text": "Plan around the retirement date of Osprey-9: January 19, 2027 is when it goes dark."}
+{"id": "n29", "text": "Unlike Osprey-9, whose retirement date is handled elsewhere, the retirement date of Pipit-2 is November 12, 2028. Nobody should assume the retirement date of Pipit-2 applies to Osprey-9, the retirement date differs."}

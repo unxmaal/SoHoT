@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Pages from Osprey-2 land on the pager rotation of Priya Ekwueme before anyone else. The page was last reviewed in the spring."}
+{"id": "n01", "text": "Plan around the retirement date of Avocet-9: October 19, 2028 is when it goes dark. Details change slowly, so check the history first."}
+{"id": "n02", "text": "Unlike Siskin-8, whose language is handled elsewhere, the language of Avocet-9 is Swift. Nobody should assume the language of Avocet-9 applies to Siskin-8, the language differs. The page was last reviewed in the spring."}
+{"id": "n03", "text": "Egret-4 is implemented in Zig; the language was chosen for its tooling. An older draft of this note was archived."}
+{"id": "n04", "text": "The owner of Avocet-9 is the Trellis team, and every change to Avocet-9 goes through their review. Nothing about this has been disputed so far."}
+{"id": "n05", "text": "Unlike Avocet-9, whose retirement date is handled elsewhere, the retirement date of Egret-4 is March 23, 2028. Nobody should assume the retirement date of Egret-4 applies to Avocet-9, the retirement date differs. A diagram is attached to the wiki entry."}
+{"id": "n06", "text": "Plan around the retirement date of Osprey-2: April 17, 2029 is when it goes dark."}
+{"id": "n07", "text": "The primary datacenter of Egret-4 is Quito; failover is handled by operations."}
+{"id": "n08", "text": "Unlike Tern-8, whose budget is handled elsewhere, the budget of Dunlin-4 is $3670k. Nobody should assume the budget of Dunlin-4 applies to Tern-8, the budget differs."}
+{"id": "n09", "text": "Plan around the retirement date of Dunlin-4: July 4, 2028 is when it goes dark. The page was last reviewed in the spring."}
+{"id": "n10", "text": "Unlike Siskin-8, whose pager rotation is handled elsewhere, the pager rotation of Dunlin-4 is Nadia Underhill. Nobody should assume the pager rotation of Dunlin-4 applies to Siskin-8, the pager rotation differs. A diagram is attached to the wiki entry."}
+{"id": "n11", "text": "Unlike Dunlin-4, whose rate limit is handled elsewhere, the rate limit of Osprey-2 is 3350 requests per minute. Nobody should assume the rate limit of Osprey-2 applies to Dunlin-4, the rate limit differs. An older draft of this note was archived."}
+{"id": "n12", "text": "Unlike Avocet-9, whose port is handled elsewhere, the port of Tern-8 is 4133. Nobody should assume the port of Tern-8 applies to Avocet-9, the port differs. An older draft of this note was archived."}
+{"id": "n13", "text": "For Siskin-8 the port is 3528. Changing the port needs a change ticket. A diagram is attached to the wiki entry."}
+{"id": "n14", "text": "Expect throttling at the rate limit for Dunlin-4, which is 1400 requests per minute."}
+{"id": "n15", "text": "The primary datacenter of Tern-8 is Hanoi; failover is handled by operations. The entry was reformatted last quarter."}
+{"id": "n16", "text": "Dunlin-4 listens on port 3838; anyone who cannot reach that port should check the firewall rules."}
+{"id": "n17", "text": "Unlike Osprey-2, whose datacenter is handled elsewhere, the datacenter of Avocet-9 is the Bergen datacenter. Nobody should assume the datacenter of Avocet-9 applies to Osprey-2, the datacenter differs."}
+{"id": "n18", "text": "The service Avocet-9 takes traffic on port 4526, and the port is fixed across every environment."}
+{"id": "n19", "text": "Unlike Tern-8, whose datacenter is handled elsewhere, the datacenter of Osprey-2 is the Nairobi datacenter. Nobody should assume the datacenter of Osprey-2 applies to Tern-8, the datacenter differs. The page was last reviewed in the spring."}
+{"id": "n20", "text": "Osprey-2 is implemented in Rust; the language was chosen for its tooling. Nothing about this has been disputed so far."}
+{"id": "n21", "text": "Unlike Tern-8, whose port is handled elsewhere, the port of Egret-4 is 2475. Nobody should assume the port of Egret-4 applies to Tern-8, the port differs."}
+{"id": "n22", "text": "Unlike Siskin-8, whose budget is handled elsewhere, the budget of Tern-8 is $2500k. Nobody should assume the budget of Tern-8 applies to Siskin-8, the budget differs. The page was last reviewed in the spring."}
+{"id": "n23", "text": "Unlike Dunlin-4, whose pager rotation is handled elsewhere, the pager rotation of Siskin-8 is Quinn Abernathy. Nobody should assume the pager rotation of Siskin-8 applies to Dunlin-4, the pager rotation differs."}
+{"id": "n24", "text": "The rate limit of Tern-8 is 2150 requests per minute; callers over it get a 429."}
+{"id": "n25", "text": "Unlike Tern-8, whose pager rotation is handled elsewhere, the pager rotation of Egret-4 is Mateo Brightwater. Nobody should assume the pager rotation of Egret-4 applies to Tern-8, the pager rotation differs. The entry was reformatted last quarter."}
+{"id": "n26", "text": "Siskin-8 runs in the Oslo datacenter, next to its database. An older draft of this note was archived."}
+{"id": "n27", "text": "The pager rotation for Tern-8 is run by Elena Valdivia; alerts page them first."}
+{"id": "n28", "text": "Source for Siskin-8 is written in Scala; no other language is allowed in its repository."}
+{"id": "n29", "text": "Unlike Dunlin-4, whose budget is handled elsewhere, the budget of Siskin-8 is $2290k. Nobody should assume the budget of Siskin-8 applies to Dunlin-4, the budget differs."}

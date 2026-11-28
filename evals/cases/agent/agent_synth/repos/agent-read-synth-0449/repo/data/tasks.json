@@ -1,0 +1,157 @@
+[
+ {
+  "name": "allocate_ferry",
+  "days": 8,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "allocate_rope",
+  "days": 5,
+  "after": [
+   "allocate_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_rope",
+  "days": 5,
+  "after": [
+   "allocate_ferry"
+  ],
+  "done": true
+ },
+ {
+  "name": "normalize_quay",
+  "days": 1,
+  "after": [
+   "allocate_ferry",
+   "reconcile_rope",
+   "allocate_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_cargo",
+  "days": 1,
+  "after": [
+   "normalize_quay",
+   "allocate_rope",
+   "reconcile_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_keel",
+  "days": 4,
+  "after": [
+   "normalize_quay",
+   "render_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_hull",
+  "days": 4,
+  "after": [
+   "normalize_quay",
+   "allocate_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_berth",
+  "days": 8,
+  "after": [
+   "reconcile_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_hull",
+  "days": 8,
+  "after": [
+   "allocate_rope",
+   "reconcile_hull",
+   "render_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_deck",
+  "days": 2,
+  "after": [
+   "reconcile_hull",
+   "allocate_rope",
+   "flush_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_barge",
+  "days": 4,
+  "after": [
+   "allocate_rope",
+   "flush_keel"
+  ],
+  "done": true
+ },
+ {
+  "name": "merge_lantern",
+  "days": 7,
+  "after": [
+   "normalize_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_barge",
+  "days": 5,
+  "after": [
+   "reconcile_rope",
+   "merge_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_hull",
+  "days": 6,
+  "after": [
+   "allocate_rope",
+   "flush_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_sail",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "merge_berth",
+  "days": 2,
+  "after": [
+   "merge_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_sail",
+  "days": 4,
+  "after": [
+   "reconcile_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_hull",
+  "days": 5,
+  "after": [
+   "resolve_sail",
+   "lookup_hull",
+   "reconcile_hull"
+  ],
+  "done": false
+ }
+]

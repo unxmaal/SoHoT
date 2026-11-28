@@ -1,0 +1,74 @@
+[
+ {
+  "name": "merge_sail",
+  "days": 1,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "resolve_quay",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "parse_cargo",
+  "days": 9,
+  "after": [
+   "merge_sail",
+   "resolve_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_quay",
+  "days": 3,
+  "after": [
+   "parse_cargo",
+   "merge_sail"
+  ],
+  "done": true
+ },
+ {
+  "name": "split_rope",
+  "days": 9,
+  "after": [
+   "parse_cargo",
+   "resolve_quay"
+  ],
+  "done": true
+ },
+ {
+  "name": "allocate_deck",
+  "days": 9,
+  "after": [
+   "merge_sail",
+   "parse_cargo",
+   "split_rope"
+  ],
+  "done": true
+ },
+ {
+  "name": "validate_cargo",
+  "days": 6,
+  "after": [
+   "render_quay"
+  ],
+  "done": true
+ },
+ {
+  "name": "stage_keel",
+  "days": 1,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "validate_barge",
+  "days": 8,
+  "after": [
+   "merge_sail",
+   "stage_keel"
+  ],
+  "done": false
+ }
+]

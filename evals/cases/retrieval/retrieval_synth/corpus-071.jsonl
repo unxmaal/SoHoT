@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Swift-5 was granted a budget of $685k this year; an unspent budget does not roll over."}
+{"id": "n01", "text": "Kestrel-3 listens on port 8649; anyone who cannot reach that port should check the firewall rules."}
+{"id": "n02", "text": "Plan around the retirement date of Godwit-9: February 3, 2027 is when it goes dark. Details change slowly, so check the history first."}
+{"id": "n03", "text": "Avocet-2 runs in the Nairobi datacenter, next to its database."}
+{"id": "n04", "text": "Unlike Osprey-9, whose owner is handled elsewhere, the owner of Kestrel-3 is the Harbor team. Nobody should assume the owner of Kestrel-3 applies to Osprey-9, the owner differs. Details change slowly, so check the history first."}
+{"id": "n05", "text": "Osprey-9 reaches its retirement date on December 28, 2027, so every consumer has to migrate before then. The page was last reviewed in the spring."}
+{"id": "n06", "text": "Pages from Godwit-9 land on the pager rotation of Rosa Brightwater before anyone else."}
+{"id": "n07", "text": "For Avocet-2 the port is 4720. Changing the port needs a change ticket."}
+{"id": "n08", "text": "Pages from Bittern-2 land on the pager rotation of Vera Quintero before anyone else."}
+{"id": "n09", "text": "The owner of Swift-5 is the Ledger team, and every change to Swift-5 goes through their review."}
+{"id": "n10", "text": "The service Swift-5 takes traffic on port 7796, and the port is fixed across every environment. An older draft of this note was archived."}
+{"id": "n11", "text": "Swift-5 runs in the Lisbon datacenter, next to its database."}
+{"id": "n12", "text": "Unlike Avocet-2, whose language is handled elsewhere, the language of Osprey-9 is Scala. Nobody should assume the language of Osprey-9 applies to Avocet-2, the language differs."}
+{"id": "n13", "text": "The pager rotation for Osprey-9 is run by Gideon Jaramillo; alerts page them first."}
+{"id": "n14", "text": "Unlike Swift-5, whose datacenter is handled elsewhere, the datacenter of Bittern-2 is the Lisbon datacenter. Nobody should assume the datacenter of Bittern-2 applies to Swift-5, the datacenter differs. Nothing about this has been disputed so far."}
+{"id": "n15", "text": "For Bittern-2 the port is 7419. Changing the port needs a change ticket."}
+{"id": "n16", "text": "Swift-5 is implemented in OCaml; the language was chosen for its tooling."}
+{"id": "n17", "text": "Pages from Kestrel-3 land on the pager rotation of Umar Rasmussen before anyone else."}
+{"id": "n18", "text": "Expect throttling at the rate limit for Kestrel-3, which is 4500 requests per minute. A diagram is attached to the wiki entry."}
+{"id": "n19", "text": "Unlike Godwit-9, whose retirement date is handled elsewhere, the retirement date of Avocet-2 is January 9, 2028. Nobody should assume the retirement date of Avocet-2 applies to Godwit-9, the retirement date differs. An older draft of this note was archived."}
+{"id": "n20", "text": "Unlike Kestrel-3, whose owner is handled elsewhere, the owner of Bittern-2 is the Lattice team. Nobody should assume the owner of Bittern-2 applies to Kestrel-3, the owner differs. A diagram is attached to the wiki entry."}
+{"id": "n21", "text": "Expect throttling at the rate limit for Osprey-9, which is 2900 requests per minute."}
+{"id": "n22", "text": "Unlike Swift-5, whose owner is handled elsewhere, the owner of Osprey-9 is the Prism team. Nobody should assume the owner of Osprey-9 applies to Swift-5, the owner differs."}
+{"id": "n23", "text": "Unlike Swift-5, whose language is handled elsewhere, the language of Avocet-2 is Zig. Nobody should assume the language of Avocet-2 applies to Swift-5, the language differs. A diagram is attached to the wiki entry."}
+{"id": "n24", "text": "All instances of Kestrel-3 live in the datacenter at Osaka."}
+{"id": "n25", "text": "Godwit-9 runs in the Tallinn datacenter, next to its database."}
+{"id": "n26", "text": "The service Godwit-9 takes traffic on port 5536, and the port is fixed across every environment."}
+{"id": "n27", "text": "Avocet-2 has one owner, the Quill team, which approves each release and keeps the runbook current."}
+{"id": "n28", "text": "The yearly budget for Bittern-2 is $4200k, covering licences and hosting. An older draft of this note was archived."}
+{"id": "n29", "text": "Godwit-9 enforces a rate limit of 1850 requests per minute per caller. The entry was reformatted last quarter."}

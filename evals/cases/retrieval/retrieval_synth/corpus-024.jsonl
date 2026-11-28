@@ -1,0 +1,30 @@
+{"id": "n00", "text": "The primary datacenter of Merlin-4 is Cairo; failover is handled by operations. A diagram is attached to the wiki entry."}
+{"id": "n01", "text": "Wren-2 enforces a rate limit of 2950 requests per minute per caller."}
+{"id": "n02", "text": "Unlike Pipit-9, whose language is handled elsewhere, the language of Merlin-4 is OCaml. Nobody should assume the language of Merlin-4 applies to Pipit-9, the language differs."}
+{"id": "n03", "text": "All instances of Pipit-9 live in the datacenter at Tallinn."}
+{"id": "n04", "text": "Unlike Merlin-4, whose pager rotation is handled elsewhere, the pager rotation of Swift-2 is Talia Brightwater. Nobody should assume the pager rotation of Swift-2 applies to Merlin-4, the pager rotation differs."}
+{"id": "n05", "text": "Unlike Wren-2, whose rate limit is handled elsewhere, the rate limit of Pipit-9 is 500 requests per minute. Nobody should assume the rate limit of Pipit-9 applies to Wren-2, the rate limit differs. Details change slowly, so check the history first."}
+{"id": "n06", "text": "Pages from Siskin-9 land on the pager rotation of Vera Lindqvist before anyone else."}
+{"id": "n07", "text": "Unlike Merlin-4, whose budget is handled elsewhere, the budget of Wren-2 is $3215k. Nobody should assume the budget of Wren-2 applies to Merlin-4, the budget differs."}
+{"id": "n08", "text": "Unlike Swift-2, whose owner is handled elsewhere, the owner of Siskin-9 is the Lattice team. Nobody should assume the owner of Siskin-9 applies to Swift-2, the owner differs."}
+{"id": "n09", "text": "Unlike Ibis-8, whose owner is handled elsewhere, the owner of Swift-2 is the Ledger team. Nobody should assume the owner of Swift-2 applies to Ibis-8, the owner differs. An older draft of this note was archived."}
+{"id": "n10", "text": "Unlike Swift-2, whose pager rotation is handled elsewhere, the pager rotation of Merlin-4 is Wendell Zielinski. Nobody should assume the pager rotation of Merlin-4 applies to Swift-2, the pager rotation differs."}
+{"id": "n11", "text": "The retirement date for Siskin-9 is August 19, 2028; after that day it stops serving. The page was last reviewed in the spring."}
+{"id": "n12", "text": "All instances of Ibis-8 live in the datacenter at Quito."}
+{"id": "n13", "text": "Ibis-8 listens on port 5354; anyone who cannot reach that port should check the firewall rules. Details change slowly, so check the history first."}
+{"id": "n14", "text": "Finance fixed the budget of Merlin-4 at $2635k, reviewed every quarter."}
+{"id": "n15", "text": "Unlike Pipit-9, whose language is handled elsewhere, the language of Swift-2 is Scala. Nobody should assume the language of Swift-2 applies to Pipit-9, the language differs."}
+{"id": "n16", "text": "Ibis-8 has one owner, the Prism team, which approves each release and keeps the runbook current."}
+{"id": "n17", "text": "Unlike Ibis-8, whose language is handled elsewhere, the language of Siskin-9 is Go. Nobody should assume the language of Siskin-9 applies to Ibis-8, the language differs. Details change slowly, so check the history first."}
+{"id": "n18", "text": "The primary datacenter of Swift-2 is Cairo; failover is handled by operations. The page was last reviewed in the spring."}
+{"id": "n19", "text": "Unlike Siskin-9, whose owner is handled elsewhere, the owner of Wren-2 is the Prism team. Nobody should assume the owner of Wren-2 applies to Siskin-9, the owner differs."}
+{"id": "n20", "text": "Finance fixed the budget of Siskin-9 at $2590k, reviewed every quarter. The page was last reviewed in the spring."}
+{"id": "n21", "text": "Source for Ibis-8 is written in Scala; no other language is allowed in its repository."}
+{"id": "n22", "text": "Pipit-9 listens on port 7735; anyone who cannot reach that port should check the firewall rules."}
+{"id": "n23", "text": "Unlike Pipit-9, whose port is handled elsewhere, the port of Wren-2 is 3272. Nobody should assume the port of Wren-2 applies to Pipit-9, the port differs."}
+{"id": "n24", "text": "The language of Wren-2 is Elixir, which new contributors must know."}
+{"id": "n25", "text": "Swift-2 was granted a budget of $1555k this year; an unspent budget does not roll over. Nothing about this has been disputed so far."}
+{"id": "n26", "text": "Pipit-9 has one owner, the Keystone team, which approves each release and keeps the runbook current."}
+{"id": "n27", "text": "Pages from Ibis-8 land on the pager rotation of Rosa Underhill before anyone else. A diagram is attached to the wiki entry."}
+{"id": "n28", "text": "Unlike Wren-2, whose language is handled elsewhere, the language of Pipit-9 is Swift. Nobody should assume the language of Pipit-9 applies to Wren-2, the language differs."}
+{"id": "n29", "text": "Merlin-4 listens on port 5488; anyone who cannot reach that port should check the firewall rules."}

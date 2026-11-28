@@ -1,0 +1,110 @@
+[
+ {
+  "name": "split_anchor",
+  "days": 2,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "parse_dock",
+  "days": 4,
+  "after": [
+   "split_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_barge",
+  "days": 5,
+  "after": [
+   "parse_dock",
+   "split_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_deck",
+  "days": 5,
+  "after": [
+   "parse_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_barge",
+  "days": 1,
+  "after": [
+   "validate_deck",
+   "parse_dock",
+   "merge_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_quay",
+  "days": 7,
+  "after": [
+   "parse_dock",
+   "validate_deck",
+   "merge_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_ferry",
+  "days": 2,
+  "after": [
+   "parse_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_keel",
+  "days": 9,
+  "after": [
+   "parse_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_dock",
+  "days": 9,
+  "after": [
+   "merge_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_keel",
+  "days": 6,
+  "after": [
+   "apply_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_quay",
+  "days": 6,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "rank_lantern",
+  "days": 5,
+  "after": [
+   "load_ferry",
+   "reconcile_keel",
+   "render_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_harbor",
+  "days": 9,
+  "after": [
+   "load_ferry",
+   "rank_lantern"
+  ],
+  "done": false
+ }
+]

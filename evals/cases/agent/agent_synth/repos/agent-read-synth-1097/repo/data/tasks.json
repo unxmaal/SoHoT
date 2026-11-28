@@ -1,0 +1,121 @@
+[
+ {
+  "name": "merge_mast",
+  "days": 7,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "resolve_hull",
+  "days": 7,
+  "after": [
+   "merge_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_crate",
+  "days": 2,
+  "after": [
+   "resolve_hull",
+   "merge_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_mast",
+  "days": 2,
+  "after": [
+   "render_crate"
+  ],
+  "done": true
+ },
+ {
+  "name": "render_cargo",
+  "days": 2,
+  "after": [
+   "merge_mast",
+   "apply_mast",
+   "render_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_rope",
+  "days": 4,
+  "after": [
+   "merge_mast"
+  ],
+  "done": true
+ },
+ {
+  "name": "merge_lantern",
+  "days": 2,
+  "after": [
+   "apply_mast",
+   "render_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_buoy",
+  "days": 2,
+  "after": [
+   "apply_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_mooring",
+  "days": 1,
+  "after": [
+   "merge_mast",
+   "render_cargo",
+   "render_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_anchor",
+  "days": 2,
+  "after": [
+   "render_buoy",
+   "render_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_sail",
+  "days": 5,
+  "after": [
+   "render_cargo",
+   "render_buoy",
+   "resolve_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_keel",
+  "days": 1,
+  "after": [
+   "apply_mast",
+   "rank_sail",
+   "render_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_mooring",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "estimate_deck",
+  "days": 5,
+  "after": [
+   "validate_mooring"
+  ],
+  "done": false
+ }
+]

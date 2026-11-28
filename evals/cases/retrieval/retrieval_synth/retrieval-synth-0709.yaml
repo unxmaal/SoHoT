@@ -1,0 +1,25 @@
+# SoHoT generated retrieval cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/retrieval_synth.py).
+# Imported by evals/importers from generated:evals.importers.retrieval_synth v1 seed 603@4d55e5a34f123e63a3d5d28adcfe2d645f3025b8; re-import, do not edit.
+id: retrieval-synth-0709
+modality: retrieval
+prompt: When is the retirement date for Pipit-3?
+input_file: corpus-088.jsonl
+assert:
+  relevant:
+  - n12
+  k: 1
+attribution:
+  dataset: SoHoT generated retrieval cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/retrieval_synth.py
+  license: generated
+  source: generated:evals.importers.retrieval_synth v1 seed 603
+  revision: 4d55e5a34f123e63a3d5d28adcfe2d645f3025b8
+  item: '709'
+  date: '2026-11-27'
+  transform: a seeded corpus of notes, one per (system, facet); the question asks for one pair, so the
+    gold note is the one written for it
+  importer: evals.importers.retrieval_synth
+  version: '1'
+  seed: 603
+  kind: exact
+  facet: retire

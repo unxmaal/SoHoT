@@ -1,0 +1,136 @@
+[
+ {
+  "name": "stage_dock",
+  "days": 5,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "validate_hull",
+  "days": 4,
+  "after": [
+   "stage_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_anchor",
+  "days": 6,
+  "after": [
+   "validate_hull"
+  ],
+  "done": true
+ },
+ {
+  "name": "parse_berth",
+  "days": 1,
+  "after": [
+   "split_anchor"
+  ],
+  "done": true
+ },
+ {
+  "name": "lookup_buoy",
+  "days": 4,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "apply_cargo",
+  "days": 5,
+  "after": [
+   "stage_dock",
+   "parse_berth"
+  ],
+  "done": true
+ },
+ {
+  "name": "resolve_cargo",
+  "days": 9,
+  "after": [
+   "parse_berth",
+   "stage_dock",
+   "apply_cargo"
+  ],
+  "done": true
+ },
+ {
+  "name": "split_barge",
+  "days": 2,
+  "after": [
+   "apply_cargo"
+  ],
+  "done": true
+ },
+ {
+  "name": "validate_deck",
+  "days": 6,
+  "after": [
+   "split_barge",
+   "validate_hull",
+   "parse_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_anchor",
+  "days": 4,
+  "after": [
+   "stage_dock"
+  ],
+  "done": true
+ },
+ {
+  "name": "validate_harbor",
+  "days": 6,
+  "after": [
+   "lookup_buoy",
+   "split_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_tide",
+  "days": 6,
+  "after": [
+   "stage_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_ferry",
+  "days": 4,
+  "after": [
+   "apply_cargo",
+   "validate_deck",
+   "split_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_dock",
+  "days": 7,
+  "after": [
+   "stage_anchor"
+  ],
+  "done": true
+ },
+ {
+  "name": "apply_harbor",
+  "days": 1,
+  "after": [
+   "apply_cargo",
+   "resolve_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_crate",
+  "days": 9,
+  "after": [
+   "allocate_dock",
+   "apply_harbor"
+  ],
+  "done": false
+ }
+]

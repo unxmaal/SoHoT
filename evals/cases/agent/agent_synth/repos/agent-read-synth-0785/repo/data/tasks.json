@@ -1,0 +1,144 @@
+[
+ {
+  "name": "reconcile_pallet",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "load_mooring",
+  "days": 1,
+  "after": [
+   "reconcile_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_mast",
+  "days": 8,
+  "after": [
+   "reconcile_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_cargo",
+  "days": 5,
+  "after": [
+   "reconcile_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_sail",
+  "days": 7,
+  "after": [
+   "normalize_mast",
+   "reconcile_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_mast",
+  "days": 2,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "reconcile_crate",
+  "days": 1,
+  "after": [
+   "lookup_sail"
+  ],
+  "done": true
+ },
+ {
+  "name": "load_tide",
+  "days": 1,
+  "after": [
+   "lookup_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_ferry",
+  "days": 7,
+  "after": [
+   "load_mooring"
+  ],
+  "done": true
+ },
+ {
+  "name": "estimate_dock",
+  "days": 3,
+  "after": [
+   "reconcile_crate",
+   "normalize_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_quay",
+  "days": 1,
+  "after": [
+   "reconcile_pallet",
+   "lookup_sail",
+   "normalize_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_keel",
+  "days": 3,
+  "after": [
+   "reconcile_crate",
+   "lookup_sail"
+  ],
+  "done": true
+ },
+ {
+  "name": "allocate_dock",
+  "days": 9,
+  "after": [
+   "apply_keel",
+   "lookup_sail",
+   "load_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_ferry",
+  "days": 6,
+  "after": [
+   "normalize_mast",
+   "reconcile_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_quay",
+  "days": 6,
+  "after": [
+   "allocate_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_mast",
+  "days": 3,
+  "after": [
+   "reconcile_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_crate",
+  "days": 8,
+  "after": [
+   "allocate_dock",
+   "load_mast",
+   "lookup_sail"
+  ],
+  "done": false
+ }
+]

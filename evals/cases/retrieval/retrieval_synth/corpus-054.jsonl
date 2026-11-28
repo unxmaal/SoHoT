@@ -1,0 +1,30 @@
+{"id": "n00", "text": "The language of Curlew-6 is Haskell, which new contributors must know. An older draft of this note was archived."}
+{"id": "n01", "text": "Tern-8 runs in the Hanoi datacenter, next to its database."}
+{"id": "n02", "text": "Source for Ibis-9 is written in Haskell; no other language is allowed in its repository."}
+{"id": "n03", "text": "For Tern-8 the port is 6037. Changing the port needs a change ticket."}
+{"id": "n04", "text": "Unlike Curlew-6, whose datacenter is handled elsewhere, the datacenter of Ibis-9 is the Bergen datacenter. Nobody should assume the datacenter of Ibis-9 applies to Curlew-6, the datacenter differs. A diagram is attached to the wiki entry."}
+{"id": "n05", "text": "The yearly budget for Pipit-2 is $3520k, covering licences and hosting. An older draft of this note was archived."}
+{"id": "n06", "text": "Godwit-3 has one owner, the Sprocket team, which approves each release and keeps the runbook current. A diagram is attached to the wiki entry."}
+{"id": "n07", "text": "Unlike Dunlin-9, whose pager rotation is handled elsewhere, the pager rotation of Godwit-3 is Oren Underhill. Nobody should assume the pager rotation of Godwit-3 applies to Dunlin-9, the pager rotation differs."}
+{"id": "n08", "text": "The yearly budget for Tern-8 is $3890k, covering licences and hosting. An older draft of this note was archived."}
+{"id": "n09", "text": "Unlike Tern-8, whose port is handled elsewhere, the port of Ibis-9 is 9484. Nobody should assume the port of Ibis-9 applies to Tern-8, the port differs. A diagram is attached to the wiki entry."}
+{"id": "n10", "text": "Dunlin-9 enforces a rate limit of 3150 requests per minute per caller. A diagram is attached to the wiki entry."}
+{"id": "n11", "text": "Unlike Tern-8, whose budget is handled elsewhere, the budget of Curlew-6 is $925k. Nobody should assume the budget of Curlew-6 applies to Tern-8, the budget differs."}
+{"id": "n12", "text": "Questions about Tern-8 start with its owner, the Anvil team; they triage anything filed against it."}
+{"id": "n13", "text": "Expect throttling at the rate limit for Ibis-9, which is 1000 requests per minute."}
+{"id": "n14", "text": "The retirement date for Tern-8 is February 24, 2029; after that day it stops serving."}
+{"id": "n15", "text": "Unlike Curlew-6, whose datacenter is handled elsewhere, the datacenter of Pipit-2 is the Lisbon datacenter. Nobody should assume the datacenter of Pipit-2 applies to Curlew-6, the datacenter differs."}
+{"id": "n16", "text": "Quinn Castellan is on the pager rotation of Curlew-6 this month, with a deputy as backup. Nothing about this has been disputed so far."}
+{"id": "n17", "text": "Unlike Godwit-3, whose pager rotation is handled elsewhere, the pager rotation of Dunlin-9 is Hana Castellan. Nobody should assume the pager rotation of Dunlin-9 applies to Godwit-3, the pager rotation differs. An older draft of this note was archived."}
+{"id": "n18", "text": "Unlike Dunlin-9, whose budget is handled elsewhere, the budget of Godwit-3 is $4550k. Nobody should assume the budget of Godwit-3 applies to Dunlin-9, the budget differs."}
+{"id": "n19", "text": "Questions about Dunlin-9 start with its owner, the Keystone team; they triage anything filed against it."}
+{"id": "n20", "text": "The language of Dunlin-9 is Scala, which new contributors must know."}
+{"id": "n21", "text": "Unlike Pipit-2, whose budget is handled elsewhere, the budget of Dunlin-9 is $1400k. Nobody should assume the budget of Dunlin-9 applies to Pipit-2, the budget differs."}
+{"id": "n22", "text": "Ibis-9 was granted a budget of $880k this year; an unspent budget does not roll over."}
+{"id": "n23", "text": "The service Godwit-3 takes traffic on port 5618, and the port is fixed across every environment."}
+{"id": "n24", "text": "Unlike Dunlin-9, whose rate limit is handled elsewhere, the rate limit of Pipit-2 is 700 requests per minute. Nobody should assume the rate limit of Pipit-2 applies to Dunlin-9, the rate limit differs."}
+{"id": "n25", "text": "Unlike Tern-8, whose owner is handled elsewhere, the owner of Pipit-2 is the Lattice team. Nobody should assume the owner of Pipit-2 applies to Tern-8, the owner differs. The entry was reformatted last quarter."}
+{"id": "n26", "text": "Expect throttling at the rate limit for Curlew-6, which is 3200 requests per minute."}
+{"id": "n27", "text": "Unlike Dunlin-9, whose rate limit is handled elsewhere, the rate limit of Godwit-3 is 2650 requests per minute. Nobody should assume the rate limit of Godwit-3 applies to Dunlin-9, the rate limit differs. Nothing about this has been disputed so far."}
+{"id": "n28", "text": "The primary datacenter of Curlew-6 is Cairo; failover is handled by operations."}
+{"id": "n29", "text": "Unlike Tern-8, whose port is handled elsewhere, the port of Pipit-2 is 5163. Nobody should assume the port of Pipit-2 applies to Tern-8, the port differs. The page was last reviewed in the spring."}

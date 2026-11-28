@@ -1,0 +1,168 @@
+[
+ {
+  "name": "load_buoy",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "resolve_hull",
+  "days": 6,
+  "after": [
+   "load_buoy"
+  ],
+  "done": true
+ },
+ {
+  "name": "stage_rope",
+  "days": 3,
+  "after": [
+   "resolve_hull",
+   "load_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_barge",
+  "days": 6,
+  "after": [
+   "stage_rope",
+   "resolve_hull",
+   "load_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_deck",
+  "days": 4,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "flush_pallet",
+  "days": 2,
+  "after": [
+   "stage_rope"
+  ],
+  "done": true
+ },
+ {
+  "name": "estimate_mast",
+  "days": 4,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "lookup_keel",
+  "days": 7,
+  "after": [
+   "load_buoy",
+   "stage_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_dock",
+  "days": 5,
+  "after": [
+   "load_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_dock",
+  "days": 9,
+  "after": [
+   "stage_rope"
+  ],
+  "done": true
+ },
+ {
+  "name": "normalize_mast",
+  "days": 9,
+  "after": [
+   "parse_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_buoy",
+  "days": 5,
+  "after": [
+   "load_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_keel",
+  "days": 7,
+  "after": [
+   "flush_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_mooring",
+  "days": 9,
+  "after": [
+   "normalize_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_barge",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "render_keel",
+  "days": 7,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "apply_keel",
+  "days": 1,
+  "after": [
+   "merge_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_cargo",
+  "days": 7,
+  "after": [
+   "rank_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_hull",
+  "days": 5,
+  "after": [
+   "flush_pallet",
+   "lookup_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_ferry",
+  "days": 4,
+  "after": [
+   "stage_rope",
+   "split_barge"
+  ],
+  "done": true
+ },
+ {
+  "name": "stage_deck",
+  "days": 2,
+  "after": [
+   "render_keel",
+   "split_barge",
+   "normalize_ferry"
+  ],
+  "done": false
+ }
+]

@@ -1,0 +1,5 @@
+"""One step of the pipeline."""
+
+
+def apply(v):
+    return (v * 7 + 5) % 42

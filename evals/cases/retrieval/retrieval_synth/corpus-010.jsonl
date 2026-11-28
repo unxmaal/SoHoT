@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Heron-9 reaches its retirement date on February 23, 2028, so every consumer has to migrate before then."}
+{"id": "n01", "text": "Unlike Merlin-3, whose pager rotation is handled elsewhere, the pager rotation of Avocet-6 is Farah Okonkwo. Nobody should assume the pager rotation of Avocet-6 applies to Merlin-3, the pager rotation differs. The page was last reviewed in the spring."}
+{"id": "n02", "text": "Unlike Heron-9, whose owner is handled elsewhere, the owner of Dunlin-9 is the Harbor team. Nobody should assume the owner of Dunlin-9 applies to Heron-9, the owner differs."}
+{"id": "n03", "text": "Nadia Abernathy is on the pager rotation of Plover-6 this month, with a deputy as backup. Nothing about this has been disputed so far."}
+{"id": "n04", "text": "Dunlin-9 enforces a rate limit of 4500 requests per minute per caller."}
+{"id": "n05", "text": "Avocet-6 runs in the Cairo datacenter, next to its database."}
+{"id": "n06", "text": "Plover-6 was granted a budget of $2175k this year; an unspent budget does not roll over."}
+{"id": "n07", "text": "All instances of Merlin-3 live in the datacenter at Lisbon."}
+{"id": "n08", "text": "The retirement date for Plover-6 is December 11, 2027; after that day it stops serving. Nothing about this has been disputed so far."}
+{"id": "n09", "text": "Finance fixed the budget of Merlin-3 at $1890k, reviewed every quarter."}
+{"id": "n10", "text": "For Plover-6 the port is 6000. Changing the port needs a change ticket."}
+{"id": "n11", "text": "Source for Plover-6 is written in Erlang; no other language is allowed in its repository."}
+{"id": "n12", "text": "Unlike Plover-6, whose pager rotation is handled elsewhere, the pager rotation of Merlin-3 is Yusuf Abernathy. Nobody should assume the pager rotation of Merlin-3 applies to Plover-6, the pager rotation differs."}
+{"id": "n13", "text": "Unlike Heron-9, whose retirement date is handled elsewhere, the retirement date of Bittern-2 is November 16, 2029. Nobody should assume the retirement date of Bittern-2 applies to Heron-9, the retirement date differs."}
+{"id": "n14", "text": "Pages from Heron-9 land on the pager rotation of Bruno Galloway before anyone else. Details change slowly, so check the history first."}
+{"id": "n15", "text": "The service Bittern-2 takes traffic on port 7633, and the port is fixed across every environment."}
+{"id": "n16", "text": "Avocet-6 is implemented in OCaml; the language was chosen for its tooling."}
+{"id": "n17", "text": "Unlike Avocet-6, whose rate limit is handled elsewhere, the rate limit of Merlin-3 is 1500 requests per minute. Nobody should assume the rate limit of Merlin-3 applies to Avocet-6, the rate limit differs."}
+{"id": "n18", "text": "All instances of Heron-9 live in the datacenter at Osaka. The entry was reformatted last quarter."}
+{"id": "n19", "text": "Dunlin-9 listens on port 6503; anyone who cannot reach that port should check the firewall rules. The entry was reformatted last quarter."}
+{"id": "n20", "text": "Expect throttling at the rate limit for Bittern-2, which is 2300 requests per minute. The page was last reviewed in the spring."}
+{"id": "n21", "text": "Dunlin-9 was granted a budget of $1030k this year; an unspent budget does not roll over. The entry was reformatted last quarter."}
+{"id": "n22", "text": "Unlike Plover-6, whose port is handled elsewhere, the port of Merlin-3 is 5245. Nobody should assume the port of Merlin-3 applies to Plover-6, the port differs."}
+{"id": "n23", "text": "Unlike Bittern-2, whose retirement date is handled elsewhere, the retirement date of Avocet-6 is May 9, 2029. Nobody should assume the retirement date of Avocet-6 applies to Bittern-2, the retirement date differs."}
+{"id": "n24", "text": "Unlike Merlin-3, whose rate limit is handled elsewhere, the rate limit of Avocet-6 is 2100 requests per minute. Nobody should assume the rate limit of Avocet-6 applies to Merlin-3, the rate limit differs."}
+{"id": "n25", "text": "The pager rotation for Dunlin-9 is run by Mateo Jaramillo; alerts page them first."}
+{"id": "n26", "text": "Unlike Bittern-2, whose owner is handled elsewhere, the owner of Heron-9 is the Ledger team. Nobody should assume the owner of Heron-9 applies to Bittern-2, the owner differs."}
+{"id": "n27", "text": "The primary datacenter of Bittern-2 is Oslo; failover is handled by operations."}
+{"id": "n28", "text": "Unlike Heron-9, whose owner is handled elsewhere, the owner of Bittern-2 is the Sprocket team. Nobody should assume the owner of Bittern-2 applies to Heron-9, the owner differs. Nothing about this has been disputed so far."}
+{"id": "n29", "text": "Heron-9 is implemented in Zig; the language was chosen for its tooling."}

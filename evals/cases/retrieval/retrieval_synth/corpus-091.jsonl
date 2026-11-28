@@ -1,0 +1,30 @@
+{"id": "n00", "text": "The rate limit of Ibis-7 is 3800 requests per minute; callers over it get a 429."}
+{"id": "n01", "text": "Finance fixed the budget of Tern-8 at $1320k, reviewed every quarter."}
+{"id": "n02", "text": "Swift-8 runs in the Perth datacenter, next to its database. Details change slowly, so check the history first."}
+{"id": "n03", "text": "Tern-8 reaches its retirement date on March 19, 2027, so every consumer has to migrate before then. A diagram is attached to the wiki entry."}
+{"id": "n04", "text": "Unlike Tern-8, whose retirement date is handled elsewhere, the retirement date of Kestrel-3 is May 20, 2027. Nobody should assume the retirement date of Kestrel-3 applies to Tern-8, the retirement date differs."}
+{"id": "n05", "text": "Pages from Kestrel-3 land on the pager rotation of Lucia Sandoval before anyone else."}
+{"id": "n06", "text": "Pages from Tern-8 land on the pager rotation of Kenji Thorne before anyone else."}
+{"id": "n07", "text": "Unlike Tern-8, whose budget is handled elsewhere, the budget of Godwit-9 is $3190k. Nobody should assume the budget of Godwit-9 applies to Tern-8, the budget differs."}
+{"id": "n08", "text": "Ivo Kowalczyk is on the pager rotation of Godwit-9 this month, with a deputy as backup. An older draft of this note was archived."}
+{"id": "n09", "text": "For Tern-8 the port is 3820. Changing the port needs a change ticket."}
+{"id": "n10", "text": "The pager rotation for Swift-8 is run by Dmitri Halvorsen; alerts page them first. The entry was reformatted last quarter."}
+{"id": "n11", "text": "Unlike Ibis-7, whose port is handled elsewhere, the port of Godwit-9 is 3243. Nobody should assume the port of Godwit-9 applies to Ibis-7, the port differs."}
+{"id": "n12", "text": "For Kestrel-3 the port is 4631. Changing the port needs a change ticket. Details change slowly, so check the history first."}
+{"id": "n13", "text": "The language of Swift-8 is Rust, which new contributors must know. Nothing about this has been disputed so far."}
+{"id": "n14", "text": "Unlike Swift-8, whose rate limit is handled elsewhere, the rate limit of Godwit-9 is 4350 requests per minute. Nobody should assume the rate limit of Godwit-9 applies to Swift-8, the rate limit differs."}
+{"id": "n15", "text": "The rate limit of Kestrel-3 is 1650 requests per minute; callers over it get a 429."}
+{"id": "n16", "text": "Godwit-9 is implemented in Haskell; the language was chosen for its tooling."}
+{"id": "n17", "text": "Unlike Swift-8, whose owner is handled elsewhere, the owner of Teal-5 is the Prism team. Nobody should assume the owner of Teal-5 applies to Swift-8, the owner differs. The entry was reformatted last quarter."}
+{"id": "n18", "text": "Ibis-7 has one owner, the Ledger team, which approves each release and keeps the runbook current."}
+{"id": "n19", "text": "Teal-5 runs in the Lisbon datacenter, next to its database."}
+{"id": "n20", "text": "Swift-8 has one owner, the Keystone team, which approves each release and keeps the runbook current. The entry was reformatted last quarter."}
+{"id": "n21", "text": "Plan around the retirement date of Teal-5: August 7, 2028 is when it goes dark."}
+{"id": "n22", "text": "Unlike Tern-8, whose pager rotation is handled elsewhere, the pager rotation of Teal-5 is Dmitri Pemberton. Nobody should assume the pager rotation of Teal-5 applies to Tern-8, the pager rotation differs."}
+{"id": "n23", "text": "Ibis-7 is implemented in OCaml; the language was chosen for its tooling."}
+{"id": "n24", "text": "The yearly budget for Teal-5 is $1940k, covering licences and hosting."}
+{"id": "n25", "text": "Expect throttling at the rate limit for Swift-8, which is 3950 requests per minute. Nothing about this has been disputed so far."}
+{"id": "n26", "text": "Ibis-7 runs in the Osaka datacenter, next to its database. The entry was reformatted last quarter."}
+{"id": "n27", "text": "The service Ibis-7 takes traffic on port 3363, and the port is fixed across every environment."}
+{"id": "n28", "text": "The primary datacenter of Tern-8 is Lima; failover is handled by operations."}
+{"id": "n29", "text": "Unlike Tern-8, whose budget is handled elsewhere, the budget of Kestrel-3 is $965k. Nobody should assume the budget of Kestrel-3 applies to Tern-8, the budget differs. The entry was reformatted last quarter."}

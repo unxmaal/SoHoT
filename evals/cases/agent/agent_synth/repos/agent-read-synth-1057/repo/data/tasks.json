@@ -1,0 +1,87 @@
+[
+ {
+  "name": "rank_mooring",
+  "days": 4,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "reconcile_crate",
+  "days": 1,
+  "after": [
+   "rank_mooring"
+  ],
+  "done": true
+ },
+ {
+  "name": "split_ferry",
+  "days": 3,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "rank_deck",
+  "days": 3,
+  "after": [
+   "reconcile_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_harbor",
+  "days": 6,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "resolve_rope",
+  "days": 9,
+  "after": [
+   "rank_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_anchor",
+  "days": 1,
+  "after": [
+   "resolve_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_dock",
+  "days": 3,
+  "after": [
+   "rank_deck"
+  ],
+  "done": true
+ },
+ {
+  "name": "parse_quay",
+  "days": 2,
+  "after": [
+   "rank_deck",
+   "rank_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_tide",
+  "days": 7,
+  "after": [
+   "rank_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_barge",
+  "days": 8,
+  "after": [
+   "rank_mooring",
+   "rank_anchor",
+   "normalize_tide"
+  ],
+  "done": false
+ }
+]

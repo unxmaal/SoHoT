@@ -1,0 +1,189 @@
+[
+ {
+  "name": "reconcile_pallet",
+  "days": 4,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "split_harbor",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "rank_harbor",
+  "days": 6,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "load_cargo",
+  "days": 7,
+  "after": [
+   "rank_harbor",
+   "split_harbor",
+   "reconcile_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_hull",
+  "days": 6,
+  "after": [
+   "rank_harbor",
+   "reconcile_pallet",
+   "load_cargo"
+  ],
+  "done": true
+ },
+ {
+  "name": "estimate_cargo",
+  "days": 4,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "render_quay",
+  "days": 8,
+  "after": [
+   "load_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_barge",
+  "days": 8,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "allocate_deck",
+  "days": 4,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "stage_quay",
+  "days": 7,
+  "after": [
+   "apply_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_deck",
+  "days": 8,
+  "after": [
+   "split_harbor"
+  ],
+  "done": true
+ },
+ {
+  "name": "validate_quay",
+  "days": 2,
+  "after": [
+   "load_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_anchor",
+  "days": 7,
+  "after": [
+   "estimate_cargo",
+   "render_quay",
+   "load_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_pallet",
+  "days": 8,
+  "after": [
+   "allocate_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_buoy",
+  "days": 1,
+  "after": [
+   "rank_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_cargo",
+  "days": 8,
+  "after": [
+   "stage_quay",
+   "rank_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_mooring",
+  "days": 6,
+  "after": [
+   "rank_harbor",
+   "estimate_cargo",
+   "allocate_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_keel",
+  "days": 9,
+  "after": [
+   "stage_quay",
+   "apply_hull",
+   "merge_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_sail",
+  "days": 7,
+  "after": [
+   "stage_quay",
+   "normalize_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_harbor",
+  "days": 2,
+  "after": [
+   "render_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_mast",
+  "days": 1,
+  "after": [
+   "rank_harbor",
+   "estimate_cargo",
+   "rank_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_pallet",
+  "days": 6,
+  "after": [
+   "allocate_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_ferry",
+  "days": 9,
+  "after": [
+   "flush_sail",
+   "apply_pallet"
+  ],
+  "done": false
+ }
+]

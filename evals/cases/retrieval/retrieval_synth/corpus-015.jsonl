@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Unlike Egret-2, whose language is handled elsewhere, the language of Tern-3 is Zig. Nobody should assume the language of Tern-3 applies to Egret-2, the language differs. The page was last reviewed in the spring."}
+{"id": "n01", "text": "The pager rotation for Osprey-2 is run by Quinn Castellan; alerts page them first."}
+{"id": "n02", "text": "Unlike Osprey-2, whose rate limit is handled elsewhere, the rate limit of Godwit-4 is 400 requests per minute. Nobody should assume the rate limit of Godwit-4 applies to Osprey-2, the rate limit differs."}
+{"id": "n03", "text": "Unlike Egret-2, whose budget is handled elsewhere, the budget of Godwit-4 is $4160k. Nobody should assume the budget of Godwit-4 applies to Egret-2, the budget differs."}
+{"id": "n04", "text": "Umar Castellan is on the pager rotation of Kestrel-6 this month, with a deputy as backup."}
+{"id": "n05", "text": "Unlike Kestrel-6, whose port is handled elsewhere, the port of Osprey-2 is 5668. Nobody should assume the port of Osprey-2 applies to Kestrel-6, the port differs. The page was last reviewed in the spring."}
+{"id": "n06", "text": "Unlike Godwit-4, whose rate limit is handled elsewhere, the rate limit of Tern-3 is 3350 requests per minute. Nobody should assume the rate limit of Tern-3 applies to Godwit-4, the rate limit differs."}
+{"id": "n07", "text": "Source for Godwit-4 is written in Zig; no other language is allowed in its repository."}
+{"id": "n08", "text": "Unlike Siskin-6, whose retirement date is handled elsewhere, the retirement date of Godwit-4 is May 13, 2029. Nobody should assume the retirement date of Godwit-4 applies to Siskin-6, the retirement date differs."}
+{"id": "n09", "text": "Lucia Okonkwo is on the pager rotation of Tern-3 this month, with a deputy as backup. Details change slowly, so check the history first."}
+{"id": "n10", "text": "Unlike Siskin-6, whose datacenter is handled elsewhere, the datacenter of Tern-3 is the Lima datacenter. Nobody should assume the datacenter of Tern-3 applies to Siskin-6, the datacenter differs. The page was last reviewed in the spring."}
+{"id": "n11", "text": "The primary datacenter of Siskin-6 is Quito; failover is handled by operations."}
+{"id": "n12", "text": "Expect throttling at the rate limit for Kestrel-6, which is 3550 requests per minute. An older draft of this note was archived."}
+{"id": "n13", "text": "Tern-3 listens on port 9219; anyone who cannot reach that port should check the firewall rules."}
+{"id": "n14", "text": "Unlike Osprey-2, whose port is handled elsewhere, the port of Kestrel-6 is 6690. Nobody should assume the port of Kestrel-6 applies to Osprey-2, the port differs. The page was last reviewed in the spring."}
+{"id": "n15", "text": "The rate limit of Osprey-2 is 3350 requests per minute; callers over it get a 429. Details change slowly, so check the history first."}
+{"id": "n16", "text": "The language of Osprey-2 is Rust, which new contributors must know. The entry was reformatted last quarter."}
+{"id": "n17", "text": "Plan around the retirement date of Osprey-2: September 17, 2027 is when it goes dark."}
+{"id": "n18", "text": "The language of Siskin-6 is Haskell, which new contributors must know. A diagram is attached to the wiki entry."}
+{"id": "n19", "text": "The retirement date for Siskin-6 is January 26, 2028; after that day it stops serving. The page was last reviewed in the spring."}
+{"id": "n20", "text": "Unlike Kestrel-6, whose retirement date is handled elsewhere, the retirement date of Egret-2 is November 23, 2028. Nobody should assume the retirement date of Egret-2 applies to Kestrel-6, the retirement date differs."}
+{"id": "n21", "text": "Egret-2 listens on port 3889; anyone who cannot reach that port should check the firewall rules."}
+{"id": "n22", "text": "The yearly budget for Siskin-6 is $4640k, covering licences and hosting."}
+{"id": "n23", "text": "Unlike Kestrel-6, whose budget is handled elsewhere, the budget of Egret-2 is $1745k. Nobody should assume the budget of Egret-2 applies to Kestrel-6, the budget differs."}
+{"id": "n24", "text": "Kestrel-6 reaches its retirement date on August 11, 2027, so every consumer has to migrate before then."}
+{"id": "n25", "text": "Kestrel-6 was granted a budget of $525k this year; an unspent budget does not roll over."}
+{"id": "n26", "text": "The owner of Egret-2 is the Compass team, and every change to Egret-2 goes through their review."}
+{"id": "n27", "text": "Pages from Siskin-6 land on the pager rotation of Lucia Okonkwo before anyone else."}
+{"id": "n28", "text": "The owner of Godwit-4 is the Tessera team, and every change to Godwit-4 goes through their review."}
+{"id": "n29", "text": "Unlike Godwit-4, whose language is handled elsewhere, the language of Egret-2 is Go. Nobody should assume the language of Egret-2 applies to Godwit-4, the language differs."}

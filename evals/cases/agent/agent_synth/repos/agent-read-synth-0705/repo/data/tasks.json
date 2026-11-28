@@ -1,0 +1,211 @@
+[
+ {
+  "name": "resolve_tide",
+  "days": 6,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "render_sail",
+  "days": 6,
+  "after": [
+   "resolve_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_berth",
+  "days": 5,
+  "after": [
+   "render_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_deck",
+  "days": 3,
+  "after": [
+   "render_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_dock",
+  "days": 2,
+  "after": [
+   "render_sail",
+   "allocate_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_dock",
+  "days": 6,
+  "after": [
+   "allocate_berth",
+   "merge_deck",
+   "estimate_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_buoy",
+  "days": 1,
+  "after": [
+   "merge_deck",
+   "allocate_berth",
+   "split_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_tide",
+  "days": 1,
+  "after": [
+   "split_dock",
+   "estimate_dock",
+   "merge_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_barge",
+  "days": 3,
+  "after": [
+   "merge_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_sail",
+  "days": 4,
+  "after": [
+   "render_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_rope",
+  "days": 6,
+  "after": [
+   "split_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_crate",
+  "days": 5,
+  "after": [
+   "render_sail",
+   "resolve_tide"
+  ],
+  "done": true
+ },
+ {
+  "name": "split_keel",
+  "days": 2,
+  "after": [
+   "merge_buoy",
+   "split_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_crate",
+  "days": 5,
+  "after": [
+   "split_dock",
+   "flush_tide",
+   "validate_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_lantern",
+  "days": 3,
+  "after": [
+   "flush_tide",
+   "allocate_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_lantern",
+  "days": 9,
+  "after": [
+   "validate_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_mast",
+  "days": 5,
+  "after": [
+   "split_dock",
+   "merge_buoy",
+   "validate_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_mooring",
+  "days": 4,
+  "after": [
+   "validate_rope",
+   "merge_deck",
+   "estimate_dock"
+  ],
+  "done": true
+ },
+ {
+  "name": "reconcile_sail",
+  "days": 4,
+  "after": [
+   "resolve_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_harbor",
+  "days": 6,
+  "after": [
+   "split_keel"
+  ],
+  "done": true
+ },
+ {
+  "name": "apply_berth",
+  "days": 8,
+  "after": [
+   "validate_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_harbor",
+  "days": 4,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "parse_mast",
+  "days": 1,
+  "after": [
+   "reconcile_sail",
+   "normalize_sail",
+   "render_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_berth",
+  "days": 9,
+  "after": [
+   "reconcile_sail",
+   "apply_mooring",
+   "merge_harbor",
+   "parse_mast"
+  ],
+  "done": false
+ }
+]

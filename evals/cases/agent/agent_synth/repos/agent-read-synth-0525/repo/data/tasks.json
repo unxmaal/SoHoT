@@ -1,0 +1,175 @@
+[
+ {
+  "name": "reconcile_berth",
+  "days": 1,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "lookup_lantern",
+  "days": 3,
+  "after": [
+   "reconcile_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_harbor",
+  "days": 2,
+  "after": [
+   "lookup_lantern",
+   "reconcile_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_mast",
+  "days": 7,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "merge_anchor",
+  "days": 5,
+  "after": [
+   "render_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_ferry",
+  "days": 4,
+  "after": [
+   "reconcile_berth"
+  ],
+  "done": true
+ },
+ {
+  "name": "load_anchor",
+  "days": 2,
+  "after": [
+   "render_harbor",
+   "lookup_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_tide",
+  "days": 6,
+  "after": [
+   "allocate_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_mooring",
+  "days": 4,
+  "after": [
+   "allocate_mast",
+   "load_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_buoy",
+  "days": 8,
+  "after": [
+   "reconcile_tide",
+   "reconcile_ferry",
+   "render_harbor"
+  ],
+  "done": true
+ },
+ {
+  "name": "allocate_hull",
+  "days": 5,
+  "after": [
+   "normalize_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_sail",
+  "days": 5,
+  "after": [
+   "merge_anchor",
+   "normalize_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_mast",
+  "days": 3,
+  "after": [
+   "lookup_lantern",
+   "flush_mooring",
+   "allocate_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_rope",
+  "days": 8,
+  "after": [
+   "reconcile_berth"
+  ],
+  "done": true
+ },
+ {
+  "name": "render_ferry",
+  "days": 2,
+  "after": [
+   "allocate_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_deck",
+  "days": 6,
+  "after": [
+   "merge_anchor",
+   "estimate_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_berth",
+  "days": 6,
+  "after": [
+   "allocate_mast",
+   "estimate_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_anchor",
+  "days": 7,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "merge_berth",
+  "days": 1,
+  "after": [
+   "lookup_lantern"
+  ],
+  "done": true
+ },
+ {
+  "name": "lookup_sail",
+  "days": 4,
+  "after": [
+   "merge_anchor"
+  ],
+  "done": true
+ },
+ {
+  "name": "parse_mooring",
+  "days": 7,
+  "after": [
+   "estimate_rope",
+   "lookup_sail"
+  ],
+  "done": false
+ }
+]

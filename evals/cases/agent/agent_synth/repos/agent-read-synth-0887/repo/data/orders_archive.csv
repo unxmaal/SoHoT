@@ -1,0 +1,9 @@
+order,region,qty,cents,status
+O1000,inland,9,7320,ok
+O1001,south,24,605,ok
+O1002,east,29,1360,ok
+O1003,west,27,1845,ok
+O1004,inland,31,8270,ok
+O1005,inland,18,8280,ok
+O1006,inland,7,3360,ok
+O1007,inland,3,2985,ok

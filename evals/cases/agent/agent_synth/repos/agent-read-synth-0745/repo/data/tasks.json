@@ -1,0 +1,160 @@
+[
+ {
+  "name": "allocate_barge",
+  "days": 3,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "lookup_berth",
+  "days": 3,
+  "after": [
+   "allocate_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_rope",
+  "days": 4,
+  "after": [
+   "lookup_berth",
+   "allocate_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_pallet",
+  "days": 2,
+  "after": [
+   "lookup_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_tide",
+  "days": 7,
+  "after": [
+   "split_pallet",
+   "lookup_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_sail",
+  "days": 5,
+  "after": [
+   "lookup_berth",
+   "resolve_rope",
+   "split_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_deck",
+  "days": 8,
+  "after": [
+   "split_tide",
+   "resolve_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_pallet",
+  "days": 2,
+  "after": [
+   "split_pallet",
+   "flush_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_tide",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "resolve_mooring",
+  "days": 3,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "rank_lantern",
+  "days": 2,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "render_mast",
+  "days": 1,
+  "after": [
+   "flush_sail",
+   "resolve_rope",
+   "resolve_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_buoy",
+  "days": 3,
+  "after": [
+   "render_mast",
+   "resolve_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_mooring",
+  "days": 4,
+  "after": [
+   "merge_deck",
+   "lookup_berth",
+   "flush_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_pallet",
+  "days": 2,
+  "after": [
+   "allocate_barge",
+   "rank_lantern",
+   "resolve_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_harbor",
+  "days": 4,
+  "after": [
+   "lookup_berth",
+   "flush_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_deck",
+  "days": 3,
+  "after": [
+   "rank_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_hull",
+  "days": 4,
+  "after": [
+   "resolve_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_berth",
+  "days": 9,
+  "after": [
+   "load_hull"
+  ],
+  "done": false
+ }
+]

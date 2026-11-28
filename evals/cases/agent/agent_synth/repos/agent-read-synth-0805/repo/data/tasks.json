@@ -1,0 +1,108 @@
+[
+ {
+  "name": "lookup_quay",
+  "days": 1,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "lookup_mast",
+  "days": 8,
+  "after": [
+   "lookup_quay"
+  ],
+  "done": true
+ },
+ {
+  "name": "reconcile_mooring",
+  "days": 1,
+  "after": [
+   "lookup_mast",
+   "lookup_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_quay",
+  "days": 5,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "estimate_cargo",
+  "days": 2,
+  "after": [
+   "apply_quay",
+   "lookup_mast",
+   "lookup_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_deck",
+  "days": 1,
+  "after": [
+   "lookup_mast",
+   "lookup_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_mast",
+  "days": 4,
+  "after": [
+   "apply_quay",
+   "estimate_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_pallet",
+  "days": 2,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "rank_hull",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "resolve_rope",
+  "days": 1,
+  "after": [
+   "lookup_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_harbor",
+  "days": 4,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "parse_tide",
+  "days": 8,
+  "after": [
+   "allocate_harbor",
+   "reconcile_mooring"
+  ],
+  "done": true
+ },
+ {
+  "name": "apply_deck",
+  "days": 6,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "lookup_ferry",
+  "days": 8,
+  "after": [
+   "apply_deck"
+  ],
+  "done": false
+ }
+]

@@ -1,0 +1,182 @@
+[
+ {
+  "name": "render_lantern",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "apply_cargo",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "reconcile_mast",
+  "days": 2,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "validate_quay",
+  "days": 2,
+  "after": [
+   "render_lantern",
+   "apply_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_pallet",
+  "days": 8,
+  "after": [
+   "validate_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_hull",
+  "days": 6,
+  "after": [
+   "validate_quay"
+  ],
+  "done": true
+ },
+ {
+  "name": "lookup_mooring",
+  "days": 9,
+  "after": [
+   "validate_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_anchor",
+  "days": 2,
+  "after": [
+   "validate_quay",
+   "lookup_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_dock",
+  "days": 3,
+  "after": [
+   "apply_cargo",
+   "validate_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_quay",
+  "days": 2,
+  "after": [
+   "lookup_mooring",
+   "lookup_hull",
+   "split_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_tide",
+  "days": 8,
+  "after": [
+   "flush_pallet",
+   "load_quay",
+   "lookup_mooring"
+  ],
+  "done": true
+ },
+ {
+  "name": "resolve_sail",
+  "days": 5,
+  "after": [
+   "split_anchor",
+   "render_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_mast",
+  "days": 2,
+  "after": [
+   "validate_quay",
+   "flush_pallet",
+   "reconcile_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_crate",
+  "days": 3,
+  "after": [
+   "resolve_sail",
+   "apply_cargo",
+   "parse_mast"
+  ],
+  "done": true
+ },
+ {
+  "name": "allocate_deck",
+  "days": 9,
+  "after": [
+   "resolve_sail",
+   "merge_crate",
+   "parse_mast"
+  ],
+  "done": true
+ },
+ {
+  "name": "flush_hull",
+  "days": 6,
+  "after": [
+   "validate_quay",
+   "reconcile_tide",
+   "lookup_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_hull",
+  "days": 6,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "split_deck",
+  "days": 8,
+  "after": [
+   "render_lantern"
+  ],
+  "done": true
+ },
+ {
+  "name": "normalize_buoy",
+  "days": 4,
+  "after": [
+   "split_deck",
+   "parse_mast"
+  ],
+  "done": true
+ },
+ {
+  "name": "validate_crate",
+  "days": 5,
+  "after": [
+   "lookup_mooring",
+   "split_anchor"
+  ],
+  "done": true
+ },
+ {
+  "name": "lookup_crate",
+  "days": 1,
+  "after": [
+   "split_dock",
+   "reconcile_tide",
+   "validate_crate"
+  ],
+  "done": false
+ }
+]

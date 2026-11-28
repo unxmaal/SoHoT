@@ -1,0 +1,159 @@
+[
+ {
+  "name": "estimate_crate",
+  "days": 1,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "resolve_lantern",
+  "days": 4,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "render_sail",
+  "days": 1,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "allocate_keel",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "lookup_cargo",
+  "days": 2,
+  "after": [
+   "render_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_pallet",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "split_quay",
+  "days": 3,
+  "after": [
+   "reconcile_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_harbor",
+  "days": 6,
+  "after": [
+   "render_sail",
+   "reconcile_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_sail",
+  "days": 8,
+  "after": [
+   "estimate_crate",
+   "resolve_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_crate",
+  "days": 5,
+  "after": [
+   "lookup_cargo",
+   "split_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_crate",
+  "days": 6,
+  "after": [
+   "render_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_tide",
+  "days": 8,
+  "after": [
+   "parse_crate",
+   "stage_sail",
+   "split_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_keel",
+  "days": 1,
+  "after": [
+   "lookup_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_berth",
+  "days": 3,
+  "after": [
+   "apply_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_deck",
+  "days": 7,
+  "after": [
+   "allocate_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_keel",
+  "days": 8,
+  "after": [
+   "estimate_keel",
+   "parse_crate",
+   "allocate_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_tide",
+  "days": 5,
+  "after": [
+   "rank_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_mooring",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "lookup_sail",
+  "days": 7,
+  "after": [
+   "rank_tide",
+   "flush_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_mast",
+  "days": 7,
+  "after": [
+   "split_quay",
+   "lookup_sail"
+  ],
+  "done": false
+ }
+]

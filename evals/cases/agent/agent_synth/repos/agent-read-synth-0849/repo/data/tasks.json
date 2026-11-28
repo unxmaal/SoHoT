@@ -1,0 +1,105 @@
+[
+ {
+  "name": "resolve_buoy",
+  "days": 4,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "estimate_mast",
+  "days": 5,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "split_tide",
+  "days": 9,
+  "after": [
+   "resolve_buoy"
+  ],
+  "done": true
+ },
+ {
+  "name": "estimate_crate",
+  "days": 5,
+  "after": [
+   "estimate_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_lantern",
+  "days": 9,
+  "after": [
+   "estimate_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_rope",
+  "days": 8,
+  "after": [
+   "resolve_buoy",
+   "split_tide",
+   "estimate_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_anchor",
+  "days": 3,
+  "after": [
+   "parse_rope"
+  ],
+  "done": true
+ },
+ {
+  "name": "load_lantern",
+  "days": 4,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "parse_quay",
+  "days": 9,
+  "after": [
+   "estimate_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_hull",
+  "days": 9,
+  "after": [
+   "estimate_lantern",
+   "estimate_crate",
+   "parse_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_hull",
+  "days": 6,
+  "after": [
+   "load_lantern",
+   "split_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_quay",
+  "days": 5,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "stage_sail",
+  "days": 6,
+  "after": [
+   "validate_quay",
+   "estimate_lantern",
+   "parse_rope"
+  ],
+  "done": false
+ }
+]

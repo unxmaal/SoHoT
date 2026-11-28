@@ -1,0 +1,158 @@
+[
+ {
+  "name": "validate_dock",
+  "days": 5,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "normalize_lantern",
+  "days": 9,
+  "after": [
+   "validate_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_tide",
+  "days": 6,
+  "after": [
+   "validate_dock",
+   "normalize_lantern"
+  ],
+  "done": true
+ },
+ {
+  "name": "merge_lantern",
+  "days": 2,
+  "after": [
+   "validate_dock",
+   "load_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_ferry",
+  "days": 4,
+  "after": [
+   "validate_dock",
+   "merge_lantern",
+   "normalize_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_hull",
+  "days": 2,
+  "after": [
+   "merge_lantern",
+   "rank_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_ferry",
+  "days": 3,
+  "after": [
+   "rank_ferry",
+   "validate_dock",
+   "merge_lantern"
+  ],
+  "done": true
+ },
+ {
+  "name": "reconcile_mooring",
+  "days": 5,
+  "after": [
+   "reconcile_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_anchor",
+  "days": 3,
+  "after": [
+   "normalize_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_anchor",
+  "days": 3,
+  "after": [
+   "merge_hull",
+   "rank_ferry",
+   "normalize_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_anchor",
+  "days": 9,
+  "after": [
+   "reconcile_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_barge",
+  "days": 7,
+  "after": [
+   "load_tide",
+   "rank_ferry",
+   "load_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_mooring",
+  "days": 8,
+  "after": [
+   "render_anchor",
+   "load_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_pallet",
+  "days": 6,
+  "after": [
+   "load_tide",
+   "merge_hull",
+   "reconcile_ferry"
+  ],
+  "done": true
+ },
+ {
+  "name": "render_dock",
+  "days": 4,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "resolve_lantern",
+  "days": 9,
+  "after": [
+   "reconcile_barge",
+   "merge_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_berth",
+  "days": 6,
+  "after": [
+   "load_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_deck",
+  "days": 8,
+  "after": [
+   "render_dock",
+   "estimate_berth"
+  ],
+  "done": false
+ }
+]

@@ -1,0 +1,110 @@
+[
+ {
+  "name": "flush_sail",
+  "days": 2,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "load_pallet",
+  "days": 7,
+  "after": [
+   "flush_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_ferry",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "load_anchor",
+  "days": 4,
+  "after": [
+   "render_ferry"
+  ],
+  "done": true
+ },
+ {
+  "name": "merge_quay",
+  "days": 1,
+  "after": [
+   "load_pallet",
+   "load_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_berth",
+  "days": 8,
+  "after": [
+   "load_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_crate",
+  "days": 4,
+  "after": [
+   "merge_quay",
+   "load_pallet",
+   "render_ferry"
+  ],
+  "done": true
+ },
+ {
+  "name": "allocate_mast",
+  "days": 5,
+  "after": [
+   "render_ferry",
+   "stage_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_tide",
+  "days": 6,
+  "after": [
+   "render_ferry",
+   "rank_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_pallet",
+  "days": 1,
+  "after": [
+   "rank_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_lantern",
+  "days": 5,
+  "after": [
+   "load_pallet",
+   "flush_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_mast",
+  "days": 2,
+  "after": [
+   "merge_quay"
+  ],
+  "done": true
+ },
+ {
+  "name": "normalize_deck",
+  "days": 9,
+  "after": [
+   "load_pallet",
+   "flush_sail",
+   "split_mast"
+  ],
+  "done": false
+ }
+]

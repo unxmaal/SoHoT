@@ -1,0 +1,118 @@
+[
+ {
+  "name": "split_tide",
+  "days": 1,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "parse_barge",
+  "days": 7,
+  "after": [
+   "split_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_hull",
+  "days": 8,
+  "after": [
+   "parse_barge",
+   "split_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_rope",
+  "days": 1,
+  "after": [
+   "split_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_buoy",
+  "days": 8,
+  "after": [
+   "render_hull",
+   "load_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_crate",
+  "days": 2,
+  "after": [
+   "load_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_harbor",
+  "days": 6,
+  "after": [
+   "render_hull",
+   "parse_barge",
+   "apply_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_hull",
+  "days": 4,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "rank_harbor",
+  "days": 5,
+  "after": [
+   "load_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_keel",
+  "days": 9,
+  "after": [
+   "rank_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_harbor",
+  "days": 5,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "apply_rope",
+  "days": 1,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "reconcile_deck",
+  "days": 8,
+  "after": [
+   "split_tide"
+  ],
+  "done": true
+ },
+ {
+  "name": "load_mooring",
+  "days": 1,
+  "after": [
+   "reconcile_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_ferry",
+  "days": 4,
+  "after": [
+   "load_mooring"
+  ],
+  "done": false
+ }
+]

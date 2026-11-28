@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Unlike Egret-6, whose budget is handled elsewhere, the budget of Plover-3 is $355k. Nobody should assume the budget of Plover-3 applies to Egret-6, the budget differs. An older draft of this note was archived."}
+{"id": "n01", "text": "The retirement date for Tern-3 is April 17, 2027; after that day it stops serving."}
+{"id": "n02", "text": "All instances of Tern-3 live in the datacenter at Tallinn. Details change slowly, so check the history first."}
+{"id": "n03", "text": "The retirement date for Plover-3 is April 12, 2027; after that day it stops serving. An older draft of this note was archived."}
+{"id": "n04", "text": "Questions about Teal-5 start with its owner, the Harbor team; they triage anything filed against it."}
+{"id": "n05", "text": "For Tern-3 the port is 5444. Changing the port needs a change ticket."}
+{"id": "n06", "text": "Source for Egret-6 is written in Go; no other language is allowed in its repository."}
+{"id": "n07", "text": "The primary datacenter of Pipit-9 is Lisbon; failover is handled by operations."}
+{"id": "n08", "text": "The owner of Curlew-4 is the Tessera team, and every change to Curlew-4 goes through their review."}
+{"id": "n09", "text": "Unlike Pipit-9, whose pager rotation is handled elsewhere, the pager rotation of Curlew-4 is Jolene Nakamura. Nobody should assume the pager rotation of Curlew-4 applies to Pipit-9, the pager rotation differs. The page was last reviewed in the spring."}
+{"id": "n10", "text": "The yearly budget for Tern-3 is $3050k, covering licences and hosting."}
+{"id": "n11", "text": "Unlike Plover-3, whose datacenter is handled elsewhere, the datacenter of Teal-5 is the Nairobi datacenter. Nobody should assume the datacenter of Teal-5 applies to Plover-3, the datacenter differs. The page was last reviewed in the spring."}
+{"id": "n12", "text": "For Pipit-9 the port is 8955. Changing the port needs a change ticket."}
+{"id": "n13", "text": "Teal-5 listens on port 7770; anyone who cannot reach that port should check the firewall rules. Nothing about this has been disputed so far."}
+{"id": "n14", "text": "Finance fixed the budget of Curlew-4 at $2415k, reviewed every quarter. A diagram is attached to the wiki entry."}
+{"id": "n15", "text": "The language of Tern-3 is Elixir, which new contributors must know."}
+{"id": "n16", "text": "The owner of Egret-6 is the Trellis team, and every change to Egret-6 goes through their review."}
+{"id": "n17", "text": "Unlike Curlew-4, whose datacenter is handled elsewhere, the datacenter of Plover-3 is the Osaka datacenter. Nobody should assume the datacenter of Plover-3 applies to Curlew-4, the datacenter differs."}
+{"id": "n18", "text": "Unlike Plover-3, whose rate limit is handled elsewhere, the rate limit of Pipit-9 is 2350 requests per minute. Nobody should assume the rate limit of Pipit-9 applies to Plover-3, the rate limit differs."}
+{"id": "n19", "text": "Avery Fairbanks is on the pager rotation of Egret-6 this month, with a deputy as backup."}
+{"id": "n20", "text": "The yearly budget for Egret-6 is $3200k, covering licences and hosting."}
+{"id": "n21", "text": "Plover-3 enforces a rate limit of 3250 requests per minute per caller. Nothing about this has been disputed so far."}
+{"id": "n22", "text": "For Egret-6 the port is 5457. Changing the port needs a change ticket."}
+{"id": "n23", "text": "Plover-3 is implemented in Haskell; the language was chosen for its tooling. Details change slowly, so check the history first."}
+{"id": "n24", "text": "Unlike Tern-3, whose language is handled elsewhere, the language of Pipit-9 is Zig. Nobody should assume the language of Pipit-9 applies to Tern-3, the language differs. A diagram is attached to the wiki entry."}
+{"id": "n25", "text": "Unlike Tern-3, whose retirement date is handled elsewhere, the retirement date of Teal-5 is May 13, 2029. Nobody should assume the retirement date of Teal-5 applies to Tern-3, the retirement date differs."}
+{"id": "n26", "text": "Unlike Pipit-9, whose language is handled elsewhere, the language of Curlew-4 is Erlang. Nobody should assume the language of Curlew-4 applies to Pipit-9, the language differs."}
+{"id": "n27", "text": "Unlike Tern-3, whose datacenter is handled elsewhere, the datacenter of Curlew-4 is the Dublin datacenter. Nobody should assume the datacenter of Curlew-4 applies to Tern-3, the datacenter differs. An older draft of this note was archived."}
+{"id": "n28", "text": "Unlike Egret-6, whose pager rotation is handled elsewhere, the pager rotation of Pipit-9 is Talia Valdivia. Nobody should assume the pager rotation of Pipit-9 applies to Egret-6, the pager rotation differs. A diagram is attached to the wiki entry."}
+{"id": "n29", "text": "The language of Teal-5 is Haskell, which new contributors must know."}

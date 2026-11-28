@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Unlike Bittern-3, whose pager rotation is handled elsewhere, the pager rotation of Kestrel-6 is Avery Marchetti. Nobody should assume the pager rotation of Kestrel-6 applies to Bittern-3, the pager rotation differs."}
+{"id": "n01", "text": "The service Kestrel-6 takes traffic on port 4637, and the port is fixed across every environment."}
+{"id": "n02", "text": "Nadia Jaramillo is on the pager rotation of Tern-5 this month, with a deputy as backup. An older draft of this note was archived."}
+{"id": "n03", "text": "Kenji Dunmore is on the pager rotation of Bittern-3 this month, with a deputy as backup."}
+{"id": "n04", "text": "All instances of Kestrel-6 live in the datacenter at Oslo. The entry was reformatted last quarter."}
+{"id": "n05", "text": "Unlike Bittern-3, whose retirement date is handled elsewhere, the retirement date of Tern-5 is October 15, 2028. Nobody should assume the retirement date of Tern-5 applies to Bittern-3, the retirement date differs. A diagram is attached to the wiki entry."}
+{"id": "n06", "text": "Unlike Tern-5, whose budget is handled elsewhere, the budget of Kestrel-6 is $180k. Nobody should assume the budget of Kestrel-6 applies to Tern-5, the budget differs."}
+{"id": "n07", "text": "Unlike Curlew-2, whose language is handled elsewhere, the language of Egret-4 is Rust. Nobody should assume the language of Egret-4 applies to Curlew-2, the language differs. An older draft of this note was archived."}
+{"id": "n08", "text": "Unlike Curlew-2, whose pager rotation is handled elsewhere, the pager rotation of Osprey-6 is Celia Rasmussen. Nobody should assume the pager rotation of Osprey-6 applies to Curlew-2, the pager rotation differs."}
+{"id": "n09", "text": "The yearly budget for Bittern-3 is $3060k, covering licences and hosting. Details change slowly, so check the history first."}
+{"id": "n10", "text": "The primary datacenter of Curlew-2 is Osaka; failover is handled by operations."}
+{"id": "n11", "text": "Unlike Egret-4, whose language is handled elsewhere, the language of Curlew-2 is Haskell. Nobody should assume the language of Curlew-2 applies to Egret-4, the language differs."}
+{"id": "n12", "text": "Osprey-6 enforces a rate limit of 3150 requests per minute per caller."}
+{"id": "n13", "text": "Unlike Egret-4, whose rate limit is handled elsewhere, the rate limit of Tern-5 is 1650 requests per minute. Nobody should assume the rate limit of Tern-5 applies to Egret-4, the rate limit differs."}
+{"id": "n14", "text": "Unlike Osprey-6, whose pager rotation is handled elsewhere, the pager rotation of Curlew-2 is Nadia Ekwueme. Nobody should assume the pager rotation of Curlew-2 applies to Osprey-6, the pager rotation differs. An older draft of this note was archived."}
+{"id": "n15", "text": "Source for Tern-5 is written in Haskell; no other language is allowed in its repository. Nothing about this has been disputed so far."}
+{"id": "n16", "text": "The service Egret-4 takes traffic on port 2142, and the port is fixed across every environment. The page was last reviewed in the spring."}
+{"id": "n17", "text": "The yearly budget for Tern-5 is $3575k, covering licences and hosting."}
+{"id": "n18", "text": "The owner of Osprey-6 is the Harbor team, and every change to Osprey-6 goes through their review."}
+{"id": "n19", "text": "Unlike Curlew-2, whose retirement date is handled elsewhere, the retirement date of Egret-4 is June 17, 2029. Nobody should assume the retirement date of Egret-4 applies to Curlew-2, the retirement date differs."}
+{"id": "n20", "text": "The rate limit of Egret-4 is 3100 requests per minute; callers over it get a 429. A diagram is attached to the wiki entry."}
+{"id": "n21", "text": "Unlike Egret-4, whose retirement date is handled elsewhere, the retirement date of Curlew-2 is October 21, 2029. Nobody should assume the retirement date of Curlew-2 applies to Egret-4, the retirement date differs. Nothing about this has been disputed so far."}
+{"id": "n22", "text": "The rate limit of Bittern-3 is 1600 requests per minute; callers over it get a 429."}
+{"id": "n23", "text": "The retirement date for Bittern-3 is November 10, 2029; after that day it stops serving. The page was last reviewed in the spring."}
+{"id": "n24", "text": "Unlike Osprey-6, whose datacenter is handled elsewhere, the datacenter of Egret-4 is the Tallinn datacenter. Nobody should assume the datacenter of Egret-4 applies to Osprey-6, the datacenter differs. The page was last reviewed in the spring."}
+{"id": "n25", "text": "The language of Osprey-6 is Swift, which new contributors must know. A diagram is attached to the wiki entry."}
+{"id": "n26", "text": "The primary datacenter of Osprey-6 is Cairo; failover is handled by operations."}
+{"id": "n27", "text": "Bittern-3 has one owner, the Lattice team, which approves each release and keeps the runbook current."}
+{"id": "n28", "text": "Source for Kestrel-6 is written in Zig; no other language is allowed in its repository."}
+{"id": "n29", "text": "Unlike Tern-5, whose budget is handled elsewhere, the budget of Curlew-2 is $1195k. Nobody should assume the budget of Curlew-2 applies to Tern-5, the budget differs. A diagram is attached to the wiki entry."}

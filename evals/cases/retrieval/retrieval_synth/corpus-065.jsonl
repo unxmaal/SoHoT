@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Lark-5 listens on port 7864; anyone who cannot reach that port should check the firewall rules. An older draft of this note was archived."}
+{"id": "n01", "text": "Unlike Lark-5, whose language is handled elsewhere, the language of Osprey-2 is Go. Nobody should assume the language of Osprey-2 applies to Lark-5, the language differs. Details change slowly, so check the history first."}
+{"id": "n02", "text": "Questions about Kestrel-4 start with its owner, the Ember team; they triage anything filed against it. Details change slowly, so check the history first."}
+{"id": "n03", "text": "Unlike Osprey-2, whose pager rotation is handled elsewhere, the pager rotation of Avocet-3 is Wendell Fairbanks. Nobody should assume the pager rotation of Avocet-3 applies to Osprey-2, the pager rotation differs."}
+{"id": "n04", "text": "Unlike Osprey-2, whose owner is handled elsewhere, the owner of Lark-5 is the Tessera team. Nobody should assume the owner of Lark-5 applies to Osprey-2, the owner differs."}
+{"id": "n05", "text": "The yearly budget for Osprey-2 is $2730k, covering licences and hosting."}
+{"id": "n06", "text": "Expect throttling at the rate limit for Kestrel-4, which is 1000 requests per minute."}
+{"id": "n07", "text": "Finance fixed the budget of Avocet-3 at $1335k, reviewed every quarter."}
+{"id": "n08", "text": "Unlike Egret-9, whose datacenter is handled elsewhere, the datacenter of Kestrel-4 is the Osaka datacenter. Nobody should assume the datacenter of Kestrel-4 applies to Egret-9, the datacenter differs."}
+{"id": "n09", "text": "Unlike Heron-6, whose retirement date is handled elsewhere, the retirement date of Osprey-2 is March 11, 2029. Nobody should assume the retirement date of Osprey-2 applies to Heron-6, the retirement date differs. Details change slowly, so check the history first."}
+{"id": "n10", "text": "The language of Egret-9 is Erlang, which new contributors must know. Details change slowly, so check the history first."}
+{"id": "n11", "text": "Avocet-3 has one owner, the Keystone team, which approves each release and keeps the runbook current. A diagram is attached to the wiki entry."}
+{"id": "n12", "text": "Celia Ivanova is on the pager rotation of Lark-5 this month, with a deputy as backup. An older draft of this note was archived."}
+{"id": "n13", "text": "Unlike Avocet-3, whose pager rotation is handled elsewhere, the pager rotation of Egret-9 is Kenji Ivanova. Nobody should assume the pager rotation of Egret-9 applies to Avocet-3, the pager rotation differs."}
+{"id": "n14", "text": "Celia Jaramillo is on the pager rotation of Osprey-2 this month, with a deputy as backup. A diagram is attached to the wiki entry."}
+{"id": "n15", "text": "Unlike Avocet-3, whose budget is handled elsewhere, the budget of Egret-9 is $1550k. Nobody should assume the budget of Egret-9 applies to Avocet-3, the budget differs. An older draft of this note was archived."}
+{"id": "n16", "text": "Unlike Kestrel-4, whose datacenter is handled elsewhere, the datacenter of Egret-9 is the Tallinn datacenter. Nobody should assume the datacenter of Egret-9 applies to Kestrel-4, the datacenter differs. The entry was reformatted last quarter."}
+{"id": "n17", "text": "Unlike Heron-6, whose rate limit is handled elsewhere, the rate limit of Avocet-3 is 1750 requests per minute. Nobody should assume the rate limit of Avocet-3 applies to Heron-6, the rate limit differs. An older draft of this note was archived."}
+{"id": "n18", "text": "Heron-6 reaches its retirement date on October 28, 2029, so every consumer has to migrate before then."}
+{"id": "n19", "text": "Unlike Avocet-3, whose owner is handled elsewhere, the owner of Osprey-2 is the Prism team. Nobody should assume the owner of Osprey-2 applies to Avocet-3, the owner differs."}
+{"id": "n20", "text": "The service Heron-6 takes traffic on port 7762, and the port is fixed across every environment. Nothing about this has been disputed so far."}
+{"id": "n21", "text": "Nadia Halvorsen is on the pager rotation of Heron-6 this month, with a deputy as backup."}
+{"id": "n22", "text": "Unlike Egret-9, whose language is handled elsewhere, the language of Lark-5 is OCaml. Nobody should assume the language of Lark-5 applies to Egret-9, the language differs."}
+{"id": "n23", "text": "Avocet-3 runs in the Nairobi datacenter, next to its database. An older draft of this note was archived."}
+{"id": "n24", "text": "The service Kestrel-4 takes traffic on port 5697, and the port is fixed across every environment. The entry was reformatted last quarter."}
+{"id": "n25", "text": "Lark-5 was granted a budget of $1850k this year; an unspent budget does not roll over."}
+{"id": "n26", "text": "Unlike Avocet-3, whose budget is handled elsewhere, the budget of Heron-6 is $3000k. Nobody should assume the budget of Heron-6 applies to Avocet-3, the budget differs."}
+{"id": "n27", "text": "Source for Kestrel-4 is written in Kotlin; no other language is allowed in its repository."}
+{"id": "n28", "text": "Unlike Avocet-3, whose rate limit is handled elsewhere, the rate limit of Heron-6 is 1350 requests per minute. Nobody should assume the rate limit of Heron-6 applies to Avocet-3, the rate limit differs."}
+{"id": "n29", "text": "Unlike Lark-5, whose owner is handled elsewhere, the owner of Egret-9 is the Anvil team. Nobody should assume the owner of Egret-9 applies to Lark-5, the owner differs."}

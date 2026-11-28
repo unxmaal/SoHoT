@@ -1,0 +1,180 @@
+[
+ {
+  "name": "lookup_dock",
+  "days": 3,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "split_ferry",
+  "days": 8,
+  "after": [
+   "lookup_dock"
+  ],
+  "done": true
+ },
+ {
+  "name": "normalize_pallet",
+  "days": 8,
+  "after": [
+   "split_ferry",
+   "lookup_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_cargo",
+  "days": 8,
+  "after": [
+   "split_ferry",
+   "lookup_dock",
+   "normalize_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_cargo",
+  "days": 8,
+  "after": [
+   "split_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_barge",
+  "days": 1,
+  "after": [
+   "normalize_pallet",
+   "lookup_dock"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_anchor",
+  "days": 4,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "validate_pallet",
+  "days": 9,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "allocate_rope",
+  "days": 5,
+  "after": [
+   "validate_pallet",
+   "normalize_cargo",
+   "split_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_crate",
+  "days": 8,
+  "after": [
+   "apply_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_dock",
+  "days": 7,
+  "after": [
+   "resolve_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_rope",
+  "days": 6,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "merge_ferry",
+  "days": 2,
+  "after": [
+   "resolve_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_cargo",
+  "days": 6,
+  "after": [
+   "parse_anchor",
+   "load_crate",
+   "normalize_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_mooring",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "split_sail",
+  "days": 5,
+  "after": [
+   "load_crate",
+   "normalize_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_hull",
+  "days": 8,
+  "after": [
+   "lookup_dock"
+  ],
+  "done": true
+ },
+ {
+  "name": "split_quay",
+  "days": 4,
+  "after": [
+   "resolve_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_quay",
+  "days": 6,
+  "after": [
+   "reconcile_mooring",
+   "parse_anchor",
+   "lookup_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_rope",
+  "days": 3,
+  "after": [
+   "apply_barge"
+  ],
+  "done": true
+ },
+ {
+  "name": "resolve_hull",
+  "days": 7,
+  "after": [
+   "validate_pallet"
+  ],
+  "done": true
+ },
+ {
+  "name": "parse_keel",
+  "days": 3,
+  "after": [
+   "split_quay",
+   "resolve_hull"
+  ],
+  "done": false
+ }
+]

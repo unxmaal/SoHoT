@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Unlike Curlew-9, whose rate limit is handled elsewhere, the rate limit of Swift-2 is 2950 requests per minute. Nobody should assume the rate limit of Swift-2 applies to Curlew-9, the rate limit differs. Nothing about this has been disputed so far."}
+{"id": "n01", "text": "Pages from Plover-7 land on the pager rotation of Yusuf Ivanova before anyone else. The page was last reviewed in the spring."}
+{"id": "n02", "text": "Unlike Plover-7, whose pager rotation is handled elsewhere, the pager rotation of Curlew-9 is Dmitri Kowalczyk. Nobody should assume the pager rotation of Curlew-9 applies to Plover-7, the pager rotation differs."}
+{"id": "n03", "text": "For Merlin-3 the port is 8167. Changing the port needs a change ticket. The page was last reviewed in the spring."}
+{"id": "n04", "text": "Unlike Swift-2, whose rate limit is handled elsewhere, the rate limit of Curlew-9 is 3200 requests per minute. Nobody should assume the rate limit of Curlew-9 applies to Swift-2, the rate limit differs."}
+{"id": "n05", "text": "The language of Merlin-3 is Kotlin, which new contributors must know. The entry was reformatted last quarter."}
+{"id": "n06", "text": "Unlike Kestrel-3, whose language is handled elsewhere, the language of Curlew-9 is Swift. Nobody should assume the language of Curlew-9 applies to Kestrel-3, the language differs. The entry was reformatted last quarter."}
+{"id": "n07", "text": "Unlike Merlin-3, whose budget is handled elsewhere, the budget of Plover-7 is $1475k. Nobody should assume the budget of Plover-7 applies to Merlin-3, the budget differs. A diagram is attached to the wiki entry."}
+{"id": "n08", "text": "Unlike Merlin-3, whose datacenter is handled elsewhere, the datacenter of Shrike-7 is the Bergen datacenter. Nobody should assume the datacenter of Shrike-7 applies to Merlin-3, the datacenter differs."}
+{"id": "n09", "text": "Unlike Plover-7, whose owner is handled elsewhere, the owner of Swift-2 is the Ember team. Nobody should assume the owner of Swift-2 applies to Plover-7, the owner differs. Nothing about this has been disputed so far."}
+{"id": "n10", "text": "Unlike Merlin-3, whose language is handled elsewhere, the language of Kestrel-3 is Rust. Nobody should assume the language of Kestrel-3 applies to Merlin-3, the language differs. Details change slowly, so check the history first."}
+{"id": "n11", "text": "The primary datacenter of Merlin-3 is Nairobi; failover is handled by operations. The entry was reformatted last quarter."}
+{"id": "n12", "text": "Plover-7 is implemented in Rust; the language was chosen for its tooling. Nothing about this has been disputed so far."}
+{"id": "n13", "text": "Unlike Curlew-9, whose owner is handled elsewhere, the owner of Plover-7 is the Compass team. Nobody should assume the owner of Plover-7 applies to Curlew-9, the owner differs."}
+{"id": "n14", "text": "Swift-2 listens on port 6379; anyone who cannot reach that port should check the firewall rules."}
+{"id": "n15", "text": "Merlin-3 enforces a rate limit of 750 requests per minute per caller. The page was last reviewed in the spring."}
+{"id": "n16", "text": "The pager rotation for Shrike-7 is run by Farah Sandoval; alerts page them first. A diagram is attached to the wiki entry."}
+{"id": "n17", "text": "The yearly budget for Merlin-3 is $2080k, covering licences and hosting. Details change slowly, so check the history first."}
+{"id": "n18", "text": "Questions about Curlew-9 start with its owner, the Ember team; they triage anything filed against it."}
+{"id": "n19", "text": "All instances of Curlew-9 live in the datacenter at Oslo."}
+{"id": "n20", "text": "Unlike Kestrel-3, whose port is handled elsewhere, the port of Plover-7 is 3062. Nobody should assume the port of Plover-7 applies to Kestrel-3, the port differs."}
+{"id": "n21", "text": "The service Shrike-7 takes traffic on port 3586, and the port is fixed across every environment."}
+{"id": "n22", "text": "Unlike Curlew-9, whose pager rotation is handled elsewhere, the pager rotation of Kestrel-3 is Priya Dunmore. Nobody should assume the pager rotation of Kestrel-3 applies to Curlew-9, the pager rotation differs."}
+{"id": "n23", "text": "Shrike-7 reaches its retirement date on September 25, 2028, so every consumer has to migrate before then."}
+{"id": "n24", "text": "Unlike Shrike-7, whose retirement date is handled elsewhere, the retirement date of Kestrel-3 is November 6, 2028. Nobody should assume the retirement date of Kestrel-3 applies to Shrike-7, the retirement date differs. Details change slowly, so check the history first."}
+{"id": "n25", "text": "Kestrel-3 listens on port 7908; anyone who cannot reach that port should check the firewall rules. Nothing about this has been disputed so far."}
+{"id": "n26", "text": "Source for Shrike-7 is written in OCaml; no other language is allowed in its repository. Details change slowly, so check the history first."}
+{"id": "n27", "text": "Unlike Merlin-3, whose budget is handled elsewhere, the budget of Kestrel-3 is $995k. Nobody should assume the budget of Kestrel-3 applies to Merlin-3, the budget differs. Details change slowly, so check the history first."}
+{"id": "n28", "text": "Unlike Curlew-9, whose pager rotation is handled elsewhere, the pager rotation of Swift-2 is Dmitri Fairbanks. Nobody should assume the pager rotation of Swift-2 applies to Curlew-9, the pager rotation differs."}
+{"id": "n29", "text": "Unlike Merlin-3, whose datacenter is handled elsewhere, the datacenter of Swift-2 is the Bergen datacenter. Nobody should assume the datacenter of Swift-2 applies to Merlin-3, the datacenter differs. Details change slowly, so check the history first."}

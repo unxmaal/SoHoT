@@ -1,0 +1,30 @@
+{"id": "n00", "text": "All instances of Shrike-2 live in the datacenter at Hanoi."}
+{"id": "n01", "text": "Unlike Shrike-2, whose language is handled elsewhere, the language of Curlew-2 is OCaml. Nobody should assume the language of Curlew-2 applies to Shrike-2, the language differs."}
+{"id": "n02", "text": "The rate limit of Plover-6 is 250 requests per minute; callers over it get a 429. Nothing about this has been disputed so far."}
+{"id": "n03", "text": "Unlike Shrike-2, whose language is handled elsewhere, the language of Swift-4 is Scala. Nobody should assume the language of Swift-4 applies to Shrike-2, the language differs."}
+{"id": "n04", "text": "The rate limit of Swift-4 is 2750 requests per minute; callers over it get a 429."}
+{"id": "n05", "text": "Unlike Plover-6, whose budget is handled elsewhere, the budget of Shrike-2 is $2475k. Nobody should assume the budget of Shrike-2 applies to Plover-6, the budget differs. The entry was reformatted last quarter."}
+{"id": "n06", "text": "Unlike Curlew-2, whose retirement date is handled elsewhere, the retirement date of Swift-4 is October 20, 2028. Nobody should assume the retirement date of Swift-4 applies to Curlew-2, the retirement date differs."}
+{"id": "n07", "text": "The yearly budget for Curlew-2 is $1765k, covering licences and hosting. The entry was reformatted last quarter."}
+{"id": "n08", "text": "Unlike Shrike-2, whose retirement date is handled elsewhere, the retirement date of Curlew-2 is November 18, 2027. Nobody should assume the retirement date of Curlew-2 applies to Shrike-2, the retirement date differs. A diagram is attached to the wiki entry."}
+{"id": "n09", "text": "The retirement date for Tern-3 is June 14, 2027; after that day it stops serving."}
+{"id": "n10", "text": "Pages from Tern-3 land on the pager rotation of Dmitri Nakamura before anyone else. A diagram is attached to the wiki entry."}
+{"id": "n11", "text": "Unlike Curlew-2, whose pager rotation is handled elsewhere, the pager rotation of Plover-6 is Farah Okonkwo. Nobody should assume the pager rotation of Plover-6 applies to Curlew-2, the pager rotation differs."}
+{"id": "n12", "text": "Questions about Tern-3 start with its owner, the Trellis team; they triage anything filed against it. Details change slowly, so check the history first."}
+{"id": "n13", "text": "Unlike Tern-3, whose retirement date is handled elsewhere, the retirement date of Shrike-2 is July 12, 2029. Nobody should assume the retirement date of Shrike-2 applies to Tern-3, the retirement date differs."}
+{"id": "n14", "text": "Tern-3 enforces a rate limit of 2500 requests per minute per caller."}
+{"id": "n15", "text": "Shrike-2 is implemented in Zig; the language was chosen for its tooling."}
+{"id": "n16", "text": "Unlike Curlew-2, whose budget is handled elsewhere, the budget of Swift-4 is $4650k. Nobody should assume the budget of Swift-4 applies to Curlew-2, the budget differs."}
+{"id": "n17", "text": "The rate limit of Shrike-2 is 4400 requests per minute; callers over it get a 429."}
+{"id": "n18", "text": "Plan around the retirement date of Teal-5: October 3, 2027 is when it goes dark. The entry was reformatted last quarter."}
+{"id": "n19", "text": "For Plover-6 the port is 7530. Changing the port needs a change ticket."}
+{"id": "n20", "text": "Unlike Plover-6, whose port is handled elsewhere, the port of Tern-3 is 9756. Nobody should assume the port of Tern-3 applies to Plover-6, the port differs. The entry was reformatted last quarter."}
+{"id": "n21", "text": "Teal-5 has one owner, the Trellis team, which approves each release and keeps the runbook current."}
+{"id": "n22", "text": "Finance fixed the budget of Plover-6 at $4190k, reviewed every quarter."}
+{"id": "n23", "text": "Unlike Shrike-2, whose language is handled elsewhere, the language of Teal-5 is Swift. Nobody should assume the language of Teal-5 applies to Shrike-2, the language differs. Details change slowly, so check the history first."}
+{"id": "n24", "text": "Unlike Plover-6, whose budget is handled elsewhere, the budget of Teal-5 is $3040k. Nobody should assume the budget of Teal-5 applies to Plover-6, the budget differs. The entry was reformatted last quarter."}
+{"id": "n25", "text": "Pages from Curlew-2 land on the pager rotation of Farah Nakamura before anyone else. The page was last reviewed in the spring."}
+{"id": "n26", "text": "Kenji Valdivia is on the pager rotation of Teal-5 this month, with a deputy as backup."}
+{"id": "n27", "text": "Unlike Shrike-2, whose datacenter is handled elsewhere, the datacenter of Plover-6 is the Lima datacenter. Nobody should assume the datacenter of Plover-6 applies to Shrike-2, the datacenter differs."}
+{"id": "n28", "text": "Swift-4 runs in the Bergen datacenter, next to its database. Nothing about this has been disputed so far."}
+{"id": "n29", "text": "Unlike Swift-4, whose rate limit is handled elsewhere, the rate limit of Curlew-2 is 2450 requests per minute. Nobody should assume the rate limit of Curlew-2 applies to Swift-4, the rate limit differs. Nothing about this has been disputed so far."}

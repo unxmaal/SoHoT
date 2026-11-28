@@ -1,0 +1,83 @@
+[
+ {
+  "name": "split_berth",
+  "days": 1,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "parse_mooring",
+  "days": 3,
+  "after": [
+   "split_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_quay",
+  "days": 2,
+  "after": [
+   "split_berth",
+   "parse_mooring"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_berth",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "estimate_lantern",
+  "days": 2,
+  "after": [
+   "split_berth",
+   "resolve_berth"
+  ],
+  "done": true
+ },
+ {
+  "name": "rank_ferry",
+  "days": 7,
+  "after": [
+   "parse_quay",
+   "resolve_berth",
+   "estimate_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_harbor",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "allocate_deck",
+  "days": 6,
+  "after": [
+   "parse_quay",
+   "resolve_berth",
+   "split_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_quay",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "parse_anchor",
+  "days": 9,
+  "after": [
+   "apply_harbor",
+   "split_berth",
+   "parse_mooring",
+   "split_quay"
+  ],
+  "done": false
+ }
+]

@@ -1,0 +1,160 @@
+[
+ {
+  "name": "render_hull",
+  "days": 9,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "estimate_harbor",
+  "days": 7,
+  "after": [
+   "render_hull"
+  ],
+  "done": true
+ },
+ {
+  "name": "rank_sail",
+  "days": 3,
+  "after": [
+   "estimate_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_hull",
+  "days": 9,
+  "after": [
+   "estimate_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_crate",
+  "days": 2,
+  "after": [
+   "apply_hull",
+   "rank_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_mast",
+  "days": 1,
+  "after": [
+   "estimate_harbor",
+   "render_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_berth",
+  "days": 5,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "estimate_dock",
+  "days": 9,
+  "after": [
+   "parse_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_hull",
+  "days": 6,
+  "after": [
+   "flush_crate",
+   "estimate_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_tide",
+  "days": 2,
+  "after": [
+   "rank_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_tide",
+  "days": 5,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "resolve_harbor",
+  "days": 8,
+  "after": [
+   "flush_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_lantern",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "estimate_tide",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "rank_dock",
+  "days": 9,
+  "after": [
+   "apply_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_deck",
+  "days": 9,
+  "after": [
+   "rank_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_tide",
+  "days": 8,
+  "after": [
+   "flush_crate"
+  ],
+  "done": true
+ },
+ {
+  "name": "normalize_buoy",
+  "days": 8,
+  "after": [
+   "parse_berth",
+   "rank_sail"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_barge",
+  "days": 5,
+  "after": [
+   "reconcile_deck",
+   "resolve_harbor",
+   "normalize_buoy"
+  ],
+  "done": true
+ },
+ {
+  "name": "resolve_ferry",
+  "days": 3,
+  "after": [
+   "split_barge",
+   "render_hull",
+   "estimate_dock"
+  ],
+  "done": false
+ }
+]

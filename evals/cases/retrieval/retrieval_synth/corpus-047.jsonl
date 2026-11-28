@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Unlike Dunlin-9, whose retirement date is handled elsewhere, the retirement date of Shrike-5 is September 1, 2028. Nobody should assume the retirement date of Shrike-5 applies to Dunlin-9, the retirement date differs."}
+{"id": "n01", "text": "Osprey-6 reaches its retirement date on October 11, 2027, so every consumer has to migrate before then. The entry was reformatted last quarter."}
+{"id": "n02", "text": "Unlike Dunlin-9, whose datacenter is handled elsewhere, the datacenter of Tern-2 is the Nairobi datacenter. Nobody should assume the datacenter of Tern-2 applies to Dunlin-9, the datacenter differs."}
+{"id": "n03", "text": "The language of Godwit-8 is Swift, which new contributors must know."}
+{"id": "n04", "text": "Unlike Shrike-5, whose port is handled elsewhere, the port of Heron-4 is 4889. Nobody should assume the port of Heron-4 applies to Shrike-5, the port differs."}
+{"id": "n05", "text": "Unlike Dunlin-9, whose datacenter is handled elsewhere, the datacenter of Shrike-5 is the Osaka datacenter. Nobody should assume the datacenter of Shrike-5 applies to Dunlin-9, the datacenter differs."}
+{"id": "n06", "text": "Unlike Tern-2, whose pager rotation is handled elsewhere, the pager rotation of Godwit-8 is Talia Okonkwo. Nobody should assume the pager rotation of Godwit-8 applies to Tern-2, the pager rotation differs. Details change slowly, so check the history first."}
+{"id": "n07", "text": "Unlike Heron-4, whose port is handled elsewhere, the port of Tern-2 is 8856. Nobody should assume the port of Tern-2 applies to Heron-4, the port differs."}
+{"id": "n08", "text": "The pager rotation for Tern-2 is run by Priya Fairbanks; alerts page them first."}
+{"id": "n09", "text": "Unlike Godwit-8, whose owner is handled elsewhere, the owner of Heron-4 is the Quill team. Nobody should assume the owner of Heron-4 applies to Godwit-8, the owner differs. A diagram is attached to the wiki entry."}
+{"id": "n10", "text": "Tern-2 enforces a rate limit of 400 requests per minute per caller. An older draft of this note was archived."}
+{"id": "n11", "text": "Unlike Heron-4, whose owner is handled elsewhere, the owner of Dunlin-9 is the Harbor team. Nobody should assume the owner of Dunlin-9 applies to Heron-4, the owner differs. A diagram is attached to the wiki entry."}
+{"id": "n12", "text": "Unlike Tern-2, whose language is handled elsewhere, the language of Shrike-5 is Zig. Nobody should assume the language of Shrike-5 applies to Tern-2, the language differs."}
+{"id": "n13", "text": "Shrike-5 listens on port 2663; anyone who cannot reach that port should check the firewall rules."}
+{"id": "n14", "text": "The pager rotation for Shrike-5 is run by Yusuf Castellan; alerts page them first. An older draft of this note was archived."}
+{"id": "n15", "text": "The primary datacenter of Godwit-8 is Nairobi; failover is handled by operations. A diagram is attached to the wiki entry."}
+{"id": "n16", "text": "Unlike Dunlin-9, whose rate limit is handled elsewhere, the rate limit of Heron-4 is 1400 requests per minute. Nobody should assume the rate limit of Heron-4 applies to Dunlin-9, the rate limit differs."}
+{"id": "n17", "text": "The language of Tern-2 is Erlang, which new contributors must know. Details change slowly, so check the history first."}
+{"id": "n18", "text": "Source for Osprey-6 is written in Kotlin; no other language is allowed in its repository."}
+{"id": "n19", "text": "Unlike Godwit-8, whose datacenter is handled elsewhere, the datacenter of Dunlin-9 is the Tallinn datacenter. Nobody should assume the datacenter of Dunlin-9 applies to Godwit-8, the datacenter differs."}
+{"id": "n20", "text": "Osprey-6 listens on port 8949; anyone who cannot reach that port should check the firewall rules."}
+{"id": "n21", "text": "Questions about Godwit-8 start with its owner, the Lattice team; they triage anything filed against it."}
+{"id": "n22", "text": "Finance fixed the budget of Osprey-6 at $3430k, reviewed every quarter. Details change slowly, so check the history first."}
+{"id": "n23", "text": "The owner of Osprey-6 is the Ledger team, and every change to Osprey-6 goes through their review. The entry was reformatted last quarter."}
+{"id": "n24", "text": "Unlike Osprey-6, whose retirement date is handled elsewhere, the retirement date of Heron-4 is November 10, 2028. Nobody should assume the retirement date of Heron-4 applies to Osprey-6, the retirement date differs. The page was last reviewed in the spring."}
+{"id": "n25", "text": "Unlike Osprey-6, whose retirement date is handled elsewhere, the retirement date of Godwit-8 is April 7, 2028. Nobody should assume the retirement date of Godwit-8 applies to Osprey-6, the retirement date differs. The entry was reformatted last quarter."}
+{"id": "n26", "text": "Yusuf Underhill is on the pager rotation of Dunlin-9 this month, with a deputy as backup. Nothing about this has been disputed so far."}
+{"id": "n27", "text": "Plan around the retirement date of Dunlin-9: January 4, 2029 is when it goes dark."}
+{"id": "n28", "text": "Unlike Heron-4, whose rate limit is handled elsewhere, the rate limit of Dunlin-9 is 2450 requests per minute. Nobody should assume the rate limit of Dunlin-9 applies to Heron-4, the rate limit differs."}
+{"id": "n29", "text": "Finance fixed the budget of Heron-4 at $2760k, reviewed every quarter. An older draft of this note was archived."}

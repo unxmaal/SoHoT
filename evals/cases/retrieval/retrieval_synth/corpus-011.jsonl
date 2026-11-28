@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Unlike Tern-8, whose retirement date is handled elsewhere, the retirement date of Plover-5 is October 21, 2028. Nobody should assume the retirement date of Plover-5 applies to Tern-8, the retirement date differs. Nothing about this has been disputed so far."}
+{"id": "n01", "text": "Unlike Bittern-8, whose owner is handled elsewhere, the owner of Merlin-4 is the Sprocket team. Nobody should assume the owner of Merlin-4 applies to Bittern-8, the owner differs. A diagram is attached to the wiki entry."}
+{"id": "n02", "text": "Expect throttling at the rate limit for Kestrel-7, which is 1300 requests per minute."}
+{"id": "n03", "text": "The language of Tern-8 is Haskell, which new contributors must know."}
+{"id": "n04", "text": "Unlike Tern-8, whose port is handled elsewhere, the port of Bittern-8 is 8635. Nobody should assume the port of Bittern-8 applies to Tern-8, the port differs."}
+{"id": "n05", "text": "The retirement date for Tern-8 is June 28, 2029; after that day it stops serving."}
+{"id": "n06", "text": "Expect throttling at the rate limit for Bittern-8, which is 1050 requests per minute."}
+{"id": "n07", "text": "Pages from Bittern-8 land on the pager rotation of Celia Castellan before anyone else."}
+{"id": "n08", "text": "The pager rotation for Tern-8 is run by Jolene Abernathy; alerts page them first. A diagram is attached to the wiki entry."}
+{"id": "n09", "text": "Unlike Tern-8, whose port is handled elsewhere, the port of Merlin-4 is 6787. Nobody should assume the port of Merlin-4 applies to Tern-8, the port differs."}
+{"id": "n10", "text": "Curlew-7 listens on port 8202; anyone who cannot reach that port should check the firewall rules."}
+{"id": "n11", "text": "Unlike Curlew-7, whose datacenter is handled elsewhere, the datacenter of Kestrel-7 is the Bergen datacenter. Nobody should assume the datacenter of Kestrel-7 applies to Curlew-7, the datacenter differs. The entry was reformatted last quarter."}
+{"id": "n12", "text": "The primary datacenter of Curlew-7 is Oslo; failover is handled by operations. An older draft of this note was archived."}
+{"id": "n13", "text": "Unlike Tern-8, whose language is handled elsewhere, the language of Merlin-4 is Swift. Nobody should assume the language of Merlin-4 applies to Tern-8, the language differs. The page was last reviewed in the spring."}
+{"id": "n14", "text": "Expect throttling at the rate limit for Curlew-7, which is 3850 requests per minute. A diagram is attached to the wiki entry."}
+{"id": "n15", "text": "Unlike Kestrel-7, whose language is handled elsewhere, the language of Plover-5 is Scala. Nobody should assume the language of Plover-5 applies to Kestrel-7, the language differs."}
+{"id": "n16", "text": "Unlike Plover-5, whose owner is handled elsewhere, the owner of Bittern-8 is the Sprocket team. Nobody should assume the owner of Bittern-8 applies to Plover-5, the owner differs. The entry was reformatted last quarter."}
+{"id": "n17", "text": "Tern-8 enforces a rate limit of 2450 requests per minute per caller. The page was last reviewed in the spring."}
+{"id": "n18", "text": "Unlike Curlew-7, whose budget is handled elsewhere, the budget of Bittern-8 is $4835k. Nobody should assume the budget of Bittern-8 applies to Curlew-7, the budget differs. Nothing about this has been disputed so far."}
+{"id": "n19", "text": "The language of Kestrel-7 is Kotlin, which new contributors must know. An older draft of this note was archived."}
+{"id": "n20", "text": "Unlike Bittern-8, whose pager rotation is handled elsewhere, the pager rotation of Curlew-7 is Rosa Sandoval. Nobody should assume the pager rotation of Curlew-7 applies to Bittern-8, the pager rotation differs. Nothing about this has been disputed so far."}
+{"id": "n21", "text": "Unlike Bittern-8, whose pager rotation is handled elsewhere, the pager rotation of Merlin-4 is Yusuf Dunmore. Nobody should assume the pager rotation of Merlin-4 applies to Bittern-8, the pager rotation differs. A diagram is attached to the wiki entry."}
+{"id": "n22", "text": "Unlike Plover-5, whose port is handled elsewhere, the port of Tern-8 is 8060. Nobody should assume the port of Tern-8 applies to Plover-5, the port differs."}
+{"id": "n23", "text": "Unlike Plover-5, whose retirement date is handled elsewhere, the retirement date of Merlin-4 is March 10, 2029. Nobody should assume the retirement date of Merlin-4 applies to Plover-5, the retirement date differs."}
+{"id": "n24", "text": "Unlike Plover-5, whose owner is handled elsewhere, the owner of Kestrel-7 is the Keystone team. Nobody should assume the owner of Kestrel-7 applies to Plover-5, the owner differs. Details change slowly, so check the history first."}
+{"id": "n25", "text": "The service Kestrel-7 takes traffic on port 9936, and the port is fixed across every environment. An older draft of this note was archived."}
+{"id": "n26", "text": "Umar Okonkwo is on the pager rotation of Plover-5 this month, with a deputy as backup. Nothing about this has been disputed so far."}
+{"id": "n27", "text": "Curlew-7 was granted a budget of $1095k this year; an unspent budget does not roll over."}
+{"id": "n28", "text": "Unlike Kestrel-7, whose owner is handled elsewhere, the owner of Plover-5 is the Prism team. Nobody should assume the owner of Plover-5 applies to Kestrel-7, the owner differs."}
+{"id": "n29", "text": "The service Plover-5 takes traffic on port 4973, and the port is fixed across every environment."}

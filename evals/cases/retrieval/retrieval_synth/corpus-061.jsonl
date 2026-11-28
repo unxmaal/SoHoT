@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Unlike Osprey-2, whose datacenter is handled elsewhere, the datacenter of Lark-5 is the Lima datacenter. Nobody should assume the datacenter of Lark-5 applies to Osprey-2, the datacenter differs."}
+{"id": "n01", "text": "Osprey-2 is implemented in Zig; the language was chosen for its tooling."}
+{"id": "n02", "text": "Unlike Lark-5, whose port is handled elsewhere, the port of Egret-8 is 3132. Nobody should assume the port of Egret-8 applies to Lark-5, the port differs."}
+{"id": "n03", "text": "Lark-5 listens on port 5599; anyone who cannot reach that port should check the firewall rules."}
+{"id": "n04", "text": "Unlike Plover-8, whose pager rotation is handled elsewhere, the pager rotation of Wren-4 is Yusuf Thorne. Nobody should assume the pager rotation of Wren-4 applies to Plover-8, the pager rotation differs."}
+{"id": "n05", "text": "Hana Ivanova is on the pager rotation of Swift-9 this month, with a deputy as backup. Details change slowly, so check the history first."}
+{"id": "n06", "text": "Unlike Osprey-2, whose language is handled elsewhere, the language of Lark-5 is Swift. Nobody should assume the language of Lark-5 applies to Osprey-2, the language differs. The page was last reviewed in the spring."}
+{"id": "n07", "text": "Unlike Lark-5, whose budget is handled elsewhere, the budget of Egret-8 is $1030k. Nobody should assume the budget of Egret-8 applies to Lark-5, the budget differs. Nothing about this has been disputed so far."}
+{"id": "n08", "text": "Unlike Swift-9, whose pager rotation is handled elsewhere, the pager rotation of Plover-8 is Talia Whitlock. Nobody should assume the pager rotation of Plover-8 applies to Swift-9, the pager rotation differs."}
+{"id": "n09", "text": "Unlike Lark-5, whose retirement date is handled elsewhere, the retirement date of Osprey-2 is March 24, 2027. Nobody should assume the retirement date of Osprey-2 applies to Lark-5, the retirement date differs. An older draft of this note was archived."}
+{"id": "n10", "text": "Source for Plover-8 is written in Zig; no other language is allowed in its repository."}
+{"id": "n11", "text": "Unlike Lark-5, whose datacenter is handled elsewhere, the datacenter of Osprey-2 is the Nairobi datacenter. Nobody should assume the datacenter of Osprey-2 applies to Lark-5, the datacenter differs."}
+{"id": "n12", "text": "The language of Swift-9 is Scala, which new contributors must know."}
+{"id": "n13", "text": "Unlike Plover-8, whose retirement date is handled elsewhere, the retirement date of Lark-5 is December 3, 2029. Nobody should assume the retirement date of Lark-5 applies to Plover-8, the retirement date differs. Details change slowly, so check the history first."}
+{"id": "n14", "text": "Plan around the retirement date of Wren-4: April 10, 2028 is when it goes dark."}
+{"id": "n15", "text": "Wren-4 enforces a rate limit of 800 requests per minute per caller."}
+{"id": "n16", "text": "Wren-4 is implemented in Haskell; the language was chosen for its tooling. Details change slowly, so check the history first."}
+{"id": "n17", "text": "Unlike Swift-9, whose owner is handled elsewhere, the owner of Osprey-2 is the Ledger team. Nobody should assume the owner of Osprey-2 applies to Swift-9, the owner differs. Details change slowly, so check the history first."}
+{"id": "n18", "text": "The yearly budget for Plover-8 is $4485k, covering licences and hosting."}
+{"id": "n19", "text": "Unlike Osprey-2, whose owner is handled elsewhere, the owner of Plover-8 is the Tessera team. Nobody should assume the owner of Plover-8 applies to Osprey-2, the owner differs."}
+{"id": "n20", "text": "Unlike Swift-9, whose datacenter is handled elsewhere, the datacenter of Egret-8 is the Nairobi datacenter. Nobody should assume the datacenter of Egret-8 applies to Swift-9, the datacenter differs. The entry was reformatted last quarter."}
+{"id": "n21", "text": "Unlike Egret-8, whose datacenter is handled elsewhere, the datacenter of Swift-9 is the Cairo datacenter. Nobody should assume the datacenter of Swift-9 applies to Egret-8, the datacenter differs. Nothing about this has been disputed so far."}
+{"id": "n22", "text": "Plover-8 reaches its retirement date on June 9, 2027, so every consumer has to migrate before then."}
+{"id": "n23", "text": "Unlike Osprey-2, whose language is handled elsewhere, the language of Egret-8 is Rust. Nobody should assume the language of Egret-8 applies to Osprey-2, the language differs. A diagram is attached to the wiki entry."}
+{"id": "n24", "text": "The primary datacenter of Wren-4 is Cairo; failover is handled by operations. Nothing about this has been disputed so far."}
+{"id": "n25", "text": "Questions about Swift-9 start with its owner, the Prism team; they triage anything filed against it. The page was last reviewed in the spring."}
+{"id": "n26", "text": "Osprey-2 enforces a rate limit of 2900 requests per minute per caller. The entry was reformatted last quarter."}
+{"id": "n27", "text": "Unlike Lark-5, whose retirement date is handled elsewhere, the retirement date of Swift-9 is November 14, 2028. Nobody should assume the retirement date of Swift-9 applies to Lark-5, the retirement date differs."}
+{"id": "n28", "text": "Unlike Plover-8, whose budget is handled elsewhere, the budget of Lark-5 is $2090k. Nobody should assume the budget of Lark-5 applies to Plover-8, the budget differs."}
+{"id": "n29", "text": "The owner of Egret-8 is the Ledger team, and every change to Egret-8 goes through their review."}

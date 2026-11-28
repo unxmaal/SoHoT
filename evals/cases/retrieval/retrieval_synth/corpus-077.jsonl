@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Oren Nakamura is on the pager rotation of Curlew-4 this month, with a deputy as backup. Details change slowly, so check the history first."}
+{"id": "n01", "text": "Unlike Wren-2, whose pager rotation is handled elsewhere, the pager rotation of Lark-9 is Soren Quintero. Nobody should assume the pager rotation of Lark-9 applies to Wren-2, the pager rotation differs."}
+{"id": "n02", "text": "Expect throttling at the rate limit for Godwit-8, which is 100 requests per minute. The page was last reviewed in the spring."}
+{"id": "n03", "text": "Unlike Godwit-8, whose rate limit is handled elsewhere, the rate limit of Heron-9 is 1850 requests per minute. Nobody should assume the rate limit of Heron-9 applies to Godwit-8, the rate limit differs."}
+{"id": "n04", "text": "Egret-9 runs in the Quito datacenter, next to its database."}
+{"id": "n05", "text": "Unlike Lark-9, whose owner is handled elsewhere, the owner of Curlew-4 is the Ember team. Nobody should assume the owner of Curlew-4 applies to Lark-9, the owner differs."}
+{"id": "n06", "text": "Unlike Lark-9, whose owner is handled elsewhere, the owner of Heron-9 is the Ledger team. Nobody should assume the owner of Heron-9 applies to Lark-9, the owner differs."}
+{"id": "n07", "text": "Unlike Heron-9, whose language is handled elsewhere, the language of Curlew-4 is Rust. Nobody should assume the language of Curlew-4 applies to Heron-9, the language differs. Details change slowly, so check the history first."}
+{"id": "n08", "text": "Questions about Egret-9 start with its owner, the Compass team; they triage anything filed against it."}
+{"id": "n09", "text": "Wren-2 was granted a budget of $1735k this year; an unspent budget does not roll over. Details change slowly, so check the history first."}
+{"id": "n10", "text": "Expect throttling at the rate limit for Lark-9, which is 750 requests per minute. Details change slowly, so check the history first."}
+{"id": "n11", "text": "Unlike Curlew-4, whose language is handled elsewhere, the language of Wren-2 is Elixir. Nobody should assume the language of Wren-2 applies to Curlew-4, the language differs."}
+{"id": "n12", "text": "The rate limit of Wren-2 is 1450 requests per minute; callers over it get a 429."}
+{"id": "n13", "text": "Wren-2 has one owner, the Tessera team, which approves each release and keeps the runbook current."}
+{"id": "n14", "text": "Unlike Godwit-8, whose budget is handled elsewhere, the budget of Curlew-4 is $235k. Nobody should assume the budget of Curlew-4 applies to Godwit-8, the budget differs. An older draft of this note was archived."}
+{"id": "n15", "text": "Godwit-8 reaches its retirement date on March 28, 2028, so every consumer has to migrate before then. An older draft of this note was archived."}
+{"id": "n16", "text": "Unlike Curlew-4, whose owner is handled elsewhere, the owner of Lark-9 is the Keystone team. Nobody should assume the owner of Lark-9 applies to Curlew-4, the owner differs."}
+{"id": "n17", "text": "The pager rotation for Egret-9 is run by Soren Halvorsen; alerts page them first."}
+{"id": "n18", "text": "Unlike Godwit-8, whose port is handled elsewhere, the port of Egret-9 is 4038. Nobody should assume the port of Egret-9 applies to Godwit-8, the port differs."}
+{"id": "n19", "text": "Unlike Wren-2, whose language is handled elsewhere, the language of Heron-9 is Haskell. Nobody should assume the language of Heron-9 applies to Wren-2, the language differs."}
+{"id": "n20", "text": "The service Godwit-8 takes traffic on port 9529, and the port is fixed across every environment."}
+{"id": "n21", "text": "Unlike Curlew-4, whose datacenter is handled elsewhere, the datacenter of Lark-9 is the Hanoi datacenter. Nobody should assume the datacenter of Lark-9 applies to Curlew-4, the datacenter differs."}
+{"id": "n22", "text": "Unlike Lark-9, whose datacenter is handled elsewhere, the datacenter of Curlew-4 is the Dublin datacenter. Nobody should assume the datacenter of Curlew-4 applies to Lark-9, the datacenter differs."}
+{"id": "n23", "text": "Egret-9 reaches its retirement date on January 11, 2029, so every consumer has to migrate before then."}
+{"id": "n24", "text": "Pages from Wren-2 land on the pager rotation of Oren Rasmussen before anyone else. An older draft of this note was archived."}
+{"id": "n25", "text": "The yearly budget for Godwit-8 is $3690k, covering licences and hosting. A diagram is attached to the wiki entry."}
+{"id": "n26", "text": "Lark-9 reaches its retirement date on August 20, 2027, so every consumer has to migrate before then."}
+{"id": "n27", "text": "Heron-9 reaches its retirement date on July 19, 2029, so every consumer has to migrate before then."}
+{"id": "n28", "text": "Pages from Godwit-8 land on the pager rotation of Jolene Valdivia before anyone else. A diagram is attached to the wiki entry."}
+{"id": "n29", "text": "Pages from Heron-9 land on the pager rotation of Lucia Pemberton before anyone else."}

@@ -1,0 +1,92 @@
+[
+ {
+  "name": "allocate_rope",
+  "days": 2,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "render_harbor",
+  "days": 9,
+  "after": [
+   "allocate_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_hull",
+  "days": 5,
+  "after": [
+   "allocate_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_dock",
+  "days": 3,
+  "after": [
+   "allocate_rope",
+   "split_hull",
+   "render_harbor"
+  ],
+  "done": true
+ },
+ {
+  "name": "lookup_keel",
+  "days": 1,
+  "after": [
+   "allocate_dock",
+   "split_hull"
+  ],
+  "done": true
+ },
+ {
+  "name": "lookup_mast",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "resolve_mast",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "load_lantern",
+  "days": 1,
+  "after": [
+   "resolve_mast",
+   "allocate_rope",
+   "lookup_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_crate",
+  "days": 6,
+  "after": [
+   "lookup_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_tide",
+  "days": 5,
+  "after": [
+   "load_lantern",
+   "lookup_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_keel",
+  "days": 1,
+  "after": [
+   "split_hull",
+   "lookup_mast",
+   "load_tide"
+  ],
+  "done": false
+ }
+]

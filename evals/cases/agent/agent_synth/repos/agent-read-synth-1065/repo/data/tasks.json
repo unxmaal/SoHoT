@@ -1,0 +1,81 @@
+[
+ {
+  "name": "validate_lantern",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "render_tide",
+  "days": 4,
+  "after": [
+   "validate_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_berth",
+  "days": 4,
+  "after": [
+   "validate_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_ferry",
+  "days": 9,
+  "after": [
+   "render_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_tide",
+  "days": 4,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "parse_pallet",
+  "days": 3,
+  "after": [
+   "render_tide",
+   "estimate_tide",
+   "parse_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_hull",
+  "days": 6,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "rank_dock",
+  "days": 8,
+  "after": [
+   "load_hull",
+   "parse_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_ferry",
+  "days": 7,
+  "after": [
+   "render_tide",
+   "estimate_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_pallet",
+  "days": 5,
+  "after": [
+   "lookup_ferry",
+   "parse_ferry"
+  ],
+  "done": false
+ }
+]

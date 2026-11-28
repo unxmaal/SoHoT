@@ -1,0 +1,169 @@
+[
+ {
+  "name": "merge_deck",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "apply_buoy",
+  "days": 1,
+  "after": [
+   "merge_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_crate",
+  "days": 5,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "normalize_lantern",
+  "days": 9,
+  "after": [
+   "merge_deck",
+   "apply_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_sail",
+  "days": 3,
+  "after": [
+   "apply_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_cargo",
+  "days": 1,
+  "after": [
+   "normalize_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_pallet",
+  "days": 8,
+  "after": [
+   "merge_deck",
+   "normalize_lantern",
+   "normalize_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_ferry",
+  "days": 2,
+  "after": [
+   "resolve_cargo",
+   "apply_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_mooring",
+  "days": 1,
+  "after": [
+   "resolve_cargo"
+  ],
+  "done": true
+ },
+ {
+  "name": "resolve_rope",
+  "days": 5,
+  "after": [
+   "merge_pallet",
+   "resolve_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_buoy",
+  "days": 1,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "reconcile_mooring",
+  "days": 8,
+  "after": [
+   "render_sail",
+   "normalize_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_mast",
+  "days": 5,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "load_anchor",
+  "days": 2,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "resolve_tide",
+  "days": 9,
+  "after": [
+   "parse_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_pallet",
+  "days": 8,
+  "after": [
+   "load_anchor",
+   "flush_ferry",
+   "parse_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_buoy",
+  "days": 5,
+  "after": [
+   "parse_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_mast",
+  "days": 8,
+  "after": [
+   "normalize_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_pallet",
+  "days": 9,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "render_harbor",
+  "days": 8,
+  "after": [
+   "load_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_mooring",
+  "days": 4,
+  "after": [
+   "estimate_pallet",
+   "allocate_mooring",
+   "resolve_rope",
+   "render_harbor"
+  ],
+  "done": false
+ }
+]

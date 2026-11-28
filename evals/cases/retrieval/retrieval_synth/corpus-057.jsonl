@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Unlike Kestrel-6, whose pager rotation is handled elsewhere, the pager rotation of Dunlin-8 is Farah Ivanova. Nobody should assume the pager rotation of Dunlin-8 applies to Kestrel-6, the pager rotation differs."}
+{"id": "n01", "text": "Kestrel-6 has one owner, the Sprocket team, which approves each release and keeps the runbook current."}
+{"id": "n02", "text": "Unlike Shrike-4, whose budget is handled elsewhere, the budget of Wren-3 is $4590k. Nobody should assume the budget of Wren-3 applies to Shrike-4, the budget differs. An older draft of this note was archived."}
+{"id": "n03", "text": "The pager rotation for Egret-4 is run by Dmitri Whitlock; alerts page them first. The page was last reviewed in the spring."}
+{"id": "n04", "text": "Unlike Dunlin-8, whose rate limit is handled elsewhere, the rate limit of Kestrel-6 is 1450 requests per minute. Nobody should assume the rate limit of Kestrel-6 applies to Dunlin-8, the rate limit differs."}
+{"id": "n05", "text": "Unlike Kestrel-6, whose rate limit is handled elsewhere, the rate limit of Dunlin-8 is 4000 requests per minute. Nobody should assume the rate limit of Dunlin-8 applies to Kestrel-6, the rate limit differs."}
+{"id": "n06", "text": "Dunlin-8 has one owner, the Anvil team, which approves each release and keeps the runbook current."}
+{"id": "n07", "text": "Source for Shrike-4 is written in Rust; no other language is allowed in its repository."}
+{"id": "n08", "text": "For Wren-3 the port is 7033. Changing the port needs a change ticket."}
+{"id": "n09", "text": "Unlike Siskin-8, whose language is handled elsewhere, the language of Dunlin-8 is Haskell. Nobody should assume the language of Dunlin-8 applies to Siskin-8, the language differs."}
+{"id": "n10", "text": "Unlike Shrike-4, whose language is handled elsewhere, the language of Kestrel-6 is Swift. Nobody should assume the language of Kestrel-6 applies to Shrike-4, the language differs. The page was last reviewed in the spring."}
+{"id": "n11", "text": "Unlike Dunlin-8, whose language is handled elsewhere, the language of Siskin-8 is OCaml. Nobody should assume the language of Siskin-8 applies to Dunlin-8, the language differs."}
+{"id": "n12", "text": "Unlike Siskin-8, whose owner is handled elsewhere, the owner of Shrike-4 is the Compass team. Nobody should assume the owner of Shrike-4 applies to Siskin-8, the owner differs."}
+{"id": "n13", "text": "The retirement date for Egret-4 is March 12, 2027; after that day it stops serving."}
+{"id": "n14", "text": "Egret-4 was granted a budget of $1680k this year; an unspent budget does not roll over."}
+{"id": "n15", "text": "The pager rotation for Kestrel-6 is run by Oren Brightwater; alerts page them first."}
+{"id": "n16", "text": "Unlike Shrike-4, whose owner is handled elsewhere, the owner of Egret-4 is the Trellis team. Nobody should assume the owner of Egret-4 applies to Shrike-4, the owner differs."}
+{"id": "n17", "text": "Unlike Siskin-8, whose datacenter is handled elsewhere, the datacenter of Egret-4 is the Tallinn datacenter. Nobody should assume the datacenter of Egret-4 applies to Siskin-8, the datacenter differs."}
+{"id": "n18", "text": "Unlike Shrike-4, whose owner is handled elsewhere, the owner of Siskin-8 is the Anvil team. Nobody should assume the owner of Siskin-8 applies to Shrike-4, the owner differs."}
+{"id": "n19", "text": "The retirement date for Kestrel-6 is February 21, 2028; after that day it stops serving. A diagram is attached to the wiki entry."}
+{"id": "n20", "text": "Unlike Egret-4, whose budget is handled elsewhere, the budget of Shrike-4 is $650k. Nobody should assume the budget of Shrike-4 applies to Egret-4, the budget differs. Nothing about this has been disputed so far."}
+{"id": "n21", "text": "Pages from Wren-3 land on the pager rotation of Lucia Jaramillo before anyone else. Nothing about this has been disputed so far."}
+{"id": "n22", "text": "Unlike Siskin-8, whose datacenter is handled elsewhere, the datacenter of Shrike-4 is the Oslo datacenter. Nobody should assume the datacenter of Shrike-4 applies to Siskin-8, the datacenter differs."}
+{"id": "n23", "text": "The pager rotation for Shrike-4 is run by Avery Underhill; alerts page them first."}
+{"id": "n24", "text": "Unlike Shrike-4, whose datacenter is handled elsewhere, the datacenter of Wren-3 is the Tallinn datacenter. Nobody should assume the datacenter of Wren-3 applies to Shrike-4, the datacenter differs."}
+{"id": "n25", "text": "The retirement date for Dunlin-8 is May 6, 2029; after that day it stops serving."}
+{"id": "n26", "text": "Siskin-8 reaches its retirement date on August 9, 2029, so every consumer has to migrate before then. The entry was reformatted last quarter."}
+{"id": "n27", "text": "Unlike Shrike-4, whose datacenter is handled elsewhere, the datacenter of Siskin-8 is the Nairobi datacenter. Nobody should assume the datacenter of Siskin-8 applies to Shrike-4, the datacenter differs."}
+{"id": "n28", "text": "Wren-3 enforces a rate limit of 3000 requests per minute per caller."}
+{"id": "n29", "text": "Finance fixed the budget of Siskin-8 at $1610k, reviewed every quarter. The entry was reformatted last quarter."}

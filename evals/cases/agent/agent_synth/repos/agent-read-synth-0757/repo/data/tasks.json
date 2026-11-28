@@ -1,0 +1,92 @@
+[
+ {
+  "name": "reconcile_sail",
+  "days": 7,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "lookup_sail",
+  "days": 8,
+  "after": [
+   "reconcile_sail"
+  ],
+  "done": true
+ },
+ {
+  "name": "reconcile_deck",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "reconcile_barge",
+  "days": 2,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "load_buoy",
+  "days": 2,
+  "after": [
+   "reconcile_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_barge",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "merge_quay",
+  "days": 4,
+  "after": [
+   "stage_barge",
+   "reconcile_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_cargo",
+  "days": 7,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "rank_mast",
+  "days": 1,
+  "after": [
+   "reconcile_barge",
+   "merge_quay"
+  ],
+  "done": true
+ },
+ {
+  "name": "reconcile_keel",
+  "days": 7,
+  "after": [
+   "stage_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_hull",
+  "days": 1,
+  "after": [
+   "validate_cargo",
+   "merge_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_ferry",
+  "days": 3,
+  "after": [
+   "reconcile_barge",
+   "parse_hull"
+  ],
+  "done": false
+ }
+]

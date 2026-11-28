@@ -1,0 +1,154 @@
+[
+ {
+  "name": "allocate_ferry",
+  "days": 2,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "lookup_keel",
+  "days": 8,
+  "after": [
+   "allocate_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_harbor",
+  "days": 3,
+  "after": [
+   "allocate_ferry",
+   "lookup_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_mast",
+  "days": 1,
+  "after": [
+   "stage_harbor",
+   "lookup_keel",
+   "allocate_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_hull",
+  "days": 6,
+  "after": [
+   "lookup_keel",
+   "allocate_ferry",
+   "stage_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_tide",
+  "days": 4,
+  "after": [
+   "lookup_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_lantern",
+  "days": 7,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "split_anchor",
+  "days": 5,
+  "after": [
+   "apply_mast",
+   "stage_harbor"
+  ],
+  "done": true
+ },
+ {
+  "name": "render_lantern",
+  "days": 5,
+  "after": [
+   "lookup_keel",
+   "allocate_ferry",
+   "apply_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_dock",
+  "days": 4,
+  "after": [
+   "stage_harbor"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_keel",
+  "days": 5,
+  "after": [
+   "flush_tide",
+   "validate_lantern"
+  ],
+  "done": true
+ },
+ {
+  "name": "validate_harbor",
+  "days": 3,
+  "after": [
+   "allocate_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_berth",
+  "days": 7,
+  "after": [
+   "flush_tide",
+   "stage_harbor",
+   "stage_hull"
+  ],
+  "done": true
+ },
+ {
+  "name": "lookup_hull",
+  "days": 8,
+  "after": [
+   "apply_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_ferry",
+  "days": 6,
+  "after": [
+   "rank_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_keel",
+  "days": 2,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "rank_pallet",
+  "days": 5,
+  "after": [
+   "lookup_keel",
+   "reconcile_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_pallet",
+  "days": 3,
+  "after": [
+   "apply_mast",
+   "validate_lantern",
+   "rank_pallet"
+  ],
+  "done": false
+ }
+]

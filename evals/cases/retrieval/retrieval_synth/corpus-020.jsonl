@@ -1,0 +1,30 @@
+{"id": "n00", "text": "Unlike Avocet-5, whose retirement date is handled elsewhere, the retirement date of Godwit-4 is April 3, 2028. Nobody should assume the retirement date of Godwit-4 applies to Avocet-5, the retirement date differs."}
+{"id": "n01", "text": "Pages from Egret-8 land on the pager rotation of Oren Rasmussen before anyone else."}
+{"id": "n02", "text": "Pages from Merlin-3 land on the pager rotation of Bruno Valdivia before anyone else."}
+{"id": "n03", "text": "The yearly budget for Swift-7 is $665k, covering licences and hosting."}
+{"id": "n04", "text": "The retirement date for Heron-4 is March 11, 2027; after that day it stops serving."}
+{"id": "n05", "text": "Plan around the retirement date of Avocet-5: May 6, 2029 is when it goes dark."}
+{"id": "n06", "text": "Unlike Godwit-4, whose owner is handled elsewhere, the owner of Egret-8 is the Ledger team. Nobody should assume the owner of Egret-8 applies to Godwit-4, the owner differs. A diagram is attached to the wiki entry."}
+{"id": "n07", "text": "Swift-7 is implemented in Go; the language was chosen for its tooling. A diagram is attached to the wiki entry."}
+{"id": "n08", "text": "Unlike Swift-7, whose rate limit is handled elsewhere, the rate limit of Merlin-3 is 4500 requests per minute. Nobody should assume the rate limit of Merlin-3 applies to Swift-7, the rate limit differs."}
+{"id": "n09", "text": "Expect throttling at the rate limit for Avocet-5, which is 950 requests per minute."}
+{"id": "n10", "text": "The primary datacenter of Swift-7 is Cairo; failover is handled by operations."}
+{"id": "n11", "text": "Unlike Godwit-4, whose language is handled elsewhere, the language of Merlin-3 is Haskell. Nobody should assume the language of Merlin-3 applies to Godwit-4, the language differs. A diagram is attached to the wiki entry."}
+{"id": "n12", "text": "The service Egret-8 takes traffic on port 4355, and the port is fixed across every environment."}
+{"id": "n13", "text": "Unlike Heron-4, whose rate limit is handled elsewhere, the rate limit of Godwit-4 is 2350 requests per minute. Nobody should assume the rate limit of Godwit-4 applies to Heron-4, the rate limit differs."}
+{"id": "n14", "text": "The retirement date for Swift-7 is May 23, 2029; after that day it stops serving. The page was last reviewed in the spring."}
+{"id": "n15", "text": "Unlike Swift-7, whose budget is handled elsewhere, the budget of Heron-4 is $210k. Nobody should assume the budget of Heron-4 applies to Swift-7, the budget differs."}
+{"id": "n16", "text": "Unlike Swift-7, whose retirement date is handled elsewhere, the retirement date of Merlin-3 is April 3, 2029. Nobody should assume the retirement date of Merlin-3 applies to Swift-7, the retirement date differs."}
+{"id": "n17", "text": "Unlike Swift-7, whose datacenter is handled elsewhere, the datacenter of Egret-8 is the Quito datacenter. Nobody should assume the datacenter of Egret-8 applies to Swift-7, the datacenter differs."}
+{"id": "n18", "text": "Unlike Heron-4, whose port is handled elsewhere, the port of Merlin-3 is 9699. Nobody should assume the port of Merlin-3 applies to Heron-4, the port differs. Details change slowly, so check the history first."}
+{"id": "n19", "text": "The service Avocet-5 takes traffic on port 6621, and the port is fixed across every environment. The page was last reviewed in the spring."}
+{"id": "n20", "text": "Expect throttling at the rate limit for Swift-7, which is 2750 requests per minute. The page was last reviewed in the spring."}
+{"id": "n21", "text": "The language of Avocet-5 is Scala, which new contributors must know."}
+{"id": "n22", "text": "Source for Godwit-4 is written in Erlang; no other language is allowed in its repository. Details change slowly, so check the history first."}
+{"id": "n23", "text": "Unlike Merlin-3, whose pager rotation is handled elsewhere, the pager rotation of Avocet-5 is Celia Valdivia. Nobody should assume the pager rotation of Avocet-5 applies to Merlin-3, the pager rotation differs."}
+{"id": "n24", "text": "For Godwit-4 the port is 8061. Changing the port needs a change ticket. An older draft of this note was archived."}
+{"id": "n25", "text": "Source for Egret-8 is written in OCaml; no other language is allowed in its repository. The entry was reformatted last quarter."}
+{"id": "n26", "text": "Unlike Avocet-5, whose rate limit is handled elsewhere, the rate limit of Heron-4 is 4350 requests per minute. Nobody should assume the rate limit of Heron-4 applies to Avocet-5, the rate limit differs."}
+{"id": "n27", "text": "The owner of Godwit-4 is the Keystone team, and every change to Godwit-4 goes through their review. The page was last reviewed in the spring."}
+{"id": "n28", "text": "Unlike Avocet-5, whose port is handled elsewhere, the port of Heron-4 is 5573. Nobody should assume the port of Heron-4 applies to Avocet-5, the port differs. The entry was reformatted last quarter."}
+{"id": "n29", "text": "Unlike Swift-7, whose datacenter is handled elsewhere, the datacenter of Heron-4 is the Perth datacenter. Nobody should assume the datacenter of Heron-4 applies to Swift-7, the datacenter differs."}

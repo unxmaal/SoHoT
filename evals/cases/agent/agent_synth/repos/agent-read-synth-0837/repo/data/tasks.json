@@ -1,0 +1,187 @@
+[
+ {
+  "name": "parse_berth",
+  "days": 1,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "reconcile_ferry",
+  "days": 7,
+  "after": [
+   "parse_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_ferry",
+  "days": 2,
+  "after": [
+   "reconcile_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_deck",
+  "days": 2,
+  "after": [
+   "parse_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "split_tide",
+  "days": 5,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "parse_ferry",
+  "days": 3,
+  "after": [
+   "reconcile_ferry",
+   "render_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_deck",
+  "days": 7,
+  "after": [
+   "parse_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_tide",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "lookup_harbor",
+  "days": 3,
+  "after": [
+   "parse_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_tide",
+  "days": 1,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "merge_berth",
+  "days": 5,
+  "after": [
+   "parse_berth",
+   "parse_ferry",
+   "apply_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_sail",
+  "days": 8,
+  "after": [
+   "reconcile_ferry",
+   "parse_tide"
+  ],
+  "done": true
+ },
+ {
+  "name": "stage_tide",
+  "days": 9,
+  "after": [
+   "reconcile_ferry"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_sail",
+  "days": 7,
+  "after": [
+   "parse_sail",
+   "lookup_harbor",
+   "validate_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_mast",
+  "days": 9,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "flush_pallet",
+  "days": 5,
+  "after": [
+   "resolve_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_anchor",
+  "days": 4,
+  "after": [
+   "load_mast",
+   "reconcile_ferry",
+   "parse_tide"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_keel",
+  "days": 7,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "merge_dock",
+  "days": 4,
+  "after": [
+   "parse_sail"
+  ],
+  "done": true
+ },
+ {
+  "name": "render_buoy",
+  "days": 2,
+  "after": [
+   "lookup_harbor"
+  ],
+  "done": true
+ },
+ {
+  "name": "rank_deck",
+  "days": 4,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "lookup_mooring",
+  "days": 3,
+  "after": [
+   "stage_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_berth",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "parse_anchor",
+  "days": 8,
+  "after": [
+   "rank_sail",
+   "flush_berth"
+  ],
+  "done": false
+ }
+]

@@ -1,0 +1,93 @@
+[
+ {
+  "name": "split_berth",
+  "days": 1,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "load_deck",
+  "days": 3,
+  "after": [
+   "split_berth"
+  ],
+  "done": true
+ },
+ {
+  "name": "parse_cargo",
+  "days": 3,
+  "after": [
+   "split_berth"
+  ],
+  "done": true
+ },
+ {
+  "name": "render_barge",
+  "days": 6,
+  "after": [
+   "load_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_rope",
+  "days": 4,
+  "after": [
+   "parse_cargo",
+   "split_berth",
+   "render_barge"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_buoy",
+  "days": 1,
+  "after": [
+   "load_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "merge_keel",
+  "days": 8,
+  "after": [
+   "render_barge",
+   "split_berth",
+   "reconcile_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_pallet",
+  "days": 8,
+  "after": [
+   "split_berth"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_lantern",
+  "days": 1,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "stage_deck",
+  "days": 8,
+  "after": [
+   "split_berth",
+   "render_barge",
+   "parse_cargo"
+  ],
+  "done": true
+ },
+ {
+  "name": "split_mooring",
+  "days": 3,
+  "after": [
+   "render_lantern",
+   "stage_deck"
+  ],
+  "done": false
+ }
+]

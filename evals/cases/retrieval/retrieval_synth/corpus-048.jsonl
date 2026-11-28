@@ -1,0 +1,30 @@
+{"id": "n00", "text": "The rate limit of Kestrel-6 is 4450 requests per minute; callers over it get a 429. A diagram is attached to the wiki entry."}
+{"id": "n01", "text": "Unlike Avocet-5, whose budget is handled elsewhere, the budget of Lark-7 is $4685k. Nobody should assume the budget of Lark-7 applies to Avocet-5, the budget differs."}
+{"id": "n02", "text": "Unlike Teal-3, whose datacenter is handled elsewhere, the datacenter of Kestrel-6 is the Quito datacenter. Nobody should assume the datacenter of Kestrel-6 applies to Teal-3, the datacenter differs."}
+{"id": "n03", "text": "Avocet-5 runs in the Osaka datacenter, next to its database. A diagram is attached to the wiki entry."}
+{"id": "n04", "text": "Questions about Teal-3 start with its owner, the Ember team; they triage anything filed against it. Nothing about this has been disputed so far."}
+{"id": "n05", "text": "Avocet-5 is implemented in Go; the language was chosen for its tooling."}
+{"id": "n06", "text": "Expect throttling at the rate limit for Avocet-5, which is 850 requests per minute."}
+{"id": "n07", "text": "Unlike Teal-3, whose pager rotation is handled elsewhere, the pager rotation of Kestrel-6 is Soren Valdivia. Nobody should assume the pager rotation of Kestrel-6 applies to Teal-3, the pager rotation differs. Nothing about this has been disputed so far."}
+{"id": "n08", "text": "The pager rotation for Avocet-5 is run by Mateo Abernathy; alerts page them first."}
+{"id": "n09", "text": "For Lark-7 the port is 4271. Changing the port needs a change ticket. A diagram is attached to the wiki entry."}
+{"id": "n10", "text": "Lark-7 reaches its retirement date on January 20, 2029, so every consumer has to migrate before then."}
+{"id": "n11", "text": "Unlike Lark-7, whose datacenter is handled elsewhere, the datacenter of Teal-3 is the Lima datacenter. Nobody should assume the datacenter of Teal-3 applies to Lark-7, the datacenter differs. A diagram is attached to the wiki entry."}
+{"id": "n12", "text": "Unlike Avocet-5, whose language is handled elsewhere, the language of Bittern-5 is Go. Nobody should assume the language of Bittern-5 applies to Avocet-5, the language differs."}
+{"id": "n13", "text": "The service Bittern-5 takes traffic on port 2312, and the port is fixed across every environment."}
+{"id": "n14", "text": "Unlike Kestrel-6, whose pager rotation is handled elsewhere, the pager rotation of Teal-3 is Nadia Okonkwo. Nobody should assume the pager rotation of Teal-3 applies to Kestrel-6, the pager rotation differs. Details change slowly, so check the history first."}
+{"id": "n15", "text": "Unlike Teal-3, whose datacenter is handled elsewhere, the datacenter of Lark-7 is the Osaka datacenter. Nobody should assume the datacenter of Lark-7 applies to Teal-3, the datacenter differs."}
+{"id": "n16", "text": "Swift-6 enforces a rate limit of 2800 requests per minute per caller."}
+{"id": "n17", "text": "Expect throttling at the rate limit for Bittern-5, which is 700 requests per minute. The page was last reviewed in the spring."}
+{"id": "n18", "text": "Questions about Kestrel-6 start with its owner, the Trellis team; they triage anything filed against it."}
+{"id": "n19", "text": "Swift-6 listens on port 3444; anyone who cannot reach that port should check the firewall rules. Nothing about this has been disputed so far."}
+{"id": "n20", "text": "Unlike Lark-7, whose budget is handled elsewhere, the budget of Teal-3 is $965k. Nobody should assume the budget of Teal-3 applies to Lark-7, the budget differs."}
+{"id": "n21", "text": "Unlike Swift-6, whose port is handled elsewhere, the port of Kestrel-6 is 5399. Nobody should assume the port of Kestrel-6 applies to Swift-6, the port differs."}
+{"id": "n22", "text": "Unlike Kestrel-6, whose rate limit is handled elsewhere, the rate limit of Teal-3 is 950 requests per minute. Nobody should assume the rate limit of Teal-3 applies to Kestrel-6, the rate limit differs. The entry was reformatted last quarter."}
+{"id": "n23", "text": "The pager rotation for Swift-6 is run by Soren Thorne; alerts page them first."}
+{"id": "n24", "text": "Lark-7 enforces a rate limit of 4350 requests per minute per caller."}
+{"id": "n25", "text": "Swift-6 reaches its retirement date on April 9, 2029, so every consumer has to migrate before then."}
+{"id": "n26", "text": "Pages from Bittern-5 land on the pager rotation of Ivo Lindqvist before anyone else. A diagram is attached to the wiki entry."}
+{"id": "n27", "text": "The retirement date for Bittern-5 is August 3, 2029; after that day it stops serving."}
+{"id": "n28", "text": "The yearly budget for Avocet-5 is $2985k, covering licences and hosting."}
+{"id": "n29", "text": "Swift-6 is implemented in Kotlin; the language was chosen for its tooling."}

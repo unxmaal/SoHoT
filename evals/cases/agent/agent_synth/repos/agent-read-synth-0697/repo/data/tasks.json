@@ -1,0 +1,158 @@
+[
+ {
+  "name": "parse_buoy",
+  "days": 9,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "resolve_pallet",
+  "days": 4,
+  "after": [
+   "parse_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_quay",
+  "days": 2,
+  "after": [
+   "resolve_pallet",
+   "parse_buoy"
+  ],
+  "done": true
+ },
+ {
+  "name": "reconcile_lantern",
+  "days": 5,
+  "after": [
+   "estimate_quay",
+   "resolve_pallet"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_hull",
+  "days": 6,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "split_cargo",
+  "days": 3,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "load_anchor",
+  "days": 6,
+  "after": [
+   "split_cargo"
+  ],
+  "done": false
+ },
+ {
+  "name": "rank_barge",
+  "days": 3,
+  "after": [
+   "parse_buoy",
+   "split_cargo",
+   "estimate_quay"
+  ],
+  "done": false
+ },
+ {
+  "name": "lookup_anchor",
+  "days": 5,
+  "after": [
+   "split_cargo"
+  ],
+  "done": true
+ },
+ {
+  "name": "allocate_dock",
+  "days": 3,
+  "after": [
+   "reconcile_hull"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_rope",
+  "days": 6,
+  "after": [
+   "reconcile_lantern",
+   "split_cargo",
+   "parse_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "resolve_cargo",
+  "days": 3,
+  "after": [
+   "split_cargo"
+  ],
+  "done": true
+ },
+ {
+  "name": "parse_dock",
+  "days": 6,
+  "after": [
+   "reconcile_lantern",
+   "reconcile_hull",
+   "lookup_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_rope",
+  "days": 9,
+  "after": [
+   "parse_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "stage_berth",
+  "days": 6,
+  "after": [
+   "load_anchor",
+   "lookup_anchor"
+  ],
+  "done": false
+ },
+ {
+  "name": "estimate_harbor",
+  "days": 7,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "load_pallet",
+  "days": 1,
+  "after": [
+   "resolve_cargo",
+   "resolve_rope",
+   "reconcile_lantern"
+  ],
+  "done": false
+ },
+ {
+  "name": "allocate_barge",
+  "days": 6,
+  "after": [
+   "rank_barge"
+  ],
+  "done": true
+ },
+ {
+  "name": "render_mast",
+  "days": 9,
+  "after": [
+   "lookup_anchor",
+   "allocate_barge"
+  ],
+  "done": false
+ }
+]

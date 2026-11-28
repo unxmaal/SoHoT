@@ -1,0 +1,71 @@
+[
+ {
+  "name": "stage_crate",
+  "days": 3,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "lookup_rope",
+  "days": 6,
+  "after": [
+   "stage_crate"
+  ],
+  "done": false
+ },
+ {
+  "name": "flush_mast",
+  "days": 5,
+  "after": [
+   "lookup_rope",
+   "stage_crate"
+  ],
+  "done": true
+ },
+ {
+  "name": "validate_sail",
+  "days": 1,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "render_buoy",
+  "days": 5,
+  "after": [
+   "validate_sail",
+   "lookup_rope",
+   "flush_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "reconcile_anchor",
+  "days": 7,
+  "after": [
+   "render_buoy"
+  ],
+  "done": false
+ },
+ {
+  "name": "apply_dock",
+  "days": 7,
+  "after": [
+   "lookup_rope"
+  ],
+  "done": false
+ },
+ {
+  "name": "load_keel",
+  "days": 1,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "validate_lantern",
+  "days": 6,
+  "after": [
+   "load_keel"
+  ],
+  "done": false
+ }
+]

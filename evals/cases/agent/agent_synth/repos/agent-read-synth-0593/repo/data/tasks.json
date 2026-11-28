@@ -1,0 +1,84 @@
+[
+ {
+  "name": "reconcile_keel",
+  "days": 5,
+  "after": [],
+  "done": true
+ },
+ {
+  "name": "flush_dock",
+  "days": 5,
+  "after": [
+   "reconcile_keel"
+  ],
+  "done": false
+ },
+ {
+  "name": "normalize_crate",
+  "days": 8,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "lookup_cargo",
+  "days": 5,
+  "after": [
+   "normalize_crate",
+   "flush_dock",
+   "reconcile_keel"
+  ],
+  "done": true
+ },
+ {
+  "name": "allocate_mast",
+  "days": 6,
+  "after": [
+   "lookup_cargo",
+   "reconcile_keel",
+   "flush_dock"
+  ],
+  "done": true
+ },
+ {
+  "name": "merge_anchor",
+  "days": 9,
+  "after": [
+   "reconcile_keel",
+   "allocate_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "validate_ferry",
+  "days": 3,
+  "after": [],
+  "done": false
+ },
+ {
+  "name": "lookup_deck",
+  "days": 5,
+  "after": [
+   "merge_anchor",
+   "reconcile_keel",
+   "allocate_mast"
+  ],
+  "done": false
+ },
+ {
+  "name": "render_mooring",
+  "days": 5,
+  "after": [
+   "lookup_deck"
+  ],
+  "done": false
+ },
+ {
+  "name": "parse_keel",
+  "days": 3,
+  "after": [
+   "normalize_crate",
+   "render_mooring"
+  ],
+  "done": false
+ }
+]
