@@ -1,0 +1,71 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1526
+modality: code
+prompt: 'Write a Python function `solve(s)` that takes a string and applies these steps in order, each
+  to the result of the one before:
+
+  1. Shift every letter forward by 3 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  2. Sort the characters in ascending code point order.
+
+  3. Keep only the first occurrence of each character.
+
+  4. Collapse every run of the same character into one character.
+
+  5. Replace every ''o'' with ''s'' (lowercase only).
+
+  6. Swap the case of every letter.
+
+  7. Keep only the first occurrence of each character.
+
+  8. Sort the characters in ascending code point order.
+
+  9. Swap the case of every letter.
+
+  10. Convert to lowercase.
+
+  11. Replace every ''e'' with ''b'' (lowercase only).
+
+  12. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  13. Collapse every run of the same character into one character.
+
+  14. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  15. Shift every letter forward by 10 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  16. Sort the characters in ascending code point order.
+
+  Then: Return how many characters it has.
+
+
+  Example: `solve(''abaA cAa2a'') returns 12`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - solve('x') == 2
+  - solve('The 3 little pigs 33') == 18
+  - solve('Ünïcode ok') == 18
+  - solve('Level') == 8
+  - solve('eeeee fff') == 6
+  - solve('abc123xyz') == 16
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1526'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-16-steps

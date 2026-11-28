@@ -1,0 +1,21 @@
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603: a deliberately wrong answer, never graded.
+def solve(s):
+    s = ''.join(c for i, c in enumerate(s) if i == 0 or c != s[i - 1])
+    s = ' '.join(s.split()[:2])
+    s = s[:9].ljust(9, '.')
+    s = s.swapcase()
+    s = ' '.join(reversed(s.split()))
+    s = ''.join(chr((ord(c) - ord('a' if c.islower() else 'A') + 10) % 26 + ord('a' if c.islower() else 'A')) if c.isascii() and c.isalpha() else c for c in s)
+    s = ' '.join(s.split())
+    s = s.upper()
+    s = ' '.join(reversed(s.split()))
+    s = ''.join(c for c in s if not c.isdigit())
+    s = ''.join(dict.fromkeys(s))
+    s = s[:5].ljust(5, '.')
+    s = ''.join(chr((ord(c) - ord('a' if c.islower() else 'A') + 4) % 26 + ord('a' if c.islower() else 'A')) if c.isascii() and c.isalpha() else c for c in s)
+    s = s.upper()
+    s = ''.join(c for i, c in enumerate(s) if i == 0 or c != s[i - 1])
+    s = s.upper()
+    s = s[:6].ljust(6, '.')
+    s = ''.join(sorted(s))
+    return s

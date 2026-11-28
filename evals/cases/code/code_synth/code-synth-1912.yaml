@@ -1,0 +1,81 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1912
+modality: code
+prompt: 'Write a Python function `reduce_data(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  2. Cut the text to at most 8 characters, then pad it on the right with ''.'' up to 8 characters.
+
+  3. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  4. Keep only the first 2 whitespace-separated words, joined by single spaces.
+
+  5. Convert to lowercase.
+
+  6. Convert to uppercase.
+
+  7. Replace every ''d'' with ''i'' (lowercase only).
+
+  8. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  9. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  10. Replace runs of whitespace with a single space and strip both ends.
+
+  11. Collapse every run of the same character into one character.
+
+  12. Convert to lowercase.
+
+  13. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  14. Remove every digit.
+
+  15. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  16. Swap the case of every letter.
+
+  17. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  18. Remove every digit.
+
+  19. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  20. Replace runs of whitespace with a single space and strip both ends.
+
+  Then: Return the longest whitespace-separated word, the first one if several tie, or '''' if there are
+  none.
+
+
+  Example: `reduce_data(''CC111AxBCAcB CB'') returns ''1C1A1x''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - reduce_data('  ') == '1.'
+  - reduce_data('Programming in Python') == '1P1R1O1g'
+  - reduce_data('Ünïcode ok') == '1Ü1N1Ï1c'
+  - reduce_data('mississippi river') == '1M1I1S1i'
+  - reduce_data('queue QUEUE') == '1Q1U1E1u'
+  - reduce_data('noon') == '1N1O1N1.'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1912'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-20-steps

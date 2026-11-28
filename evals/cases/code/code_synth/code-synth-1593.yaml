@@ -1,0 +1,70 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1593
+modality: code
+prompt: 'Write a Python function `solve(xs)` that takes a list of integers and applies these steps in
+  order, each to the result of the one before:
+
+  1. Keep only the even values.
+
+  2. Replace every value with its square.
+
+  3. Replace the list with the differences between consecutive values, later minus earlier (a list with
+  fewer than two values becomes empty).
+
+  4. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  5. Reverse the list.
+
+  6. Keep only the first 4 values (all of them if there are fewer).
+
+  7. Rotate the list left by 3 positions, wrapping around (an empty list stays empty).
+
+  8. Keep only the values greater than 1.
+
+  9. Remove duplicates, keeping only the last occurrence of each value, in the order those last occurrences
+  appear.
+
+  10. Remove every negative value.
+
+  11. Keep only the values greater than 3.
+
+  12. Replace every value with the largest value seen so far.
+
+  13. Rotate the list left by 7 positions, wrapping around (an empty list stays empty).
+
+  14. Keep only the first 3 values (all of them if there are fewer).
+
+  15. Reverse the list.
+
+  16. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  Then: Return the largest value, or -1 for an empty list.
+
+
+  Example: `solve([-7, 24, -2, 6, 22, 0, -12, -11]) returns 448`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - solve([]) == -1
+  - solve([-4]) == -1
+  - solve([19, -1, 18, 7]) == -1
+  - solve([-12, 2, 25, 4]) == 12
+  - solve([0, -1, 10, -1, 11, 22, 14, 2]) == 384
+  - solve([-9, 20, 6, 15, 6, 4, -3, 13, -6]) == 20
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1593'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-16-steps

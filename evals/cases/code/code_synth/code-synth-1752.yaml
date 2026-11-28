@@ -1,0 +1,70 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1752
+modality: code
+prompt: 'Write a Python function `apply_rules(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Keep only the first 3 whitespace-separated words, joined by single spaces.
+
+  2. Remove every digit.
+
+  3. Swap the case of every letter.
+
+  4. Sort the characters in ascending code point order.
+
+  5. Cut the text to at most 6 characters, then pad it on the right with ''.'' up to 6 characters.
+
+  6. Replace runs of whitespace with a single space and strip both ends.
+
+  7. Swap the case of every letter.
+
+  8. Sort the characters in ascending code point order.
+
+  9. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  10. Sort the characters in ascending code point order.
+
+  11. Convert to lowercase.
+
+  12. Sort the characters in ascending code point order.
+
+  13. Replace every ''l'' with ''o'' (lowercase only).
+
+  14. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  15. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  16. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  Then: Return the most frequent character, the smallest by code point if several tie, or '''' for an
+  empty string.
+
+
+  Example: `apply_rules(''0Ac.y1bc,'') returns ''c''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - apply_rules('Data-driven 2025') == 'a'
+  - apply_rules('  jumps   over the  lazy dog ') == 'e'
+  - apply_rules('x') == '.'
+  - apply_rules('Level') == 'e'
+  - apply_rules('banana bandana') == 'a'
+  - apply_rules('Hello, World') == ','
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1752'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-16-steps

@@ -1,0 +1,74 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1749
+modality: code
+prompt: 'Write a Python function `process(xs)` that takes a list of integers and applies these steps in
+  order, each to the result of the one before:
+
+  1. Replace every value with its square.
+
+  2. Remove duplicates, keeping the first occurrence of each value.
+
+  3. Drop the first 1 values (an empty list if there are fewer).
+
+  4. Divide every value by 2 with floor division (so -7 divided by 2 gives -4).
+
+  5. Replace every value with the largest value seen so far.
+
+  6. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  7. Sort descending.
+
+  8. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  9. Remove duplicates, keeping the first occurrence of each value.
+
+  10. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  11. Replace every value with the largest of itself and the up to 1 values before it.
+
+  12. Drop the first 1 values (an empty list if there are fewer).
+
+  13. Rotate the list left by 7 positions, wrapping around (an empty list stays empty).
+
+  14. Keep only the first 5 values (all of them if there are fewer).
+
+  15. Replace every value with the largest of itself and the up to 2 values before it.
+
+  16. Sort ascending.
+
+  17. Replace every value with its square.
+
+  18. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  Then: Return the sum of the values (0 for an empty list).
+
+
+  Example: `process([-6, 9, -6, 18, 5, -12, -12]) returns 3755312`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - process([]) == 0
+  - process([-4]) == 0
+  - process([-1, 19, 19, 11, -10, -10]) == 2332800
+  - process([-11, 19, 21]) == 336400
+  - process([-9, 7, 22, -5, -10, 10, -2, 20, 9]) == 68929984
+  - process([-5, 0, 14, 20, -6, 18, 19, -3]) == 60990196
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1749'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-18-steps

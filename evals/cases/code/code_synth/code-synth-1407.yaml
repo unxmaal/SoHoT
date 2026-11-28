@@ -1,0 +1,80 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1407
+modality: code
+prompt: 'Write a Python function `process(xs)` that takes a list of integers and applies these steps in
+  order, each to the result of the one before:
+
+  1. Keep only the values greater than -2.
+
+  2. Remove every negative value.
+
+  3. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  4. Remove duplicates, keeping the first occurrence of each value.
+
+  5. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  6. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  7. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  8. Rotate the list left by 2 positions, wrapping around (an empty list stays empty).
+
+  9. Keep only the last 5 values, in their order (all of them if there are fewer).
+
+  10. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  11. Replace every value with the largest of itself and the up to 3 values before it.
+
+  12. Swap each adjacent pair (indices 0 and 1, then 2 and 3, and so on); an unpaired last value stays.
+
+  13. Replace the list with the differences between consecutive values, later minus earlier (a list with
+  fewer than two values becomes empty).
+
+  14. Remove duplicates, keeping only the last occurrence of each value, in the order those last occurrences
+  appear.
+
+  15. Drop the first 1 values (an empty list if there are fewer).
+
+  16. Keep only the values greater than 8.
+
+  17. Keep only the last 4 values, in their order (all of them if there are fewer).
+
+  18. Rotate the list left by 7 positions, wrapping around (an empty list stays empty).
+
+  19. Remove every value that is a multiple of 3 (0 is a multiple of everything).
+
+  20. Reverse the list.
+
+  Then: Return the sum of the values (0 for an empty list).
+
+
+  Example: `process([-9, -1, 7, 23, 25, 5, -10]) returns 107`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - process([]) == 0
+  - process([-5]) == 0
+  - process([17, 15, 20, -1]) == 0
+  - process([0, 18, 8, 13, 15, 23, 22, 22]) == 175
+  - process([20, -7, -7, 10, -6, 21, 12, 21, 8]) == 219
+  - process([5, 13, 23, 9, 22, -1]) == 121
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1407'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-20-steps

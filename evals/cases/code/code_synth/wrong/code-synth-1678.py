@@ -1,0 +1,21 @@
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603: a deliberately wrong answer, never graded.
+def solve(s):
+    import itertools
+    s = ''.join(str(len(list(g))) + k for k, g in itertools.groupby(s))
+    s = ''.join(sorted(s))
+    s = ''.join(chr((ord(c) - ord('a' if c.islower() else 'A') + 2) % 26 + ord('a' if c.islower() else 'A')) if c.isascii() and c.isalpha() else c for c in s)
+    s = s[:7].ljust(7, '.')
+    s = s.replace('b', 'r')
+    s = s.swapcase()
+    import re
+    s = re.sub(r'\d+', lambda m: str(len(m.group())), s)
+    s = ' '.join(s.split()[:4])
+    s = s.replace('s', 'n')
+    s = ' '.join(reversed(s.split()))
+    s = s.lower()
+    s = ''.join(sorted(s))
+    s = ''.join(chr((ord(c) - ord('a' if c.islower() else 'A') + 2) % 26 + ord('a' if c.islower() else 'A')) if c.isascii() and c.isalpha() else c for c in s)
+    s = ''.join(dict.fromkeys(s))
+    s = s.replace('c', 'e')
+    s = s[:9].ljust(9, '.')
+    return len(s)

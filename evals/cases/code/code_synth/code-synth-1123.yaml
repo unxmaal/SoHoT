@@ -1,0 +1,78 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1123
+modality: code
+prompt: 'Write a Python function `run_pipeline(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Remove every value that is a multiple of 5 (0 is a multiple of everything).
+
+  2. Collapse each run of equal adjacent values into one value.
+
+  3. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  4. Remove duplicates, keeping the first occurrence of each value.
+
+  5. Keep only the values greater than 5.
+
+  6. Reverse the list.
+
+  7. Sort ascending.
+
+  8. Keep only the values greater than -3.
+
+  9. Reverse the list.
+
+  10. Replace every value with its square.
+
+  11. Keep the values at indices 0, 2, 4, and so on.
+
+  12. Replace every value with the largest value seen so far.
+
+  13. Sort ascending.
+
+  14. Keep the values at indices 0, 2, 4, and so on.
+
+  15. Keep only the values greater than -1.
+
+  16. Sort ascending.
+
+  17. Replace every value with its square.
+
+  18. Sort descending.
+
+  19. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  20. Keep only the last 5 values, in their order (all of them if there are fewer).
+
+  Then: Return the lower median: the value at index (n - 1) // 2 of the sorted list, or 0 for an empty
+  list.
+
+
+  Example: `run_pipeline([8, 20, 7]) returns 4096`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - run_pipeline([]) == 0
+  - run_pipeline([8]) == 4096
+  - run_pipeline([10, 15, 19, -6, -7, 9, 25]) == 130321
+  - run_pipeline([18, 10, 7, 5, 23, 20, 3, -5, 12]) == 279841
+  - run_pipeline([8, 22, 20, 20]) == 234256
+  - run_pipeline([18, 11, -11, 12, 3, -7, -12, -10, 9]) == 104976
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1123'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-20-steps

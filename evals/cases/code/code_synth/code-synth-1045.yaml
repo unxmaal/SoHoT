@@ -1,0 +1,66 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1045
+modality: code
+prompt: 'Write a Python function `apply_rules(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  2. Clamp every value into the range -2 to 6, both inclusive.
+
+  3. Replace every value with the largest of itself and the up to 2 values before it.
+
+  4. Clamp every value into the range -2 to 5, both inclusive.
+
+  5. Replace every value with the largest value seen so far.
+
+  6. Replace every value with its square.
+
+  7. Replace the list with the sums of non-overlapping consecutive pairs; a lone final value stays as
+  it is.
+
+  8. Divide every value by 3 with integer division that rounds toward zero (so -7 divided by 3 gives -2).
+
+  9. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  10. Replace every value with its square.
+
+  11. Replace every value with its absolute value.
+
+  12. Divide every value by 4 with floor division (so -7 divided by 4 gives -2).
+
+  13. Remove every negative value.
+
+  14. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  Then: Return the sum of the values (0 for an empty list).
+
+
+  Example: `apply_rules([0, 12, -3, 8, 3, 22, -5, -4]) returns 208`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - apply_rules([]) == 0
+  - apply_rules([-6]) == 0
+  - apply_rules([21, 21, 23, 24]) == 128
+  - apply_rules([19, 18, -8, 15]) == 128
+  - apply_rules([11, 0, -8]) == 80
+  - apply_rules([16, 11, 5, 19, 21, 13, 15, 21]) == 256
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1045'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-14-steps

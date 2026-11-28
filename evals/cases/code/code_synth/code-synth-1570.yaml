@@ -1,0 +1,75 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1570
+modality: code
+prompt: 'Write a Python function `apply_rules(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Replace every ''d'' with ''b'' (lowercase only).
+
+  2. Swap the case of every letter.
+
+  3. Replace runs of whitespace with a single space and strip both ends.
+
+  4. Replace every ''o'' with ''c'' (lowercase only).
+
+  5. Shift every letter forward by 6 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  6. Remove every digit.
+
+  7. Replace every ''r'' with ''b'' (lowercase only).
+
+  8. Replace runs of whitespace with a single space and strip both ends.
+
+  9. Convert to lowercase.
+
+  10. Swap the case of every letter.
+
+  11. Cut the text to at most 5 characters, then pad it on the right with ''.'' up to 5 characters.
+
+  12. Sort the characters in ascending code point order.
+
+  13. Shift every letter forward by 1 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  14. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  15. Swap the case of every letter.
+
+  16. Collapse every run of the same character into one character.
+
+  17. Sort the characters in ascending code point order.
+
+  18. Swap the case of every letter.
+
+  Then: Return how many characters it has.
+
+
+  Example: `apply_rules('', a1 z1x,AB,'') returns 8`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - apply_rules('12345') == 2
+  - apply_rules('A man a plan a canal Panama') == 8
+  - apply_rules('Level') == 6
+  - apply_rules('  ') == 2
+  - apply_rules('') == 2
+  - apply_rules('Data-driven 2025') == 8
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1570'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-18-steps

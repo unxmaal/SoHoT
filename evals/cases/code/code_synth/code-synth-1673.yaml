@@ -1,0 +1,74 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1673
+modality: code
+prompt: 'Write a Python function `run_pipeline(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Rotate the list left by 2 positions, wrapping around (an empty list stays empty).
+
+  2. Replace every value with the largest of itself and the up to 2 values before it.
+
+  3. Reverse the list.
+
+  4. Remove every negative value.
+
+  5. Replace every value with the largest of itself and the up to 3 values before it.
+
+  6. Reverse the list.
+
+  7. Keep only the values greater than -3.
+
+  8. Rotate the list left by 3 positions, wrapping around (an empty list stays empty).
+
+  9. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  10. Replace every value with the largest value seen so far.
+
+  11. Collapse each run of equal adjacent values into one value.
+
+  12. Reverse the list.
+
+  13. Sort ascending.
+
+  14. Replace the list with the sums of non-overlapping consecutive pairs; a lone final value stays as
+  it is.
+
+  15. Keep only the last 5 values, in their order (all of them if there are fewer).
+
+  16. Divide every value by 4 with integer division that rounds toward zero (so -7 divided by 4 gives
+  -1).
+
+  17. Sort ascending.
+
+  18. Replace every value with the largest value seen so far.
+
+  Then: Return the largest value, or -1 for an empty list.
+
+
+  Example: `run_pipeline([-11, -5, 3, -9, 25]) returns 6`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - run_pipeline([]) == -1
+  - run_pipeline([-8]) == -1
+  - run_pipeline([10, -9, 1]) == 2
+  - run_pipeline([12, 23, 16, 10, 19, -7]) == 10
+  - run_pipeline([-7, 15, 5, 5, -9, 6, -11]) == 5
+  - run_pipeline([8, -6, 2, -10, -1, 24]) == 6
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1673'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-18-steps

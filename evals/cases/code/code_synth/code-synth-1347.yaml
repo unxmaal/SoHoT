@@ -1,0 +1,67 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1347
+modality: code
+prompt: 'Write a Python function `process(xs)` that takes a list of integers and applies these steps in
+  order, each to the result of the one before:
+
+  1. Drop the first 1 values (an empty list if there are fewer).
+
+  2. Reverse the list.
+
+  3. Remove duplicates, keeping the first occurrence of each value.
+
+  4. Replace every value with its square.
+
+  5. Remove duplicates, keeping only the last occurrence of each value, in the order those last occurrences
+  appear.
+
+  6. Replace every value with its remainder after division by 8, as Python''s % gives it (never negative).
+
+  7. Remove duplicates, keeping only the last occurrence of each value, in the order those last occurrences
+  appear.
+
+  8. Remove every negative value.
+
+  9. Add 9 to every value.
+
+  10. Keep only the first 2 values (all of them if there are fewer).
+
+  11. Keep the values at indices 0, 2, 4, and so on.
+
+  12. Sort descending.
+
+  13. Replace every value with its absolute value.
+
+  14. Replace every value with its remainder after division by 4, as Python''s % gives it (never negative).
+
+  Then: Return the lower median: the value at index (n - 1) // 2 of the sorted list, or 0 for an empty
+  list.
+
+
+  Example: `process([25, -9, 12, 18]) returns 1`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - process([]) == 0
+  - process([5]) == 0
+  - process([16, 7, 5, -3, -8, -7, 18, 19, 1]) == 1
+  - process([10, -9, -12, -4, -9]) == 2
+  - process([8, 12, 9, 4, 11, 13]) == 2
+  - process([16, 11, -7, -4, 4, 9, 5]) == 1
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1347'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-14-steps

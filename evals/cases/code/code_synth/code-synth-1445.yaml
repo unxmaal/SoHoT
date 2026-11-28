@@ -1,0 +1,78 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1445
+modality: code
+prompt: 'Write a Python function `transform(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Divide every value by 3 with floor division (so -7 divided by 3 gives -3).
+
+  2. Keep only the values greater than -2.
+
+  3. Replace every value with the largest value seen so far.
+
+  4. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  5. Sort ascending.
+
+  6. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  7. Divide every value by 2 with integer division that rounds toward zero (so -7 divided by 2 gives -3).
+
+  8. Drop the first 2 values (an empty list if there are fewer).
+
+  9. Divide every value by 3 with integer division that rounds toward zero (so -7 divided by 3 gives -2).
+
+  10. Add 9 to every value.
+
+  11. Replace every value with its remainder after division by 9, as Python''s % gives it (never negative).
+
+  12. Keep only the values greater than -3.
+
+  13. Sort ascending.
+
+  14. Collapse each run of equal adjacent values into one value.
+
+  15. Add 6 to every value.
+
+  16. Keep only the first 4 values (all of them if there are fewer).
+
+  17. Replace every value with the largest value seen so far.
+
+  18. Remove duplicates, keeping the first occurrence of each value.
+
+  19. Remove every negative value.
+
+  20. Collapse each run of equal adjacent values into one value.
+
+  Then: Return how many distinct values there are.
+
+
+  Example: `transform([19, -11, 20]) returns 0`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - transform([]) == 0
+  - transform([-8]) == 0
+  - transform([4, 9, -11, -1]) == 1
+  - transform([6, 11, 8, 3, 23]) == 3
+  - transform([25, 20, 3, 4, -12, -11, -8, 22, -11]) == 3
+  - transform([3, 14, 18, 13]) == 2
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1445'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-20-steps

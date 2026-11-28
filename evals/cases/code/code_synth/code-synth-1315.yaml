@@ -1,0 +1,76 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1315
+modality: code
+prompt: 'Write a Python function `apply_rules(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  2. Sort ascending.
+
+  3. Collapse each run of equal adjacent values into one value.
+
+  4. Swap each adjacent pair (indices 0 and 1, then 2 and 3, and so on); an unpaired last value stays.
+
+  5. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  6. Multiply every value by 2.
+
+  7. Replace every value with the largest value seen so far.
+
+  8. Remove duplicates, keeping the first occurrence of each value.
+
+  9. Replace the list with the sums of non-overlapping consecutive pairs; a lone final value stays as
+  it is.
+
+  10. Keep the values at indices 0, 3, 6, and so on.
+
+  11. Add 2 to every value.
+
+  12. Keep only the first 2 values (all of them if there are fewer).
+
+  13. Replace every value with its square.
+
+  14. Add 2 to every value.
+
+  15. Remove duplicates, keeping only the last occurrence of each value, in the order those last occurrences
+  appear.
+
+  16. Multiply every value by 3.
+
+  17. Replace every value with the largest value seen so far.
+
+  18. Remove every negative value.
+
+  Then: Return the lower median: the value at index (n - 1) // 2 of the sorted list, or 0 for an empty
+  list.
+
+
+  Example: `apply_rules([3, 7, 9, 25]) returns 3894`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - apply_rules([]) == 0
+  - apply_rules([7]) == 774
+  - apply_rules([2, 12, 24, 12]) == 8754
+  - apply_rules([22, 4, 17, 15, 9, 0]) == 6918
+  - apply_rules([0, -2, 17, 10]) == 3078
+  - apply_rules([-8, 24, 21, -10, 1, 23]) == 198
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1315'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-18-steps

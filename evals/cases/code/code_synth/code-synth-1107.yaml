@@ -1,0 +1,70 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1107
+modality: code
+prompt: 'Write a Python function `transform(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Swap each adjacent pair (indices 0 and 1, then 2 and 3, and so on); an unpaired last value stays.
+
+  2. Keep only the values greater than 2.
+
+  3. Collapse each run of equal adjacent values into one value.
+
+  4. Clamp every value into the range -3 to 5, both inclusive.
+
+  5. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  6. Keep only the values greater than 3.
+
+  7. Divide every value by 2 with integer division that rounds toward zero (so -7 divided by 2 gives -3).
+
+  8. Add 4 to every value.
+
+  9. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  10. Replace every value with the largest value seen so far.
+
+  11. Replace every value with its remainder after division by 9, as Python''s % gives it (never negative).
+
+  12. Replace every value with the largest of itself and the up to 2 values before it.
+
+  13. Keep the values at indices 0, 3, 6, and so on.
+
+  14. Swap each adjacent pair (indices 0 and 1, then 2 and 3, and so on); an unpaired last value stays.
+
+  15. Remove every value that is a multiple of 4 (0 is a multiple of everything).
+
+  16. Add -5 to every value.
+
+  Then: Return how many distinct values there are.
+
+
+  Example: `transform([14, 14, 14, -8]) returns 1`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - transform([]) == 0
+  - transform([-5]) == 0
+  - transform([4, -2, 12, -2, -5, 25, 23, 15, -5]) == 2
+  - transform([-1, 19, -5, 7, -7, -9, -5, 21]) == 1
+  - transform([6, 1, 18]) == 1
+  - transform([-12, 17, 18, -7, 24, 24]) == 1
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1107'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-16-steps

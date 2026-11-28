@@ -1,0 +1,81 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1585
+modality: code
+prompt: 'Write a Python function `solve(xs)` that takes a list of integers and applies these steps in
+  order, each to the result of the one before:
+
+  1. Sort ascending.
+
+  2. Keep only the even values.
+
+  3. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  4. Replace the list with the differences between consecutive values, later minus earlier (a list with
+  fewer than two values becomes empty).
+
+  5. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  6. Sort ascending.
+
+  7. Replace the list with the sums of non-overlapping consecutive pairs; a lone final value stays as
+  it is.
+
+  8. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  9. Clamp every value into the range 0 to 6, both inclusive.
+
+  10. Keep only the even values.
+
+  11. Sort descending.
+
+  12. Collapse each run of equal adjacent values into one value.
+
+  13. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  14. Replace every value with its square.
+
+  15. Add -5 to every value.
+
+  16. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  17. Replace every value with the largest value seen so far.
+
+  18. Divide every value by 4 with floor division (so -7 divided by 4 gives -2).
+
+  19. Rotate the list left by 9 positions, wrapping around (an empty list stays empty).
+
+  20. Replace every value with its remainder after division by 6, as Python''s % gives it (never negative).
+
+  Then: Return the largest value, or -1 for an empty list.
+
+
+  Example: `solve([7, -6, 18]) returns 1`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - solve([]) == -1
+  - solve([-5]) == -1
+  - solve([20, 5, -8, 4, 0]) == 4
+  - solve([21, 20, 3, 23, 19, -2, 22, 18, -9]) == 1
+  - solve([17, -5, 14, 1, 9, -2, -11, 21]) == 1
+  - solve([1, -3, -8, 1, -9, 8, 8, 18]) == 1
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1585'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-20-steps

@@ -1,0 +1,82 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1343
+modality: code
+prompt: 'Write a Python function `solve(xs)` that takes a list of integers and applies these steps in
+  order, each to the result of the one before:
+
+  1. Sort ascending.
+
+  2. Remove duplicates, keeping only the last occurrence of each value, in the order those last occurrences
+  appear.
+
+  3. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  4. Remove duplicates, keeping only the last occurrence of each value, in the order those last occurrences
+  appear.
+
+  5. Drop the first 2 values (an empty list if there are fewer).
+
+  6. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  7. Remove every value that is a multiple of 5 (0 is a multiple of everything).
+
+  8. Replace the list with the sums of non-overlapping consecutive pairs; a lone final value stays as
+  it is.
+
+  9. Replace every value with its absolute value.
+
+  10. Remove duplicates, keeping only the last occurrence of each value, in the order those last occurrences
+  appear.
+
+  11. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  12. Reverse the list.
+
+  13. Multiply every value by -2.
+
+  14. Rotate the list left by 9 positions, wrapping around (an empty list stays empty).
+
+  15. Swap each adjacent pair (indices 0 and 1, then 2 and 3, and so on); an unpaired last value stays.
+
+  16. Remove duplicates, keeping the first occurrence of each value.
+
+  17. Divide every value by 4 with integer division that rounds toward zero (so -7 divided by 4 gives
+  -1).
+
+  18. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  Then: Return the lower median: the value at index (n - 1) // 2 of the sorted list, or 0 for an empty
+  list.
+
+
+  Example: `solve([17, -11, -10, 7, -11, -3, 16]) returns -98`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - solve([]) == 0
+  - solve([-6]) == 0
+  - solve([21, 14, -6, 15, -11, -6]) == -27
+  - solve([24, -10, -1, 8, 21]) == -27
+  - solve([-12, 15, -10, -1, -5, 7]) == -143
+  - solve([4, 24, 6, 21, 25]) == -199
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1343'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-18-steps

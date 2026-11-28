@@ -1,0 +1,79 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1645
+modality: code
+prompt: 'Write a Python function `process(xs)` that takes a list of integers and applies these steps in
+  order, each to the result of the one before:
+
+  1. Collapse each run of equal adjacent values into one value.
+
+  2. Sort ascending.
+
+  3. Swap each adjacent pair (indices 0 and 1, then 2 and 3, and so on); an unpaired last value stays.
+
+  4. Drop the first 3 values (an empty list if there are fewer).
+
+  5. Replace the list with the differences between consecutive values, later minus earlier (a list with
+  fewer than two values becomes empty).
+
+  6. Remove every value that is a multiple of 3 (0 is a multiple of everything).
+
+  7. Replace every value with its remainder after division by 3, as Python''s % gives it (never negative).
+
+  8. Sort ascending.
+
+  9. Reverse the list.
+
+  10. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  11. Rotate the list left by 8 positions, wrapping around (an empty list stays empty).
+
+  12. Replace every value with its square.
+
+  13. Keep only the first 5 values (all of them if there are fewer).
+
+  14. Multiply every value by 3.
+
+  15. Keep only the first 4 values (all of them if there are fewer).
+
+  16. Remove duplicates, keeping only the last occurrence of each value, in the order those last occurrences
+  appear.
+
+  17. Divide every value by 2 with floor division (so -7 divided by 2 gives -4).
+
+  18. Keep only the first 3 values (all of them if there are fewer).
+
+  19. Divide every value by 2 with integer division that rounds toward zero (so -7 divided by 2 gives
+  -3).
+
+  20. Replace every value with the largest value seen so far.
+
+  Then: Return how many distinct values there are.
+
+
+  Example: `process([17, 2, 0, 8]) returns 0`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - process([]) == 0
+  - process([-6]) == 0
+  - process([8, 9, 25, 12, -12, -9, 2, 6, 10]) == 2
+  - process([0, 10, 15, -7, 5]) == 1
+  - process([2, -7, 2, 6, 15, 16]) == 1
+  - process([24, 5, -6]) == 0
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1645'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-20-steps

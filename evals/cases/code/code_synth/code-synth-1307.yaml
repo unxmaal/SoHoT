@@ -1,0 +1,73 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1307
+modality: code
+prompt: 'Write a Python function `transform(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Keep only the even values.
+
+  2. Keep only the last 5 values, in their order (all of them if there are fewer).
+
+  3. Replace every value with its remainder after division by 7, as Python''s % gives it (never negative).
+
+  4. Remove duplicates, keeping the first occurrence of each value.
+
+  5. Replace every value with its remainder after division by 8, as Python''s % gives it (never negative).
+
+  6. Sort ascending.
+
+  7. Collapse each run of equal adjacent values into one value.
+
+  8. Keep only the even values.
+
+  9. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  10. Sort ascending.
+
+  11. Replace every value with its remainder after division by 9, as Python''s % gives it (never negative).
+
+  12. Remove every value that is a multiple of 4 (0 is a multiple of everything).
+
+  13. Add -9 to every value.
+
+  14. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  15. Multiply every value by 3.
+
+  16. Keep only the last 2 values, in their order (all of them if there are fewer).
+
+  17. Replace every value with its square.
+
+  18. Multiply every value by -2.
+
+  Then: Return a list of the two smallest values in ascending order (fewer if there are fewer).
+
+
+  Example: `transform([6, 25, 25, 4]) returns [-1152]`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - transform([]) == []
+  - transform([1]) == []
+  - transform([9, 21, 0, -12, 24]) == [-882]
+  - transform([11, 23, 15]) == []
+  - transform([7, 1, 24, 14, 2, 22]) == [-882]
+  - transform([-11, 18, 9, 16, 16, 18]) == [-882, -162]
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1307'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-18-steps

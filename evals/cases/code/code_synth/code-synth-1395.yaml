@@ -1,0 +1,73 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1395
+modality: code
+prompt: 'Write a Python function `solve(xs)` that takes a list of integers and applies these steps in
+  order, each to the result of the one before:
+
+  1. Collapse each run of equal adjacent values into one value.
+
+  2. Replace the list with the differences between consecutive values, later minus earlier (a list with
+  fewer than two values becomes empty).
+
+  3. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  4. Drop the first 1 values (an empty list if there are fewer).
+
+  5. Keep the values at indices 0, 2, 4, and so on.
+
+  6. Keep only the values greater than -2.
+
+  7. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  8. Divide every value by 2 with integer division that rounds toward zero (so -7 divided by 2 gives -3).
+
+  9. Remove duplicates, keeping the first occurrence of each value.
+
+  10. Replace the list with the sums of non-overlapping consecutive pairs; a lone final value stays as
+  it is.
+
+  11. Replace every value with the largest value seen so far.
+
+  12. Remove every negative value.
+
+  13. Replace every value with the largest value seen so far.
+
+  14. Remove duplicates, keeping only the last occurrence of each value, in the order those last occurrences
+  appear.
+
+  15. Collapse each run of equal adjacent values into one value.
+
+  16. Add -3 to every value.
+
+  Then: Return a list of the two smallest values in ascending order (fewer if there are fewer).
+
+
+  Example: `solve([17, -6, 1, -5, -2, 2, -8, 19, -6]) returns []`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - solve([]) == []
+  - solve([7]) == []
+  - solve([-3, -6, -11, 0, 9, 9]) == [3]
+  - solve([16, 2, 16, 5, 22, 5, 14, 22]) == [0]
+  - solve([17, 15, 14, -3, 7]) == []
+  - solve([10, -9, 21, 4, -6, 8, -11]) == [2]
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1395'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-16-steps

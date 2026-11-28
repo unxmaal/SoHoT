@@ -1,0 +1,69 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1331
+modality: code
+prompt: 'Write a Python function `run_pipeline(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Remove duplicates, keeping only the last occurrence of each value, in the order those last occurrences
+  appear.
+
+  2. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  3. Remove duplicates, keeping only the last occurrence of each value, in the order those last occurrences
+  appear.
+
+  4. Clamp every value into the range -3 to 5, both inclusive.
+
+  5. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  6. Remove duplicates, keeping only the last occurrence of each value, in the order those last occurrences
+  appear.
+
+  7. Remove duplicates, keeping the first occurrence of each value.
+
+  8. Replace every value with the largest value seen so far.
+
+  9. Keep only the values greater than 8.
+
+  10. Keep the values at indices 0, 2, 4, and so on.
+
+  11. Sort ascending.
+
+  12. Replace every value with its square.
+
+  13. Keep only the even values.
+
+  14. Replace every value with the largest of itself and the up to 2 values before it.
+
+  Then: Return how many distinct values there are.
+
+
+  Example: `run_pipeline([8, 7, 5, 10, 3, 9, 3]) returns 3`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - run_pipeline([]) == 0
+  - run_pipeline([-3]) == 0
+  - run_pipeline([17, -9, -1, 0]) == 1
+  - run_pipeline([25, 13, 11, 15, 23, 2, -11, -6]) == 4
+  - run_pipeline([0, 21, -10, 7, 9]) == 2
+  - run_pipeline([25, 2, 2, 8, -3]) == 2
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1331'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-14-steps

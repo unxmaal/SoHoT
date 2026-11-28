@@ -1,0 +1,65 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1371
+modality: code
+prompt: 'Write a Python function `process(xs)` that takes a list of integers and applies these steps in
+  order, each to the result of the one before:
+
+  1. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  2. Divide every value by 4 with floor division (so -7 divided by 4 gives -2).
+
+  3. Replace every value with its absolute value.
+
+  4. Divide every value by 4 with floor division (so -7 divided by 4 gives -2).
+
+  5. Remove every value that is a multiple of 7 (0 is a multiple of everything).
+
+  6. Drop the first 1 values (an empty list if there are fewer).
+
+  7. Keep the values at indices 0, 3, 6, and so on.
+
+  8. Add 2 to every value.
+
+  9. Replace every value with the largest value seen so far.
+
+  10. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  11. Sort ascending.
+
+  12. Remove every negative value.
+
+  13. Replace every value with the largest value seen so far.
+
+  14. Clamp every value into the range -1 to 3, both inclusive.
+
+  Then: Return a list of the two smallest values in ascending order (fewer if there are fewer).
+
+
+  Example: `process([-3, 21, 24, -7, 2]) returns [3]`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - process([]) == []
+  - process([5]) == []
+  - process([-6, 25, -12]) == []
+  - process([-11, 1, -10, 24, -9, 12, 15, 4, 9]) == [3]
+  - process([19, 17, -11, 1, -6, -4]) == [3, 3]
+  - process([3, 6, 8, -7, 25, -10]) == [3]
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1371'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-14-steps

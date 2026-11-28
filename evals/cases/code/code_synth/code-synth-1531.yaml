@@ -1,0 +1,73 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1531
+modality: code
+prompt: 'Write a Python function `solve(xs)` that takes a list of integers and applies these steps in
+  order, each to the result of the one before:
+
+  1. Keep only the values greater than 5.
+
+  2. Keep only the last 2 values, in their order (all of them if there are fewer).
+
+  3. Remove duplicates, keeping only the last occurrence of each value, in the order those last occurrences
+  appear.
+
+  4. Keep only the even values.
+
+  5. Keep only the first 2 values (all of them if there are fewer).
+
+  6. Remove every value that is a multiple of 3 (0 is a multiple of everything).
+
+  7. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  8. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  9. Remove duplicates, keeping the first occurrence of each value.
+
+  10. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  11. Replace every value with its remainder after division by 7, as Python''s % gives it (never negative).
+
+  12. Reverse the list.
+
+  13. Swap each adjacent pair (indices 0 and 1, then 2 and 3, and so on); an unpaired last value stays.
+
+  14. Keep only the first 3 values (all of them if there are fewer).
+
+  15. Replace the list with the differences between consecutive values, later minus earlier (a list with
+  fewer than two values becomes empty).
+
+  16. Remove duplicates, keeping only the last occurrence of each value, in the order those last occurrences
+  appear.
+
+  Then: Return a list of the two smallest values in ascending order (fewer if there are fewer).
+
+
+  Example: `solve([6, 15, 23, 15, 0, 23]) returns []`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - solve([]) == []
+  - solve([-7]) == []
+  - solve([-6, 17, 11, -11, 11, 22]) == []
+  - solve([21, 10, -12, 22, -3, 10, -5, 20]) == [2]
+  - solve([-5, 11, -3, 15, 25, 22, 14]) == [1]
+  - solve([-4, 20, 4, 14, -7, 0, 4, 16]) == [2]
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1531'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-16-steps

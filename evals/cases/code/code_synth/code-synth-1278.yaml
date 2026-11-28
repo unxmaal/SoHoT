@@ -1,0 +1,74 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1278
+modality: code
+prompt: 'Write a Python function `reduce_data(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Convert to uppercase.
+
+  2. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  3. Remove every vowel (a, e, i, o, u, either case).
+
+  4. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  5. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  6. Replace runs of whitespace with a single space and strip both ends.
+
+  7. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  8. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  9. Convert to lowercase.
+
+  10. Remove every vowel (a, e, i, o, u, either case).
+
+  11. Remove every digit.
+
+  12. Keep only the first occurrence of each character.
+
+  13. Replace every ''b'' with ''t'' (lowercase only).
+
+  14. Sort the characters in ascending code point order.
+
+  15. Remove every vowel (a, e, i, o, u, either case).
+
+  16. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  17. Keep only the first 2 whitespace-separated words, joined by single spaces.
+
+  18. Sort the characters in ascending code point order.
+
+  Then: Return how many characters it has.
+
+
+  Example: `reduce_data(''yxa011b.BC,'') returns 6`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - reduce_data('Data-driven 2025') == 6
+  - reduce_data('zz yy xx') == 3
+  - reduce_data('banana bandana') == 3
+  - reduce_data('Zebra 42 crossing 7') == 7
+  - reduce_data('  jumps   over the  lazy dog ') == 13
+  - reduce_data('Programming in Python') == 8
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1278'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-18-steps

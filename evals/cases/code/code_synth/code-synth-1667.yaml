@@ -1,0 +1,66 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1667
+modality: code
+prompt: 'Write a Python function `compute(xs)` that takes a list of integers and applies these steps in
+  order, each to the result of the one before:
+
+  1. Replace the list with the differences between consecutive values, later minus earlier (a list with
+  fewer than two values becomes empty).
+
+  2. Replace every value with the largest of itself and the up to 1 values before it.
+
+  3. Divide every value by 4 with floor division (so -7 divided by 4 gives -2).
+
+  4. Replace every value with its absolute value.
+
+  5. Remove every negative value.
+
+  6. Keep only the values greater than -2.
+
+  7. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  8. Drop the first 1 values (an empty list if there are fewer).
+
+  9. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  10. Add -1 to every value.
+
+  11. Replace every value with its square.
+
+  12. Sort descending.
+
+  13. Keep only the last 3 values, in their order (all of them if there are fewer).
+
+  14. Replace every value with its remainder after division by 9, as Python''s % gives it (never negative).
+
+  Then: Return the index of the first occurrence of the largest value, or -1 for an empty list.
+
+
+  Example: `compute([-9, 23, 12, 23, -5, 4, 24]) returns 0`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - compute([]) == -1
+  - compute([6]) == -1
+  - compute([-7, 19, -11, 13, -6, 8]) == 2
+  - compute([25, 17, 7, 16]) == 1
+  - compute([-7, 12, 5, 11, 8, -11, -1, 16, -2]) == 1
+  - compute([-5, 3, 22, 19, -12, 21, 8, 22, 15]) == 1
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1667'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-14-steps

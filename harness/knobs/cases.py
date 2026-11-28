@@ -10,6 +10,10 @@ KNOBS = [
        note="SQuAD questions of one paragraph a decide check case holds; it is kept only with both answerable and not (#423)"),
     _k("decide_per_family", ["evals/decide_corpus.py:PER_FAMILY"], [6, 30, 60, 90],
        note="decide cases the corpus builder draws per route, policy and rate family; 60 holds SQuAD to half the holdout (#423, #671)"),
+    _k("decide_policy_cases", ["evals/decide_corpus.py:POLICY_CASES"], [60, 90, 120],
+       note="policy cases the corpus builder draws, past PER_FAMILY so the SQuAD half of the holdout can grow with them (#2195) (#<issue>)"),
+    _k("decide_route_cases", ["evals/decide_corpus.py:ROUTE_CASES"], [60, 90, 120],
+       note="route cases the corpus builder draws, past PER_FAMILY so the SQuAD half of the holdout can grow with them (#2195) (#<issue>)"),
     _k("ocr_max_cer", ["evals/importers/ocr_synth.py:MAX_CER", "evals/ocr_corpus.py:MAX_CER"], [0.0, 0.05, 0.1, 0.25],
        unit="share", grades=True,
        note="CER an ocr case passes at, written into each case (#701); noise floor of Vision (macOS 27.0.1) on 464 "

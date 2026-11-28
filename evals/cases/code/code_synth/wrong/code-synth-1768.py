@@ -1,0 +1,23 @@
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603: a deliberately wrong answer, never graded.
+def compute(s):
+    s = ' '.join(reversed(s.split()))
+    s = ''.join(sorted(s))
+    s = ''.join(chr((ord(c) - ord('a' if c.islower() else 'A') + 6) % 26 + ord('a' if c.islower() else 'A')) if c.isascii() and c.isalpha() else c for c in s)
+    s = ' '.join(w.capitalize() for w in s.split())
+    s = ''.join(chr((ord(c) - ord('a' if c.islower() else 'A') + 10) % 26 + ord('a' if c.islower() else 'A')) if c.isascii() and c.isalpha() else c for c in s)
+    s = ''.join(c for c in s if c.lower() not in 'aeiou')
+    s = ''.join(chr((ord(c) - ord('a' if c.islower() else 'A') + 8) % 26 + ord('a' if c.islower() else 'A')) if c.isascii() and c.isalpha() else c for c in s)
+    s = ' '.join(s.split()[:3])
+    s = ' '.join(reversed(s.split()))
+    s = s.upper()
+    s = ' '.join(s.split()[:4])
+    s = ' '.join(w.capitalize() for w in s.split())
+    s = ' '.join(w[::-1] for w in s.split())
+    s = s.upper()
+    s = s.lower()
+    s = s.replace('s', 'r')
+    s = s.swapcase()
+    s = ''.join(sorted(s))
+    s = ''.join(c for c in s if not c.isdigit())
+    s = ' '.join(s.split())
+    return min(set(s), key=lambda c: (-s.count(c), c)) if s else ''

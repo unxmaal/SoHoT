@@ -1,0 +1,83 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1692
+modality: code
+prompt: 'Write a Python function `transform(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  2. Collapse every run of the same character into one character.
+
+  3. Cut the text to at most 5 characters, then pad it on the right with ''.'' up to 5 characters.
+
+  4. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  5. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  6. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  7. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  8. Convert to uppercase.
+
+  9. Sort the characters in ascending code point order.
+
+  10. Convert to lowercase.
+
+  11. Remove every digit.
+
+  12. Collapse every run of the same character into one character.
+
+  13. Keep only the first 4 whitespace-separated words, joined by single spaces.
+
+  14. Convert to lowercase.
+
+  15. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  16. Cut the text to at most 6 characters, then pad it on the right with ''.'' up to 6 characters.
+
+  17. Convert to lowercase.
+
+  18. Remove every digit.
+
+  19. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  20. Cut the text to at most 9 characters, then pad it on the right with ''.'' up to 9 characters.
+
+  Then: Return the longest whitespace-separated word, the first one if several tie, or '''' if there are
+  none.
+
+
+  Example: `transform(''2xy  22CA'') returns ''Ac.......''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - transform('abc123xyz') == 'Abc......'
+  - transform('The 3 little pigs 33') == 'Gip......'
+  - transform('x') == '.x.......'
+  - transform('mississippi river') == 'Eirv.....'
+  - transform('aabbbcccc') == '.abc.....'
+  - transform('Hello, World') == 'Dlorw....'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1692'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-20-steps

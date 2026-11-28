@@ -1,0 +1,71 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1368
+modality: code
+prompt: 'Write a Python function `apply_rules(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  2. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  3. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  4. Keep only the first 4 whitespace-separated words, joined by single spaces.
+
+  5. Replace every ''n'' with ''l'' (lowercase only).
+
+  6. Sort the characters in ascending code point order.
+
+  7. Collapse every run of the same character into one character.
+
+  8. Replace runs of whitespace with a single space and strip both ends.
+
+  9. Replace every ''o'' with ''s'' (lowercase only).
+
+  10. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  11. Keep only the first 4 whitespace-separated words, joined by single spaces.
+
+  12. Replace runs of whitespace with a single space and strip both ends.
+
+  13. Keep only the first occurrence of each character.
+
+  14. Cut the text to at most 7 characters, then pad it on the right with ''.'' up to 7 characters.
+
+  15. Sort the characters in ascending code point order.
+
+  16. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  Then: Return the longest whitespace-separated word, the first one if several tie, or '''' if there are
+  none.
+
+
+  Example: `apply_rules(''A Ay0b.a,a'') returns ''1,1.10111A1a1b''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - apply_rules('  jumps   over the  lazy dog ') == '111a1d1e1g1h1l'
+  - apply_rules('Ünïcode ok') == '111c1d1e1k1l1s'
+  - apply_rules('tab\tseparated  words') == '111a1b1d1e1p1s'
+  - apply_rules('Rotor 99') == '1112191R1r1s1t'
+  - apply_rules('Level') == '2.111L1e1l1v'
+  - apply_rules('hELLo WoRLD') == '11121D1E1L1R1W'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1368'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-16-steps

@@ -1,0 +1,76 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1199
+modality: code
+prompt: 'Write a Python function `transform(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Replace every value with the largest of itself and the up to 2 values before it.
+
+  2. Rotate the list left by 5 positions, wrapping around (an empty list stays empty).
+
+  3. Drop the first 3 values (an empty list if there are fewer).
+
+  4. Remove every value that is a multiple of 4 (0 is a multiple of everything).
+
+  5. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  6. Replace every value with its remainder after division by 7, as Python''s % gives it (never negative).
+
+  7. Keep only the first 3 values (all of them if there are fewer).
+
+  8. Remove duplicates, keeping only the last occurrence of each value, in the order those last occurrences
+  appear.
+
+  9. Sort ascending.
+
+  10. Keep only the first 5 values (all of them if there are fewer).
+
+  11. Remove every negative value.
+
+  12. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  13. Collapse each run of equal adjacent values into one value.
+
+  14. Keep only the first 6 values (all of them if there are fewer).
+
+  15. Rotate the list left by 1 positions, wrapping around (an empty list stays empty).
+
+  16. Divide every value by 3 with integer division that rounds toward zero (so -7 divided by 3 gives
+  -2).
+
+  17. Remove duplicates, keeping the first occurrence of each value.
+
+  18. Divide every value by 2 with integer division that rounds toward zero (so -7 divided by 2 gives
+  -3).
+
+  Then: Return the largest value, or -1 for an empty list.
+
+
+  Example: `transform([1, 7, -11, 20, 9]) returns -1`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - transform([]) == -1
+  - transform([-6]) == -1
+  - transform([6, 11, 19, 24, 3, 4, 7]) == 1
+  - transform([-9, -5, 24, 19, 3, 23, 12, -12, -11]) == 1
+  - transform([2, 8, 24, 6, -7, 24, 24, -7, 8]) == 0
+  - transform([-9, 18, -10, 6, 19, -7]) == 1
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1199'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-18-steps

@@ -1,0 +1,80 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1516
+modality: code
+prompt: 'Write a Python function `compute(s)` that takes a string and applies these steps in order, each
+  to the result of the one before:
+
+  1. Replace every ''b'' with ''l'' (lowercase only).
+
+  2. Sort the characters in ascending code point order.
+
+  3. Convert to lowercase.
+
+  4. Collapse every run of the same character into one character.
+
+  5. Replace every maximal run of digits with the number of digits in it.
+
+  6. Convert to uppercase.
+
+  7. Sort the characters in ascending code point order.
+
+  8. Shift every letter forward by 5 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  9. Swap the case of every letter.
+
+  10. Keep only the first occurrence of each character.
+
+  11. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  12. Keep only the first 3 whitespace-separated words, joined by single spaces.
+
+  13. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  14. Replace every ''n'' with ''s'' (lowercase only).
+
+  15. Sort the characters in ascending code point order.
+
+  16. Keep only the first occurrence of each character.
+
+  17. Sort the characters in ascending code point order.
+
+  18. Replace runs of whitespace with a single space and strip both ends.
+
+  19. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  20. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  Then: Return how many characters it has.
+
+
+  Example: `compute(''a0 yxC0zz..zyzB'') returns 16`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - compute('hELLo WoRLD') == 16
+  - compute('zz yy xx') == 8
+  - compute('banana bandana') == 10
+  - compute('abc123xyz') == 16
+  - compute('A man a plan a canal Panama') == 14
+  - compute('') == 0
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1516'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-20-steps

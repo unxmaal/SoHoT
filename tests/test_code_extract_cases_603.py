@@ -155,8 +155,8 @@ LANE_GATE_NEEDS = 417
 
 
 def test_the_margin_cases_come_only_from_families_the_incumbent_can_lose_in():
-    margin = [r for r in code_synth.fetch() if r["item"] >= code_synth.MARGIN_FROM]
-    assert len(margin) == code_synth.COUNT - code_synth.MARGIN_FROM >= 150
+    margin = [r for r in code_synth.fetch() if code_synth.MARGIN_FROM <= r["item"] < code_synth.LONG_FROM]
+    assert len(margin) == code_synth.LONG_FROM - code_synth.MARGIN_FROM >= 150
     assert {r["stratum"].split("-")[0] for r in margin} <= {"strs", "algo", "hard"}
     assert [r for r in code_synth.fetch(count=code_synth.MARGIN_FROM)] == code_synth.fetch()[:code_synth.MARGIN_FROM]
 

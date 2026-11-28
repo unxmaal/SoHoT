@@ -1,0 +1,80 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1523
+modality: code
+prompt: 'Write a Python function `reduce_data(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Replace the list with the sums of non-overlapping consecutive pairs; a lone final value stays as
+  it is.
+
+  2. Keep only the last 4 values, in their order (all of them if there are fewer).
+
+  3. Sort ascending.
+
+  4. Replace every value with the largest of itself and the up to 3 values before it.
+
+  5. Replace every value with its absolute value.
+
+  6. Replace the list with the sums of non-overlapping consecutive pairs; a lone final value stays as
+  it is.
+
+  7. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  8. Sort ascending.
+
+  9. Rotate the list left by 5 positions, wrapping around (an empty list stays empty).
+
+  10. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  11. Remove duplicates, keeping only the last occurrence of each value, in the order those last occurrences
+  appear.
+
+  12. Reverse the list.
+
+  13. Divide every value by 4 with floor division (so -7 divided by 4 gives -2).
+
+  14. Replace every value with its remainder after division by 5, as Python''s % gives it (never negative).
+
+  15. Replace every value with the largest value seen so far.
+
+  16. Swap each adjacent pair (indices 0 and 1, then 2 and 3, and so on); an unpaired last value stays.
+
+  17. Replace every value with its remainder after division by 7, as Python''s % gives it (never negative).
+
+  18. Sort descending.
+
+  19. Replace the list with the sums of non-overlapping consecutive pairs; a lone final value stays as
+  it is.
+
+  20. Replace every value with the largest of itself and the up to 3 values before it.
+
+  Then: Return the sum of the values (0 for an empty list).
+
+
+  Example: `reduce_data([21, 11, -8, 22, 23]) returns 8`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - reduce_data([]) == 0
+  - reduce_data([4]) == 1
+  - reduce_data([22, 25, 9, -4, 18, 20, 24, -8, 4]) == 6
+  - reduce_data([7, 2, 18, -7, 8, 8, 24, 14, 20]) == 8
+  - reduce_data([4, 10, 8, 10, 1, 7, 23, 20, 11]) == 4
+  - reduce_data([25, 21, -9, -2, 14, 12, 19, 25, 7]) == 6
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1523'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-20-steps

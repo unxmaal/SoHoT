@@ -1,0 +1,75 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1081
+modality: code
+prompt: 'Write a Python function `run_pipeline(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  2. Replace every value with the largest of itself and the up to 1 values before it.
+
+  3. Replace every value with the largest value seen so far.
+
+  4. Remove every value that is a multiple of 4 (0 is a multiple of everything).
+
+  5. Replace every value with the largest value seen so far.
+
+  6. Keep only the last 2 values, in their order (all of them if there are fewer).
+
+  7. Remove every negative value.
+
+  8. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  9. Replace every value with the largest value seen so far.
+
+  10. Replace every value with its remainder after division by 8, as Python''s % gives it (never negative).
+
+  11. Divide every value by 3 with floor division (so -7 divided by 3 gives -3).
+
+  12. Keep only the first 3 values (all of them if there are fewer).
+
+  13. Remove every negative value.
+
+  14. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  15. Replace the list with the sums of non-overlapping consecutive pairs; a lone final value stays as
+  it is.
+
+  16. Reverse the list.
+
+  17. Clamp every value into the range 0 to 8, both inclusive.
+
+  18. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  Then: Return the lower median: the value at index (n - 1) // 2 of the sorted list, or 0 for an empty
+  list.
+
+
+  Example: `run_pipeline([4, 19, -12, 2]) returns 4`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - run_pipeline([]) == 0
+  - run_pipeline([-4]) == 0
+  - run_pipeline([25, 14, -6, 24, 24, 4, -10, 9]) == 2
+  - run_pipeline([19, 8, -3, 11, -6, -3]) == 2
+  - run_pipeline([-8, 0, -1, -9, 25, 1, 14, 18]) == 4
+  - run_pipeline([-4, -12, 16, 2, 7, 22, -11]) == 4
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1081'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-18-steps

@@ -1,0 +1,79 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1688
+modality: code
+prompt: 'Write a Python function `apply_rules(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Swap the case of every letter.
+
+  2. Replace every maximal run of digits with the number of digits in it.
+
+  3. Keep only the first 2 whitespace-separated words, joined by single spaces.
+
+  4. Keep only the first occurrence of each character.
+
+  5. Replace every maximal run of digits with the number of digits in it.
+
+  6. Convert to lowercase.
+
+  7. Replace every maximal run of digits with the number of digits in it.
+
+  8. Replace every ''r'' with ''s'' (lowercase only).
+
+  9. Replace every maximal run of digits with the number of digits in it.
+
+  10. Shift every letter forward by 5 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  11. Replace runs of whitespace with a single space and strip both ends.
+
+  12. Collapse every run of the same character into one character.
+
+  13. Keep only the first occurrence of each character.
+
+  14. Replace every maximal run of digits with the number of digits in it.
+
+  15. Swap the case of every letter.
+
+  16. Shift every letter forward by 8 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  17. Convert to lowercase.
+
+  18. Convert to uppercase.
+
+  19. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  20. Remove every vowel (a, e, i, o, u, either case).
+
+  Then: Return the most frequent character, the smallest by code point if several tie, or '''' for an
+  empty string.
+
+
+  Example: `apply_rules(''yAaxz.a02b'') returns ''.''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - apply_rules('x') == 'K'
+  - apply_rules('Ünïcode ok') == ' '
+  - apply_rules('Zebra 42 crossing 7') == ' '
+  - apply_rules('hELLo WoRLD') == ' '
+  - apply_rules('aabbbcccc') == 'N'
+  - apply_rules('12345') == '1'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1688'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-20-steps

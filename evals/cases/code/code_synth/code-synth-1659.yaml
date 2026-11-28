@@ -1,0 +1,76 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1659
+modality: code
+prompt: 'Write a Python function `reduce_data(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Remove duplicates, keeping only the last occurrence of each value, in the order those last occurrences
+  appear.
+
+  2. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  3. Add -5 to every value.
+
+  4. Keep only the first 5 values (all of them if there are fewer).
+
+  5. Remove every value that is a multiple of 5 (0 is a multiple of everything).
+
+  6. Divide every value by 3 with integer division that rounds toward zero (so -7 divided by 3 gives -2).
+
+  7. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  8. Clamp every value into the range 1 to 10, both inclusive.
+
+  9. Replace every value with its remainder after division by 8, as Python''s % gives it (never negative).
+
+  10. Divide every value by 4 with integer division that rounds toward zero (so -7 divided by 4 gives
+  -1).
+
+  11. Remove duplicates, keeping only the last occurrence of each value, in the order those last occurrences
+  appear.
+
+  12. Clamp every value into the range -4 to 2, both inclusive.
+
+  13. Keep only the first 3 values (all of them if there are fewer).
+
+  14. Reverse the list.
+
+  15. Remove duplicates, keeping the first occurrence of each value.
+
+  16. Add 4 to every value.
+
+  17. Keep only the first 3 values (all of them if there are fewer).
+
+  18. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  Then: Return how many distinct values there are.
+
+
+  Example: `reduce_data([13, 10, 22, -10]) returns 2`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - reduce_data([]) == 0
+  - reduce_data([-1]) == 1
+  - reduce_data([2, -8, 18, 8]) == 1
+  - reduce_data([16, 4, 0]) == 1
+  - reduce_data([0, 0, 21, 7, 1]) == 2
+  - reduce_data([12, 16, 8, -6]) == 2
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1659'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-18-steps

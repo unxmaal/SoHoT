@@ -1,0 +1,64 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1291
+modality: code
+prompt: 'Write a Python function `reduce_data(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Replace every value with its absolute value.
+
+  2. Keep only the even values.
+
+  3. Divide every value by 4 with integer division that rounds toward zero (so -7 divided by 4 gives -1).
+
+  4. Replace every value with its absolute value.
+
+  5. Remove every value that is a multiple of 5 (0 is a multiple of everything).
+
+  6. Sort ascending.
+
+  7. Replace every value with its square.
+
+  8. Remove every negative value.
+
+  9. Replace every value with the largest value seen so far.
+
+  10. Divide every value by 2 with floor division (so -7 divided by 2 gives -4).
+
+  11. Keep only the values greater than -3.
+
+  12. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  13. Replace every value with the largest of itself and the up to 2 values before it.
+
+  14. Replace every value with its square.
+
+  Then: Return the index of the first occurrence of the largest value, or -1 for an empty list.
+
+
+  Example: `reduce_data([22, -7, 22]) returns -1`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - reduce_data([]) == -1
+  - reduce_data([-7]) == -1
+  - reduce_data([-4, 3, -9, -2, -7, 1, 21, 5]) == 0
+  - reduce_data([18, -4, 10]) == 2
+  - reduce_data([20, 11, 4, 10, 9, 16, 1, 21]) == 2
+  - reduce_data([5, -4, -7]) == 0
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1291'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-14-steps

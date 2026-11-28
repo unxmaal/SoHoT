@@ -1,0 +1,69 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1134
+modality: code
+prompt: 'Write a Python function `run_pipeline(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Replace every maximal run of digits with the number of digits in it.
+
+  2. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  3. Replace every ''l'' with ''t'' (lowercase only).
+
+  4. Collapse every run of the same character into one character.
+
+  5. Replace every ''a'' with ''s'' (lowercase only).
+
+  6. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  7. Cut the text to at most 5 characters, then pad it on the right with ''.'' up to 5 characters.
+
+  8. Collapse every run of the same character into one character.
+
+  9. Replace every maximal run of digits with the number of digits in it.
+
+  10. Swap the case of every letter.
+
+  11. Sort the characters in ascending code point order.
+
+  12. Convert to uppercase.
+
+  13. Remove every vowel (a, e, i, o, u, either case).
+
+  14. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  15. Swap the case of every letter.
+
+  16. Remove every vowel (a, e, i, o, u, either case).
+
+  Then: Return the longest whitespace-separated word, the first one if several tie, or '''' if there are
+  none.
+
+
+  Example: `run_pipeline(''bc cyCBazA b'') returns ''bsz''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - run_pipeline('  ') == '.'
+  - run_pipeline('hELLo WoRLD') == 'dlrw'
+  - run_pipeline('Ünïcode ok') == 'dk'
+  - run_pipeline('Level') == 'tvl'
+  - run_pipeline('The 3 little pigs 33') == '1gs'
+  - run_pipeline('Zebra 42 crossing 7') == '1gn'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1134'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-16-steps

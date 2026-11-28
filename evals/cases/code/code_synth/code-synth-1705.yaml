@@ -1,0 +1,75 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1705
+modality: code
+prompt: 'Write a Python function `run_pipeline(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Divide every value by 3 with floor division (so -7 divided by 3 gives -3).
+
+  2. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  3. Divide every value by 4 with floor division (so -7 divided by 4 gives -2).
+
+  4. Drop the first 1 values (an empty list if there are fewer).
+
+  5. Replace every value with the largest value seen so far.
+
+  6. Rotate the list left by 3 positions, wrapping around (an empty list stays empty).
+
+  7. Remove duplicates, keeping the first occurrence of each value.
+
+  8. Remove duplicates, keeping only the last occurrence of each value, in the order those last occurrences
+  appear.
+
+  9. Replace every value with the largest value seen so far.
+
+  10. Replace the list with the sums of non-overlapping consecutive pairs; a lone final value stays as
+  it is.
+
+  11. Reverse the list.
+
+  12. Remove duplicates, keeping the first occurrence of each value.
+
+  13. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  14. Add 4 to every value.
+
+  15. Keep only the first 3 values (all of them if there are fewer).
+
+  16. Add 2 to every value.
+
+  17. Keep only the first 2 values (all of them if there are fewer).
+
+  18. Sort ascending.
+
+  Then: Return the largest value, or -1 for an empty list.
+
+
+  Example: `run_pipeline([-12, -3, -6, 0, -3, -1]) returns 4`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - run_pipeline([]) == -1
+  - run_pipeline([-8]) == -1
+  - run_pipeline([-2, -11, 23, 6, 23, 17]) == 12
+  - run_pipeline([-5, 2, -1, -5, 17, 17, -2]) == 7
+  - run_pipeline([19, 1, 4]) == 7
+  - run_pipeline([10, 9, 11, 1, -3]) == 10
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1705'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-18-steps

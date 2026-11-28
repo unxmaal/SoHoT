@@ -1,0 +1,76 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1529
+modality: code
+prompt: 'Write a Python function `run_pipeline(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Replace the list with the sums of non-overlapping consecutive pairs; a lone final value stays as
+  it is.
+
+  2. Multiply every value by 3.
+
+  3. Keep only the first 6 values (all of them if there are fewer).
+
+  4. Clamp every value into the range 1 to 7, both inclusive.
+
+  5. Swap each adjacent pair (indices 0 and 1, then 2 and 3, and so on); an unpaired last value stays.
+
+  6. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  7. Divide every value by 3 with integer division that rounds toward zero (so -7 divided by 3 gives -2).
+
+  8. Replace every value with its square.
+
+  9. Add -3 to every value.
+
+  10. Divide every value by 3 with floor division (so -7 divided by 3 gives -3).
+
+  11. Remove every negative value.
+
+  12. Sort descending.
+
+  13. Keep only the even values.
+
+  14. Keep only the last 2 values, in their order (all of them if there are fewer).
+
+  15. Swap each adjacent pair (indices 0 and 1, then 2 and 3, and so on); an unpaired last value stays.
+
+  16. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  17. Divide every value by 3 with integer division that rounds toward zero (so -7 divided by 3 gives
+  -2).
+
+  18. Rotate the list left by 3 positions, wrapping around (an empty list stays empty).
+
+  Then: Return the largest value, or -1 for an empty list.
+
+
+  Example: `run_pipeline([-8, -1, 7, 13, 9, 18, 18, 25]) returns 0`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - run_pipeline([]) == -1
+  - run_pipeline([7]) == 0
+  - run_pipeline([8, 10, 15, -6, -9]) == 1
+  - run_pipeline([-12, 14, 17]) == 1
+  - run_pipeline([-3, 4, 25, 17]) == 0
+  - run_pipeline([-1, 20, 24, 2, 2, 6, 5, -3, 6]) == 1
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1529'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-18-steps

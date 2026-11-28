@@ -1,0 +1,76 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1230
+modality: code
+prompt: 'Write a Python function `process(s)` that takes a string and applies these steps in order, each
+  to the result of the one before:
+
+  1. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  2. Swap the case of every letter.
+
+  3. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  4. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  5. Convert to lowercase.
+
+  6. Remove every vowel (a, e, i, o, u, either case).
+
+  7. Replace runs of whitespace with a single space and strip both ends.
+
+  8. Swap the case of every letter.
+
+  9. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  10. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  11. Keep only the first 4 whitespace-separated words, joined by single spaces.
+
+  12. Replace every ''o'' with ''e'' (lowercase only).
+
+  13. Keep only the first 3 whitespace-separated words, joined by single spaces.
+
+  14. Convert to lowercase.
+
+  15. Replace runs of whitespace with a single space and strip both ends.
+
+  16. Keep only the first occurrence of each character.
+
+  17. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  18. Keep only the first occurrence of each character.
+
+  Then: Return how many characters it has.
+
+
+  Example: `process(''acyaa.0Cxb0b'') returns 8`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - process('Rotor 99') == 6
+  - process('  jumps   over the  lazy dog ') == 11
+  - process('Zebra 42 crossing 7') == 11
+  - process('tab\tseparated  words') == 10
+  - process('Ünïcode ok') == 9
+  - process('hELLo WoRLD') == 8
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1230'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-18-steps

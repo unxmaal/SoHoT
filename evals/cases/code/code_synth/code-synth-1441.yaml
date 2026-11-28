@@ -1,0 +1,74 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1441
+modality: code
+prompt: 'Write a Python function `apply_rules(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Add 4 to every value.
+
+  2. Remove every negative value.
+
+  3. Replace every value with its remainder after division by 7, as Python''s % gives it (never negative).
+
+  4. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  5. Replace every value with the largest value seen so far.
+
+  6. Replace every value with its remainder after division by 9, as Python''s % gives it (never negative).
+
+  7. Reverse the list.
+
+  8. Remove duplicates, keeping only the last occurrence of each value, in the order those last occurrences
+  appear.
+
+  9. Swap each adjacent pair (indices 0 and 1, then 2 and 3, and so on); an unpaired last value stays.
+
+  10. Remove every negative value.
+
+  11. Remove duplicates, keeping only the last occurrence of each value, in the order those last occurrences
+  appear.
+
+  12. Remove every value that is a multiple of 2 (0 is a multiple of everything).
+
+  13. Keep only the first 6 values (all of them if there are fewer).
+
+  14. Sort ascending.
+
+  15. Keep only the first 6 values (all of them if there are fewer).
+
+  16. Remove duplicates, keeping the first occurrence of each value.
+
+  17. Collapse each run of equal adjacent values into one value.
+
+  18. Rotate the list left by 4 positions, wrapping around (an empty list stays empty).
+
+  Then: Return how many distinct values there are.
+
+
+  Example: `apply_rules([1, 19, 24, 6]) returns 2`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - apply_rules([]) == 0
+  - apply_rules([-6]) == 0
+  - apply_rules([-7, 15, 2, 6, 17, -3]) == 3
+  - apply_rules([1, 25, 2, 9, 0, -2, -4, -3, -3]) == 2
+  - apply_rules([12, -11, 3, 3, 10, -1, 13]) == 1
+  - apply_rules([19, -3, -9, 5, 16, 4, 15, 14]) == 2
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1441'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-18-steps

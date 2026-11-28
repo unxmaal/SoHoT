@@ -1,0 +1,73 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1703
+modality: code
+prompt: 'Write a Python function `reduce_data(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Keep only the values greater than -2.
+
+  2. Remove every negative value.
+
+  3. Replace every value with its absolute value.
+
+  4. Collapse each run of equal adjacent values into one value.
+
+  5. Replace every value with its absolute value.
+
+  6. Keep only the last 4 values, in their order (all of them if there are fewer).
+
+  7. Keep only the values greater than 1.
+
+  8. Remove duplicates, keeping the first occurrence of each value.
+
+  9. Remove every value that is a multiple of 2 (0 is a multiple of everything).
+
+  10. Replace every value with the largest of itself and the up to 3 values before it.
+
+  11. Remove duplicates, keeping only the last occurrence of each value, in the order those last occurrences
+  appear.
+
+  12. Reverse the list.
+
+  13. Sort descending.
+
+  14. Keep only the first 4 values (all of them if there are fewer).
+
+  15. Remove every value that is a multiple of 7 (0 is a multiple of everything).
+
+  16. Collapse each run of equal adjacent values into one value.
+
+  17. Swap each adjacent pair (indices 0 and 1, then 2 and 3, and so on); an unpaired last value stays.
+
+  18. Sort descending.
+
+  Then: Return a list of the two smallest values in ascending order (fewer if there are fewer).
+
+
+  Example: `reduce_data([-3, -3, -11, 2]) returns []`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - reduce_data([]) == []
+  - reduce_data([8]) == []
+  - reduce_data([-12, 16, 1, 10, 17, -12]) == [17]
+  - reduce_data([6, 14, 15]) == [15]
+  - reduce_data([13, 23, 1, 4, -3, 25, 0]) == [25]
+  - reduce_data([22, -7, -4, 4]) == []
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1703'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-18-steps

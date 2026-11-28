@@ -1,0 +1,77 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1661
+modality: code
+prompt: 'Write a Python function `apply_rules(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Keep the values at indices 0, 3, 6, and so on.
+
+  2. Drop the first 2 values (an empty list if there are fewer).
+
+  3. Divide every value by 4 with integer division that rounds toward zero (so -7 divided by 4 gives -1).
+
+  4. Remove duplicates, keeping the first occurrence of each value.
+
+  5. Rotate the list left by 3 positions, wrapping around (an empty list stays empty).
+
+  6. Add 2 to every value.
+
+  7. Remove every value that is a multiple of 5 (0 is a multiple of everything).
+
+  8. Swap each adjacent pair (indices 0 and 1, then 2 and 3, and so on); an unpaired last value stays.
+
+  9. Keep only the first 3 values (all of them if there are fewer).
+
+  10. Sort ascending.
+
+  11. Remove every negative value.
+
+  12. Replace every value with its absolute value.
+
+  13. Keep the values at indices 0, 2, 4, and so on.
+
+  14. Keep only the first 3 values (all of them if there are fewer).
+
+  15. Rotate the list left by 7 positions, wrapping around (an empty list stays empty).
+
+  16. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  17. Rotate the list left by 1 positions, wrapping around (an empty list stays empty).
+
+  18. Keep only the first 2 values (all of them if there are fewer).
+
+  19. Sort ascending.
+
+  20. Replace every value with its absolute value.
+
+  Then: Return a list of the two smallest values in ascending order (fewer if there are fewer).
+
+
+  Example: `apply_rules([18, 3, 18, -2, 1, 14, 20, 22]) returns [7]`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - apply_rules([]) == []
+  - apply_rules([-4]) == []
+  - apply_rules([13, -6, 9, 19, 22, 13, 7, 17, -2]) == [3]
+  - apply_rules([2, 2, 23, 5, 23, -8, -1, 11, 14]) == [2]
+  - apply_rules([0, -8, 21, 13, 17, -3, 7]) == [3]
+  - apply_rules([1, -2, 5, 15, 11, 19, -10, 10]) == []
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1661'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-20-steps

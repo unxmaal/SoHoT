@@ -1,0 +1,68 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1505
+modality: code
+prompt: 'Write a Python function `reduce_data(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Divide every value by 3 with floor division (so -7 divided by 3 gives -3).
+
+  2. Sort descending.
+
+  3. Remove duplicates, keeping only the last occurrence of each value, in the order those last occurrences
+  appear.
+
+  4. Keep only the first 3 values (all of them if there are fewer).
+
+  5. Replace the list with the sums of non-overlapping consecutive pairs; a lone final value stays as
+  it is.
+
+  6. Replace every value with its remainder after division by 9, as Python''s % gives it (never negative).
+
+  7. Remove every value that is a multiple of 4 (0 is a multiple of everything).
+
+  8. Replace the list with the sums of non-overlapping consecutive pairs; a lone final value stays as
+  it is.
+
+  9. Replace every value with its remainder after division by 7, as Python''s % gives it (never negative).
+
+  10. Remove duplicates, keeping only the last occurrence of each value, in the order those last occurrences
+  appear.
+
+  11. Reverse the list.
+
+  12. Collapse each run of equal adjacent values into one value.
+
+  13. Remove duplicates, keeping the first occurrence of each value.
+
+  14. Clamp every value into the range -4 to 5, both inclusive.
+
+  Then: Return the resulting list.
+
+
+  Example: `reduce_data([-6, 7, 20, -12, 13]) returns [3]`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - reduce_data([]) == []
+  - reduce_data([4]) == [1]
+  - reduce_data([0, -9, 17, 15, 17, 25, 21, 9]) == [4]
+  - reduce_data([1, 13, 13, 12, 15, 22]) == [3]
+  - reduce_data([13, 19, -4, 19]) == [1]
+  - reduce_data([-12, 12, 24, 15, -5, -5, -11, 4, 0]) == []
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1505'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-14-steps

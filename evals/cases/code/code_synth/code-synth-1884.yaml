@@ -1,0 +1,66 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1884
+modality: code
+prompt: 'Write a Python function `apply_rules(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  2. Shift every letter forward by 8 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  3. Convert to lowercase.
+
+  4. Collapse every run of the same character into one character.
+
+  5. Cut the text to at most 6 characters, then pad it on the right with ''.'' up to 6 characters.
+
+  6. Replace runs of whitespace with a single space and strip both ends.
+
+  7. Keep only the first 2 whitespace-separated words, joined by single spaces.
+
+  8. Convert to lowercase.
+
+  9. Collapse every run of the same character into one character.
+
+  10. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  11. Swap the case of every letter.
+
+  12. Convert to lowercase.
+
+  13. Replace runs of whitespace with a single space and strip both ends.
+
+  14. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  Then: Return the most frequent character, the smallest by code point if several tie, or '''' for an
+  empty string.
+
+
+  Example: `apply_rules(''yy2,c01b0 zc'') returns ''0''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - apply_rules('banana bandana') == 'i'
+  - apply_rules('Hello, World') == ','
+  - apply_rules('Zebra 42 crossing 7') == 'h'
+  - apply_rules('x') == '.'
+  - apply_rules('12345') == '.'
+  - apply_rules('queue QUEUE') == 'c'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1884'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-14-steps

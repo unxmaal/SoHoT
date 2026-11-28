@@ -1,0 +1,69 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1642
+modality: code
+prompt: 'Write a Python function `transform(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  2. Keep only the first occurrence of each character.
+
+  3. Shift every letter forward by 5 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  4. Sort the characters in ascending code point order.
+
+  5. Collapse every run of the same character into one character.
+
+  6. Replace runs of whitespace with a single space and strip both ends.
+
+  7. Replace every maximal run of digits with the number of digits in it.
+
+  8. Keep only the first occurrence of each character.
+
+  9. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  10. Replace every maximal run of digits with the number of digits in it.
+
+  11. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  12. Convert to lowercase.
+
+  13. Cut the text to at most 9 characters, then pad it on the right with ''.'' up to 9 characters.
+
+  14. Remove every digit.
+
+  Then: Return the longest whitespace-separated word, the first one if several tie, or '''' if there are
+  none.
+
+
+  Example: `transform(''B0B2CacBCzz,'') returns '',gh''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - transform('A man a plan a canal Panama') == 'fuf'
+  - transform('Programming in Python') == 'udf'
+  - transform('Data-driven 2025') == '-ia'
+  - transform('Level') == 'qaj'
+  - transform('hELLo WoRLD') == 'bij'
+  - transform('banana bandana') == 'fgi'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1642'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-14-steps

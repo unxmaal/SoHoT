@@ -1,0 +1,76 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1765
+modality: code
+prompt: 'Write a Python function `solve(xs)` that takes a list of integers and applies these steps in
+  order, each to the result of the one before:
+
+  1. Remove every negative value.
+
+  2. Collapse each run of equal adjacent values into one value.
+
+  3. Divide every value by 4 with floor division (so -7 divided by 4 gives -2).
+
+  4. Reverse the list.
+
+  5. Replace every value with its square.
+
+  6. Replace every value with the largest of itself and the up to 3 values before it.
+
+  7. Divide every value by 3 with integer division that rounds toward zero (so -7 divided by 3 gives -2).
+
+  8. Remove every negative value.
+
+  9. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  10. Rotate the list left by 3 positions, wrapping around (an empty list stays empty).
+
+  11. Remove every negative value.
+
+  12. Sort ascending.
+
+  13. Keep only the values greater than 6.
+
+  14. Add -1 to every value.
+
+  15. Replace every value with the largest of itself and the up to 1 values before it.
+
+  16. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  17. Replace every value with its absolute value.
+
+  18. Replace every value with its remainder after division by 7, as Python''s % gives it (never negative).
+
+  19. Replace every value with its square.
+
+  20. Remove duplicates, keeping the first occurrence of each value.
+
+  Then: Return a list of the two smallest values in ascending order (fewer if there are fewer).
+
+
+  Example: `solve([3, 9, 8, 23]) returns [0]`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - solve([]) == []
+  - solve([-2]) == []
+  - solve([-8, -4, 21, -3, 24, 9, 6, 22]) == [0, 16]
+  - solve([5, -7, 13, -7, -9, -2, 23, 15, 12]) == [0]
+  - solve([-6, 14, 16, 18, -5, 19, 22, 22, -9]) == [0]
+  - solve([17, 16, 15]) == []
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1765'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-20-steps

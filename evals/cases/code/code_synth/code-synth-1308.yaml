@@ -1,0 +1,79 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1308
+modality: code
+prompt: 'Write a Python function `reduce_data(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  2. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  3. Replace every ''c'' with ''o'' (lowercase only).
+
+  4. Collapse every run of the same character into one character.
+
+  5. Remove every digit.
+
+  6. Convert to lowercase.
+
+  7. Keep only the first occurrence of each character.
+
+  8. Convert to lowercase.
+
+  9. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  10. Keep only the first 4 whitespace-separated words, joined by single spaces.
+
+  11. Cut the text to at most 5 characters, then pad it on the right with ''.'' up to 5 characters.
+
+  12. Convert to lowercase.
+
+  13. Replace every ''l'' with ''o'' (lowercase only).
+
+  14. Keep only the first occurrence of each character.
+
+  15. Cut the text to at most 6 characters, then pad it on the right with ''.'' up to 6 characters.
+
+  16. Keep only the first 4 whitespace-separated words, joined by single spaces.
+
+  17. Replace every maximal run of digits with the number of digits in it.
+
+  18. Cut the text to at most 9 characters, then pad it on the right with ''.'' up to 9 characters.
+
+  19. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  20. Collapse every run of the same character into one character.
+
+  Then: Return the longest whitespace-separated word, the first one if several tie, or '''' if there are
+  none.
+
+
+  Example: `reduce_data(''b101by y.002 .2y'') returns ''1.y.''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - reduce_data('aabbbcccc') == '1ab.'
+  - reduce_data('Rotor 99') == 'r.'
+  - reduce_data('banana bandana') == '1ba.'
+  - reduce_data('noon') == '1no.'
+  - reduce_data('Programming in Python') == '1py.'
+  - reduce_data('  jumps   over the  lazy dog ') == '1do.'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1308'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-20-steps

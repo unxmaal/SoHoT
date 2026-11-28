@@ -1,0 +1,72 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1095
+modality: code
+prompt: 'Write a Python function `process(xs)` that takes a list of integers and applies these steps in
+  order, each to the result of the one before:
+
+  1. Remove duplicates, keeping only the last occurrence of each value, in the order those last occurrences
+  appear.
+
+  2. Add -5 to every value.
+
+  3. Sort descending.
+
+  4. Replace the list with the differences between consecutive values, later minus earlier (a list with
+  fewer than two values becomes empty).
+
+  5. Replace every value with its square.
+
+  6. Add -3 to every value.
+
+  7. Rotate the list left by 6 positions, wrapping around (an empty list stays empty).
+
+  8. Remove duplicates, keeping the first occurrence of each value.
+
+  9. Remove every negative value.
+
+  10. Keep only the values greater than 4.
+
+  11. Drop the first 2 values (an empty list if there are fewer).
+
+  12. Keep only the first 4 values (all of them if there are fewer).
+
+  13. Remove duplicates, keeping only the last occurrence of each value, in the order those last occurrences
+  appear.
+
+  14. Add -5 to every value.
+
+  15. Remove duplicates, keeping the first occurrence of each value.
+
+  16. Replace every value with the largest value seen so far.
+
+  Then: Return the lower median: the value at index (n - 1) // 2 of the sorted list, or 0 for an empty
+  list.
+
+
+  Example: `process([19, 9, 19]) returns 0`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - process([]) == 0
+  - process([-5]) == 0
+  - process([6, 9, 4]) == 0
+  - process([-9, 11, 0, 14, 1, 17, 4]) == 73
+  - process([14, 2, 18, -5, -1, -2, -9]) == 1
+  - process([19, 19, -1, -10, 2, 10]) == 56
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1095'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-16-steps

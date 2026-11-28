@@ -1,0 +1,66 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1219
+modality: code
+prompt: 'Write a Python function `process(xs)` that takes a list of integers and applies these steps in
+  order, each to the result of the one before:
+
+  1. Replace every value with its remainder after division by 9, as Python''s % gives it (never negative).
+
+  2. Swap each adjacent pair (indices 0 and 1, then 2 and 3, and so on); an unpaired last value stays.
+
+  3. Drop the first 2 values (an empty list if there are fewer).
+
+  4. Sort ascending.
+
+  5. Replace the list with its running sums (the value at index i becomes the sum of the values at indices
+  0 to i).
+
+  6. Replace the list with the differences between consecutive values, later minus earlier (a list with
+  fewer than two values becomes empty).
+
+  7. Swap each adjacent pair (indices 0 and 1, then 2 and 3, and so on); an unpaired last value stays.
+
+  8. Keep only the first 6 values (all of them if there are fewer).
+
+  9. Drop the first 2 values (an empty list if there are fewer).
+
+  10. Sort ascending.
+
+  11. Rotate the list left by 7 positions, wrapping around (an empty list stays empty).
+
+  12. Collapse each run of equal adjacent values into one value.
+
+  13. Multiply every value by 3.
+
+  14. Swap each adjacent pair (indices 0 and 1, then 2 and 3, and so on); an unpaired last value stays.
+
+  Then: Return how many distinct values there are.
+
+
+  Example: `process([21, 5, 10, -6, 25, -11]) returns 1`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - process([]) == 0
+  - process([6]) == 0
+  - process([3, 6, -1, 4, 5, 13, 23]) == 2
+  - process([-12, -6, 21, 12, 11, 25]) == 1
+  - process([10, 10, 16, 14, 22, -9, 3]) == 2
+  - process([16, -5, 24, 0]) == 0
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1219'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-14-steps

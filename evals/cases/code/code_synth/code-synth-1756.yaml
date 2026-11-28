@@ -1,0 +1,74 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1756
+modality: code
+prompt: 'Write a Python function `reduce_data(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  2. Shift every letter forward by 6 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  3. Replace every ''n'' with ''l'' (lowercase only).
+
+  4. Swap the case of every letter.
+
+  5. Replace every ''r'' with ''l'' (lowercase only).
+
+  6. Swap the case of every letter.
+
+  7. Replace every ''d'' with ''a'' (lowercase only).
+
+  8. Cut the text to at most 7 characters, then pad it on the right with ''.'' up to 7 characters.
+
+  9. Remove every digit.
+
+  10. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  11. Swap the case of every letter.
+
+  12. Sort the characters in ascending code point order.
+
+  13. Remove every vowel (a, e, i, o, u, either case).
+
+  14. Keep only the first 3 whitespace-separated words, joined by single spaces.
+
+  15. Convert to uppercase.
+
+  16. Collapse every run of the same character into one character.
+
+  17. Sort the characters in ascending code point order.
+
+  18. Collapse every run of the same character into one character.
+
+  Then: Return how many characters it has.
+
+
+  Example: `reduce_data('',cy,cBz0cCx'') returns 1`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - reduce_data('zz yy xx') == 1
+  - reduce_data('') == 1
+  - reduce_data('Level') == 3
+  - reduce_data('Data-driven 2025') == 3
+  - reduce_data('  jumps   over the  lazy dog ') == 1
+  - reduce_data('hELLo WoRLD') == 2
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1756'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-18-steps

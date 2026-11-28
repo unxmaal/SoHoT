@@ -30,6 +30,9 @@ NIMBLE_REV = "dcfdbd9a64f0d869f658d7a72f1beaee32737773"
 MANIFESTS = "docs/assets/public-benchmarks/subsets"
 DEFAULT_OUT = Path(__file__).resolve().parent / "cases" / "decide"
 PER_FAMILY = 60
+#: Route and policy draw more than PER_FAMILY, the families the incumbent splits on; the first 60 are unchanged. #2195.
+ROUTE_CASES = 90
+POLICY_CASES = 90
 #: SQuAD check cases built here; the rest come from evals/importers/squad2_check. #671.
 CHECK_CASES = 6
 ROWS_API = "https://datasets-server.huggingface.co/rows"
@@ -411,7 +414,7 @@ def build() -> list[dict]:
     cases = []
     ids = manifest_ids(SOURCES["massive"]["manifest"])
     rows = massive_rows()
-    cases += [route_case(rows[i]) for i in pick_route(ids, rows)]
+    cases += [route_case(rows[i]) for i in pick_route(ids, rows, ROUTE_CASES)]
 
     ids = manifest_ids(SOURCES["squad2"]["manifest"])
     questions = squad_questions()
@@ -420,7 +423,7 @@ def build() -> list[dict]:
     ids = manifest_ids(SOURCES["civil_comments"]["manifest"])
     rows = _indexed(ids, "google/civil_comments", "default", "test",
                     lambda got: False, limit=len(ids))
-    cases += [policy_case(i, rows[i]) for i in pick_policy(ids, rows)]
+    cases += [policy_case(i, rows[i]) for i in pick_policy(ids, rows, POLICY_CASES)]
 
     ids = manifest_ids(SOURCES["helpsteer2"]["manifest"])
     rows = _indexed(ids, "nvidia/HelpSteer2", "default", "validation",

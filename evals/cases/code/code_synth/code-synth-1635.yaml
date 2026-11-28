@@ -1,0 +1,75 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1635
+modality: code
+prompt: 'Write a Python function `transform(xs)` that takes a list of integers and applies these steps
+  in order, each to the result of the one before:
+
+  1. Replace every value with its absolute value.
+
+  2. Replace every value with its square.
+
+  3. Remove duplicates, keeping only the last occurrence of each value, in the order those last occurrences
+  appear.
+
+  4. Sort by absolute value, values with equal absolute value keeping their current relative order.
+
+  5. Divide every value by 3 with integer division that rounds toward zero (so -7 divided by 3 gives -2).
+
+  6. Replace every value with the largest value seen so far.
+
+  7. Replace the list with the sums of non-overlapping consecutive pairs; a lone final value stays as
+  it is.
+
+  8. Remove every negative value.
+
+  9. Multiply every value by -2.
+
+  10. Remove duplicates, keeping only the last occurrence of each value, in the order those last occurrences
+  appear.
+
+  11. Multiply every value by -1.
+
+  12. Remove every value that is a multiple of 7 (0 is a multiple of everything).
+
+  13. Replace every value with the largest of itself and the up to 3 values before it.
+
+  14. Replace every value with its remainder after division by 3, as Python''s % gives it (never negative).
+
+  15. Multiply every value by 3.
+
+  16. Sort ascending.
+
+  17. Add -1 to every value.
+
+  18. Keep only the first 6 values (all of them if there are fewer).
+
+  Then: Return the resulting list.
+
+
+  Example: `transform([-11, 4, -9, -2, 0]) returns [2, 5, 5]`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - transform([]) == []
+  - transform([-4]) == [2]
+  - transform([7, 1, -6, 25, 24, 23, 22, -6, 25]) == [-1, -1, 2, 2]
+  - transform([2, 17, -7]) == [-1, 2]
+  - transform([0, 6, -4, -7, 3]) == [-1, 2, 2]
+  - transform([-4, 1, 17, -1]) == [-1, 2]
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1635'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: ints-18-steps

@@ -1,0 +1,73 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1032
+modality: code
+prompt: 'Write a Python function `transform(s)` that takes a string and applies these steps in order,
+  each to the result of the one before:
+
+  1. Collapse every run of the same character into one character.
+
+  2. Sort the characters in ascending code point order.
+
+  3. Swap the case of every letter.
+
+  4. Sort the characters in ascending code point order.
+
+  5. Keep only the first occurrence of each character.
+
+  6. Collapse every run of the same character into one character.
+
+  7. Remove every digit.
+
+  8. Replace runs of whitespace with a single space and strip both ends.
+
+  9. Swap the case of every letter.
+
+  10. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  11. Remove every digit.
+
+  12. Keep only the first occurrence of each character.
+
+  13. Sort the characters in ascending code point order.
+
+  14. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  15. Replace runs of whitespace with a single space and strip both ends.
+
+  16. Collapse every run of the same character into one character.
+
+  17. Replace every maximal run of digits with the number of digits in it.
+
+  18. Replace runs of whitespace with a single space and strip both ends.
+
+  Then: Return the most frequent character, the smallest by code point if several tie, or '''' for an
+  empty string.
+
+
+  Example: `transform(''1a1Bx2y0C c'') returns ''B''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - transform('abc123xyz') == 'a'
+  - transform('The 3 little pigs 33') == 'T'
+  - transform('') == ''
+  - transform('mississippi river') == 'e'
+  - transform('Level') == 'L'
+  - transform('queue QUEUE') == 'E'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1032'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-18-steps

@@ -1,0 +1,77 @@
+# SoHoT generated code cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py).
+# Imported by evals/importers from generated:evals.importers.code_synth v1 seed 603@9a8082722465612b071875da7b79985eb7025c9a; re-import, do not edit.
+id: code-synth-1602
+modality: code
+prompt: 'Write a Python function `process(s)` that takes a string and applies these steps in order, each
+  to the result of the one before:
+
+  1. Keep only the first occurrence of each character.
+
+  2. Remove every vowel (a, e, i, o, u, either case).
+
+  3. Shift every letter forward by 3 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  4. Cut the text to at most 8 characters, then pad it on the right with ''.'' up to 8 characters.
+
+  5. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  6. Capitalize every whitespace-separated word (first letter upper case, the rest lower case), joining
+  the words with single spaces.
+
+  7. Remove every digit.
+
+  8. Remove every vowel (a, e, i, o, u, either case).
+
+  9. Cut the text to at most 8 characters, then pad it on the right with ''.'' up to 8 characters.
+
+  10. Replace runs of whitespace with a single space and strip both ends.
+
+  11. Swap the case of every letter.
+
+  12. Shift every letter forward by 8 places in the alphabet, wrapping from z to a and keeping its case;
+  other characters are unchanged.
+
+  13. Replace runs of whitespace with a single space and strip both ends.
+
+  14. Sort the characters in ascending code point order.
+
+  15. Convert to uppercase.
+
+  16. Run-length encode: every run of one character becomes its length then the character (so ''aaab''
+  becomes ''3a1b'').
+
+  17. Reverse the characters of every whitespace-separated word, joining the words with single spaces.
+
+  18. Reverse the order of the whitespace-separated words and join them with single spaces.
+
+  Then: Return the longest whitespace-separated word, the first one if several tie, or '''' if there are
+  none.
+
+
+  Example: `process(''202Cy2a0, xcx1B'') returns ''N2J1.3,1''`.
+
+
+  Return only the code.'
+assert:
+  checks:
+  - process('abc123xyz') == 'N1K1J1.5'
+  - process('mississippi river') == 'X1G1D1A1.3'
+  - process('noon') == 'Y1.7'
+  - process('Level') == 'G1.7'
+  - process('zz yy xx') == 'K1J1.5'
+  - process('A man a plan a canal Panama') == 'X1Y1N1A2.3'
+attribution:
+  dataset: SoHoT generated code cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/code_synth.py
+  license: generated
+  source: generated:evals.importers.code_synth v1 seed 603
+  revision: 9a8082722465612b071875da7b79985eb7025c9a
+  item: '1602'
+  date: '2026-11-27'
+  transform: a seeded spec; checks are the reference's answers on seeded inputs; the example in the prompt
+    is a further input; the wrong variant must fail at least one check
+  importer: evals.importers.code_synth
+  version: '1'
+  seed: 603
+  stratum: strs-18-steps
