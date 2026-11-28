@@ -19,8 +19,8 @@ def _challenger(argv: list) -> tuple[str, str]:
 
 
 def used(conn) -> dict[str, list[str]]:
-    """Each lane's measures in hand: screened candidates waiting, paused runs and running adopts, a name once."""
-    from harness import paused
+    """Each lane's measures in hand: screened candidates waiting, paused runs, running adopts and wins waiting on the owner's picks, a name once."""
+    from harness import owner_picks, paused
     held: dict[str, dict[str, None]] = {}
 
     def add(lane, name):
@@ -28,6 +28,8 @@ def used(conn) -> dict[str, list[str]]:
             held.setdefault(lanes.canonical(lane), {})[name] = None
     for r in conn.execute("SELECT name, lane FROM proposals WHERE state = 'screened'"):
         add(r["lane"], r["name"])
+    for lane, spec in owner_picks.pinned_specs(conn):
+        add(lane, spec)
     for p in paused.waiting(conn):
         add(p["lane"], p["proposal"] or p["challenger"])
     here, mine = machine_scope.here(conn, "jobs.claimed")
@@ -59,7 +61,10 @@ def pull(conn, rows: list[dict], lane_of=None, say=None) -> Pulled:
     from harness import cuts
     lane_of = lane_of or _lane_of
     have = used(conn)
+    from harness import owner_picks
     room = {lane: LIMIT - len(names) for lane, names in have.items()}
+    # A win waiting on the owner's picks takes the lane's whole room: no new challenger meanwhile. #2183.
+    room.update({lane: 0 for lane, _ in owner_picks.pinned_specs(conn)})
     kept, held = Pulled(), {}
     for r in rows:
         lane = lanes.canonical(lane_of(r))

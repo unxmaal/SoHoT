@@ -29,7 +29,14 @@ def refused(name: str, sweep) -> int | None:
 
 def release(name: str) -> None:
     """The weights of `name` go once its test ends, unless it is adopted, served, pinned or still screened to be measured again. #2015, #2157."""
-    from harness import disk
+    from harness import disk, owner_picks
+    from harness import memory_store as ms
+    store = ms.connect()
+    try:
+        if owner_picks.holds_weights(store, name):
+            return
+    finally:
+        store.close()
     disk.sweep(names=[name], keep_states=("screened",), say=lambda line: print(f"  {line.strip()}", flush=True))
 
 

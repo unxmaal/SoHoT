@@ -1131,7 +1131,7 @@ def _confirm_job(vid: int) -> int:
     from harness import memory_store as ms
     store = ms.connect()
     try:
-        row = store.execute("SELECT v.failure_class, v.power, v.lane, v.decided_at, p.name, p.state_verdict_id "
+        row = store.execute("SELECT v.failure_class, v.power, v.lane, v.decided_at, v.run_id, p.name, p.state_verdict_id "
                             "FROM verdicts v "
                             "LEFT JOIN proposals p ON p.id = v.proposal_id WHERE v.id = ?", (vid,)).fetchone()
     finally:
@@ -1202,6 +1202,8 @@ def _confirm_job(vid: int) -> int:
     if verdict.failure_class == reasons.CONFIRMING:
         return err(f"verdict {vid}: the confirmation run has no case outside the screened ones, so it decides nothing")
     print(f"    {'ADOPTED' if verdict.adopt else 'kept the incumbent'}: {verdict.why}", flush=True)
+    if row["run_id"] is not None:
+        verdict = replace(verdict, evidence={**verdict.evidence, "pick_runs": [row["run_id"]]})
     _record(verdict, spec, data.get("run_id"), out)
     return 0
 
@@ -1355,6 +1357,8 @@ def _record(verdict, spec: str, run_id, out) -> None:
         store.execute("UPDATE verdicts SET planned_s_per_case = ?, observed_s_per_case = ? WHERE id = ?",
                       (planned, seen, vid))
         store.commit()
+        if verdict.adopt and lanes.perceptual(verdict.lane):
+            print(f"    a {verdict.lane} win waits for the owner's blind picks on the status page before it is adopted", flush=True)
         if verdict.failure_class == reasons.CONFIRMING:
             job = adopt.queue_confirmation(store, vid, verdict)
             if job:

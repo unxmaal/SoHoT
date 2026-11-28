@@ -4,7 +4,7 @@ from __future__ import annotations
 from harness import store
 
 
-SCHEMA_VERSION = 108
+SCHEMA_VERSION = 109
 
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
@@ -60,6 +60,29 @@ FETCH = "fetch"
 
 #: Ladder order: an earlier tier never replaces a later tier's state. #409.
 LADDER = {INSPECT: 0, JUDGE: 1, FETCH: 2, SCREEN: 3, MEASURE: 4, ADOPT: 5}
+
+
+OWNER_PICKS_DDL = """
+CREATE TABLE IF NOT EXISTS owner_picks (
+    id          INTEGER PRIMARY KEY,
+    -- The held verdict (failure_class awaiting_owner) this item decides. #2183.
+    verdict_id  INTEGER NOT NULL,
+    lane        TEXT NOT NULL,
+    incumbent   TEXT NOT NULL,
+    challenger  TEXT NOT NULL,
+    spec        TEXT NOT NULL,
+    proposal    TEXT NOT NULL DEFAULT '',
+    run_id      INTEGER,
+    -- waiting, adopted or declined (harness/owner_picks.py).
+    state       TEXT NOT NULL DEFAULT 'waiting',
+    -- JSON: each pair's two stored files, which side the challenger is on, and the owner's pick.
+    pairs       TEXT NOT NULL DEFAULT '[]',
+    -- JSON: the won verdict the picks adopt or decline.
+    held        TEXT NOT NULL DEFAULT '{}',
+    opened_at   REAL NOT NULL,
+    decided_at  REAL
+);
+"""
 
 
 _DDL = """
@@ -1002,6 +1025,7 @@ CREATE INDEX IF NOT EXISTS ix_probes_model ON contamination_probes(model, lane);
 CREATE INDEX IF NOT EXISTS ix_limit_cuts_knob ON limit_cuts(knob, at);
 CREATE INDEX IF NOT EXISTS ix_api_spend_at ON api_spend(at);
 """
+_DDL += OWNER_PICKS_DDL
 
 
 GIB = 1024 ** 3

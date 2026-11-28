@@ -533,6 +533,9 @@ h1{font-size:20px;margin:0 0 4px}h2{font-size:15px;margin:0}h3{font-size:13px;ma
 .jt{flex:1 1 220px;overflow-wrap:anywhere;color:var(--ink2)}.jr .fa{grid-column:auto}
 @media (min-width:700px){.fr{grid-template-columns:80px 160px minmax(0,1fr) auto}.fs{grid-row:auto}.fa{grid-column:auto}}
 .chk{display:flex;gap:6px;align-items:center;overflow-wrap:anywhere}.chk .badge{width:16px;height:16px;font-size:10px}
+.pp{margin:10px 0 0;padding-top:6px;border-top:1px solid var(--grid)}.ps{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ps img,.ps video{width:100%;max-height:320px;object-fit:contain}.ps audio{width:100%}.pp .pb{display:flex;flex-wrap:wrap;gap:6px}.pp .pb .act{margin:6px 0 0}
+.pp .pb .on button{border-width:2px}.picks{flex:1 1 100%}
 """)
 
 
@@ -540,7 +543,10 @@ def _need(c: dict, now: float, tok: str) -> str:
     from harness import owner_actions
     stopped = f"stopped {span(now - float(c['since']))}" if c.get("since") else "age unknown"
     when = f"<time title='{stamp(c['since'])}'>{esc(stopped)}</time>" if c.get("since") else esc(stopped)
-    if c.get("fix") and tok:
+    if c.get("pairs") is not None:
+        from harness import status_buttons
+        fix = status_buttons.picks(c, tok) if tok else "<span class='nn'>Open this page from a device that may press buttons to pick.</span>"
+    elif c.get("fix") and tok:
         fix = "".join(owner_actions.button(f["action"], f["arg"], tok) for f in c["fix"])
     elif c.get("fix"):
         fix = "<span class='nn'>Open this page from a device that may press buttons to fix it here.</span>"

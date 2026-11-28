@@ -24,8 +24,9 @@ REASONS = {
     "upstream": "the candidate's upstream is gone or idle",
     "reopened": "a named reopen (retraction, retest) of an earlier verdict",
     "owner": "the owner declined it by name (soh decline); no retest reopens it",
+    "owner_preference": "the owner, shown blind pairs of its outputs beside the incumbent's, did not prefer it",
 }
-CANDIDATE, HARNESS, RUNTIME, MACHINE, MEMORY, LIMIT, UPSTREAM, REOPENED, OWNER = REASONS
+CANDIDATE, HARNESS, RUNTIME, MACHINE, MEMORY, LIMIT, UPSTREAM, REOPENED, OWNER, OWNER_PREFERENCE = REASONS
 
 # Failure classes, set on each result row by the runner where it failed.
 SERVER_DEAD = "server_dead"
@@ -88,6 +89,10 @@ INCONCLUSIVE = "inconclusive"
 LANE_TOO_SMALL = "lane_too_small"
 #: A verdict's class: the holdout gate passed and the cases it was not decided on have not confirmed it yet. #725.
 CONFIRMING = "confirming"
+#: A verdict's class: a perceptual lane's holdout win waits for the owner's blind picks. #2183.
+AWAITING_OWNER = "awaiting_owner"
+#: A verdict's class: the owner's picks did not prefer the challenger. #2183.
+OWNER_DECLINED = "owner_declined"
 #: A verdict's class: a run's share of the sweep passed a fetchable row over; rank ages on it. #1288, #1779, #2020.
 PASSED_OVER = "passed_over"
 
