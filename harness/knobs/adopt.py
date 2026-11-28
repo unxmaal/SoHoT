@@ -29,7 +29,7 @@ KNOBS = [
             "417, tts 1734; at 0.15 code 196, decide 134 (enough), extract 249, ocr 208, pii 233, retrieval 278, "
             "tts 835; at 0.20 code 135 (enough), extract 175, ocr 154, pii 174, retrieval 208, tts 510. Replaying "
             "the 221 stored adopt verdicts, none changes class because of it (#1320)"),
-    _k("continuous_effect", ["harness/continuous.py:EFFECT"], [0.01, 0.02, 0.03, 0.05], unit="wer/cer",
+    _k("continuous_effect", ["harness/continuous.py:EFFECT", "harness/continuous.py:DEFAULT_EFFECT"], [0.01, 0.02, 0.03, 0.05], unit="wer/cer",
        lane_values={"stt": (0.01, 0.02, 0.03, 0.05), "tts": (0.02, 0.03, 0.05, 0.08), "ocr": (0.03, 0.05, 0.08, 0.1)},
        note="smallest drop in wer/cer a lane adopts for, in the metric's own units; a null that could not see it is not a loss (#2181)"),
     _k("deadline_grace", ["harness/power.py:DEADLINE_GRACE"], [1.0, 1.25, 1.5, 2.0],

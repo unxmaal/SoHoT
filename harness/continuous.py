@@ -11,6 +11,8 @@ from statistics import NormalDist
 METRIC = {"stt": "wer", "tts": "wer", "ocr": "cer"}
 #: The drop in the metric (absolute, in the metric's own units) worth a model switch, per lane.
 EFFECT = {"stt": 0.02, "tts": 0.03, "ocr": 0.05}
+#: The drop assumed for a lane scored on an error rate that EFFECT does not name.
+DEFAULT_EFFECT = 0.02
 #: Correlation assumed between two models' per-case scores until a pair measures it.
 CORR = 0.4
 #: Pitman efficiency of the signed-rank test against the paired t-test at the normal.
@@ -28,7 +30,7 @@ def metric_of(lane: str) -> str:
 
 
 def effect_for(lane: str) -> float:
-    return EFFECT.get((lane or "").strip().lower(), 0.0)
+    return EFFECT.get((lane or "").strip().lower(), DEFAULT_EFFECT) if metric_of(lane) else 0.0
 
 
 def _value(row: dict, metric: str):

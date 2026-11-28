@@ -284,3 +284,21 @@ def test_rows_that_carry_no_error_rate_are_paired_on_their_pass_bits_as_before()
     assert cell.p_value is None and cell.gained == 8 and cell.lost == 0 and cell.p == paired.sign_test(0, 8)
     won = adopt.decide("tts", {"candidate": "inc"}, {"candidate": "ch"}, rows)
     assert won.adopt and "8 gained against 0 lost" in won.why
+
+
+@pytest.mark.gauntlet("a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null", site="harness/continuous.py:stored_rows:runs")
+def test_the_stored_rows_are_the_lanes_measure_rows_on_its_holdout_from_every_machine(monkeypatch):
+    monkeypatch.setattr(holdout, "for_lane", lambda lane, root=None: holdout.Split(lane, ("dev1",), ("c0", "c1"), False))
+    conn = ms.connect()
+    try:
+        for i, (lane, tier) in enumerate([("stt", "measure"), ("stt", "measure"), ("stt", "screen"), ("tts", "measure")]):
+            conn.execute("INSERT INTO runs (path, lane, tier, recorded_at) VALUES (?, ?, ?, 1.0)", (f"r{i}", lane, tier))
+            rid = conn.execute("SELECT id FROM runs WHERE path = ?", (f"r{i}",)).fetchone()[0]
+            for case in ("c0#2", "dev1", "c1"):
+                conn.execute("INSERT INTO results (run_id, seq, candidate, case_id, passed, metrics) VALUES (?, 0, ?, ?, 1, '{\"wer\": 0.1}')",
+                             (rid, f"m{i}", case))
+        conn.commit()
+        got = continuous.stored_rows(conn, " STT ")
+        assert sorted((r["candidate"], r["case_id"]) for r in got) == [("m0", "c0#2"), ("m0", "c1"), ("m1", "c0#2"), ("m1", "c1")]
+    finally:
+        conn.close()

@@ -13,7 +13,7 @@ def add_parser(sub) -> None:
     p.add_argument("lane", nargs="?", default="", help="the lane to open or close, or replay")
     p.add_argument("--incumbent", default="", help="replay: the incumbent's receipt key (default: the served one)")
     p.add_argument("--challenger", action="append", default=[], help="replay: a challenger's key (default: every stored one)")
-    p.add_argument("--db", action="append", default=[], help="replay: a store copy whose rows join the live store's, read only")
+    p.add_argument("--also", action="append", default=[], help="replay: a store copy whose rows join the live store's, read only")
     p.add_argument("--reps", type=int, default=200, help="replay: bootstrap draws per holdout size")
     p.set_defaults(func=cmd_lane_gate)
 
@@ -66,7 +66,7 @@ def _replay(a) -> int:
     with lent_store() as conn:
         rows = continuous.stored_rows(conn, lane)
         key = a.incumbent or lane_gate.profile(lane, {}, conn)[0]
-    for path in a.db:
+    for path in a.also:
         extra = store.open_ro(path)
         try:
             rows += continuous.stored_rows(extra, lane)
