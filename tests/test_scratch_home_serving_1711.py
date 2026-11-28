@@ -5,6 +5,13 @@ from harness import adopt, delegate, interactive, paths, router, serving, store
 from harness import memory_store as ms
 from tests.conftest import store_state
 
+
+@pytest.fixture(autouse=True)
+def _no_owner_step(monkeypatch):
+    from harness import lanes
+    monkeypatch.setattr(lanes, "PERCEPTUAL", ())
+
+
 URL = "http://127.0.0.1:18083"
 ORNITH = "Ornith-1.5-35B-Q4_K_M"
 

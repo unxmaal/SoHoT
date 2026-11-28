@@ -6,6 +6,13 @@ from harness import adopt, rank
 from harness import memory_store as ms
 
 
+@pytest.fixture(autouse=True)
+def _no_owner_step(monkeypatch):
+    from harness import lanes
+    monkeypatch.setattr(lanes, "PERCEPTUAL", ())
+
+
+
 def row(candidate, wer, rate=1.0, median=0.5):
     return {"candidate": candidate, "pass_rate": rate, "median_s": median,
             "metrics": {"wer": wer}}

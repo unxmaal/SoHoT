@@ -8,6 +8,12 @@ import pytest
 from harness import adopt, candidates
 from harness import memory_store as ms
 
+
+@pytest.fixture(autouse=True)
+def _no_owner_step(monkeypatch):
+    from harness import lanes
+    monkeypatch.setattr(lanes, "PERCEPTUAL", ())
+
 REPO = "ornith-ai/Ornith-1.5-35B-A3B-GGUF"
 SPEC = "llamacpp:Ornith-1.5-35B-Q4_K_M"
 MUSIC = "acestep/acestep-v15-turbo@steps=8"

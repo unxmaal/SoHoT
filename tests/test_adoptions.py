@@ -8,6 +8,12 @@ from harness import adopt, adoption_state as st, candidates, disk, winners
 from harness import memory_store as ms
 from tests import conftest
 
+
+@pytest.fixture(autouse=True)
+def _no_owner_step(monkeypatch):
+    from harness import lanes
+    monkeypatch.setattr(lanes, "PERCEPTUAL", ())
+
 M2 = {"fingerprint": "Mac14,12/macOS/arm64", "hw_model": "Mac14,12",
       "os": "macOS-26", "arch": "arm64", "memory_gb": 32.0,
       "accelerator": "unified 32GB", "runtimes": "cpu,mlx", "ceiling_gb": 22.0}
