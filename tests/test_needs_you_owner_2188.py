@@ -94,6 +94,7 @@ def test_a_screen_that_finished_without_a_verdict_keeps_its_block(tmp_path):
         conn.close()
 
 
+@pytest.mark.gauntlet("a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null", site="harness/refetch.py:_cut_short:verdicts")
 def test_a_cancelled_job_that_had_already_queued_the_candidate_keeps_the_block(tmp_path):
     conn = ms.connect()
     try:
@@ -158,7 +159,9 @@ def test_serve_starts_the_warm_up_before_it_runs(monkeypatch):
     srv = pytest.importorskip("harness.mcp_server", reason="needs the `mcp` group: uv run --group mcp pytest")
     import uvicorn
     warmed = threading.Event()
+    from harness import paths
     monkeypatch.setattr("harness.status_page.warm", warmed.set)
+    monkeypatch.setattr(paths, "DEFAULT_HOME", paths.home())
     monkeypatch.setattr(uvicorn.Server, "run", lambda self, sockets=None: None)
     monkeypatch.setattr(srv, "listen_sockets", lambda host, port: [])
     monkeypatch.setattr(srv, "stale_report", lambda port, pid: [])
@@ -166,6 +169,7 @@ def test_serve_starts_the_warm_up_before_it_runs(monkeypatch):
     assert warmed.wait(10)
 
 
+@pytest.mark.gauntlet("a-shared-store-query-with-no-scope-or-a-scope-with-its-own-idea-of-null", site="harness/workqueue.py:last_of_kind:jobs")
 def test_the_deploy_section_reads_the_last_five_deploy_jobs_not_the_whole_table(tmp_path):
     from harness import deploy
     from harness import workqueue as wq
@@ -198,3 +202,16 @@ def test_a_reply_schema_is_checked_once_and_a_bad_one_is_still_refused(monkeypat
         with pytest.raises(ValueError, match="not a JSON schema"):
             claims.validate_case("sys", {"type": 5}, [], True)
     assert len(seen) == 3
+
+
+def test_serve_leaves_a_scratch_home_alone(monkeypatch):
+    import threading
+    srv = pytest.importorskip("harness.mcp_server", reason="needs the `mcp` group: uv run --group mcp pytest")
+    import uvicorn
+    warmed = threading.Event()
+    monkeypatch.setattr("harness.status_page.warm", warmed.set)
+    monkeypatch.setattr(uvicorn.Server, "run", lambda self, sockets=None: None)
+    monkeypatch.setattr(srv, "listen_sockets", lambda host, port: [])
+    monkeypatch.setattr(srv, "stale_report", lambda port, pid: [])
+    srv.serve("0.0.0.0", 8899)
+    assert not warmed.wait(0.5)

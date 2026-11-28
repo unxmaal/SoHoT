@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import sys
 import threading
 import time
 from datetime import date, datetime, timedelta
@@ -382,8 +383,8 @@ def warm() -> None:
     """Build the page once so the first visit after a start reads the cache. #2188."""
     try:
         cached()
-    except Exception:  # noqa: BLE001 - a failed warm-up is the first visit's cold build, nothing more
-        pass
+    except Exception as exc:  # noqa: BLE001 - a failed warm-up is the first visit's cold build, nothing more
+        print(f"status warm-up failed: {type(exc).__name__}: {exc}"[:300], file=sys.stderr, flush=True)
 
 
 def as_json(r: dict) -> str:
