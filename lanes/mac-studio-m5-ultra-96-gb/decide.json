@@ -2617,11 +2617,11 @@
    "runs": 4
   }
  ],
- "generated_at": "2026-11-28T11:23:19Z",
+ "generated_at": "2026-11-28T12:41:22Z",
  "knobs": [],
  "lane": {
-  "cases": 661,
-  "cases_digest": "c319d070cc29015b",
+  "cases": 721,
+  "cases_digest": "3a205352ca1c24d6",
   "name": "decide",
   "params": {},
   "wanted": true
