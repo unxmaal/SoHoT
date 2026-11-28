@@ -45,5 +45,5 @@ def test_the_decide_holdout_grows_with_its_route_and_policy_cases_and_keeps_one_
     families = {}
     for cid in side.holdout:
         families[holdout.family(cid)] = families.get(holdout.family(cid), 0) + 1
-    assert families["route-massive"] >= 26 and families["policy-civil-comments"] >= 17
+    assert families["route-massive"] >= 36
     assert max(families.values()) <= holdout.FAMILY_SHARE * len(side.holdout)

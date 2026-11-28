@@ -30,9 +30,8 @@ NIMBLE_REV = "dcfdbd9a64f0d869f658d7a72f1beaee32737773"
 MANIFESTS = "docs/assets/public-benchmarks/subsets"
 DEFAULT_OUT = Path(__file__).resolve().parent / "cases" / "decide"
 PER_FAMILY = 60
-#: Route and policy draw more than PER_FAMILY, the families the incumbent splits on; the first 60 are unchanged. #2195.
-ROUTE_CASES = 90
-POLICY_CASES = 90
+#: Route draws more than PER_FAMILY, where the constant control passes almost none; the first 60 are unchanged. #2195.
+ROUTE_CASES = 120
 #: SQuAD check cases built here; the rest come from evals/importers/squad2_check. #671.
 CHECK_CASES = 6
 ROWS_API = "https://datasets-server.huggingface.co/rows"
@@ -136,6 +135,8 @@ def pick_route(ids: list[str], rows: dict[str, dict], n: int = PER_FAMILY) -> li
                 domains[rows[i]["scenario"]] += 1
         rounds += 1
     from harness import cuts
+    if n == ROUTE_CASES:
+        return cuts.take(chosen, n, "decide_route_cases", "decide route cases past the family size")
     return cuts.take(chosen, n, "decide_per_family", "decide route cases past the family size")
 
 
@@ -423,7 +424,7 @@ def build() -> list[dict]:
     ids = manifest_ids(SOURCES["civil_comments"]["manifest"])
     rows = _indexed(ids, "google/civil_comments", "default", "test",
                     lambda got: False, limit=len(ids))
-    cases += [policy_case(i, rows[i]) for i in pick_policy(ids, rows, POLICY_CASES)]
+    cases += [policy_case(i, rows[i]) for i in pick_policy(ids, rows)]
 
     ids = manifest_ids(SOURCES["helpsteer2"]["manifest"])
     rows = _indexed(ids, "nvidia/HelpSteer2", "default", "validation",
